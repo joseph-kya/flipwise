@@ -579,15 +579,18 @@ function App() {
       ),
     [subjects],
   );
-  const visibleIds = new Set(catalog.map((c) => c.cardId));
-  const studyLog = log.filter((e) => visibleIds.has(e.cardId));
+  // Derived scheduling state is expensive (replays the whole log). The 1 s ticker only drives
+  // the session clock, so queue math is memoised on the log and a 15 s time bucket.
+  const tick = Math.floor(now / 15_000);
+  const visibleIds = useMemo(() => new Set(catalog.map((c) => c.cardId)), [catalog]);
+  const studyLog = useMemo(() => log.filter((e) => visibleIds.has(e.cardId)), [visibleIds, log]);
   const globalStudy = parts[1] === 'global';
-  const available = queue(
+  const available = useMemo(() => queue(
     catalog.filter(
       (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
     studyLog,
-    new Date(now),
-  );
+    new Date(tick * 15_000 + 14_999),
+  ), [catalog, studyLog, globalStudy, parts[1], parts[2], tick]);
   const cards = storageReady ? available : [];
   const card = cards[0];
   const subject = subjects.find(
@@ -597,10 +600,10 @@ function App() {
   const studying = parts[0] === 'study' && storageReady && (globalStudy || Boolean(subject));
   const revealed = parts[3] === 'answer';
   const studyUrl = `#/study/${parts[1]}/${parts[2]}`;
-  const states = replay(log);
-  const previewAt = new Date(now);
-  const todayCounts = queueCounts(queue(catalog, studyLog, previewAt), log);
-  const backlog = parts[0] === '' ? dueCount(catalog, studyLog, previewAt) : 0;
+  const states = useMemo(() => replay(log), [log]);
+  const previewAt = useMemo(() => new Date(tick * 15_000 + 14_999), [tick]);
+  const todayCounts = useMemo(() => queueCounts(queue(catalog, studyLog, previewAt), log), [catalog, studyLog, log, previewAt]);
+  const backlog = useMemo(() => (parts[0] === '' ? dueCount(catalog, studyLog, previewAt) : 0), [parts[0], catalog, studyLog, previewAt]);
 
   useEffect(() => {
     setIndex(0);
@@ -892,10 +895,9 @@ function App() {
   );
   const elapsed = formatElapsed(now - started);
 
-  const streakStats = useMemo(
-    () => streak(aggregateByDay(log), toStudyDateKey(new Date(now))),
-    [log, now],
-  );
+  const todayKey = toStudyDateKey(new Date(now));
+  const dailyAggregate = useMemo(() => aggregateByDay(log), [log]);
+  const streakStats = useMemo(() => streak(dailyAggregate, todayKey), [dailyAggregate, todayKey]);
 
   const demoReviewCount = useMemo(() => log.reduce((sum, e) => sum + (e.demo ? 1 : 0), 0),
     [log]);
