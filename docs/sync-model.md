@@ -7,7 +7,7 @@ what the adversarial review found (see the last section).
 
 - **Local-first.** IndexedDB `flipwise` stays the source of truth for the UI. The app works signed
   out and offline exactly as before. With no `VITE_FIREBASE_*` config the account UI is hidden and
-  Firebase is never downloaded.
+  Firebase is never downloaded. Configured clients preload auth at startup so the onboarding gate can restore an existing session before showing Welcome.
 - **Sync never loses data.** Every merge is per record (or per review), never per collection, and
   every step is idempotent, so retrying after any crash is safe.
 - **Cheap.** Stay far inside Spark (50k reads / 20k writes per day).
@@ -271,9 +271,50 @@ detection.
   two devices keep one whole version.
 - Another uid's stash stays on the device until that account signs in again. Nothing is deleted
   automatically.
-- iOS standalone PWAs use `signInWithRedirect`. With the app on `github.io` and `authDomain` on
-  `firebaseapp.com`, Safari's storage partitioning can break redirect sign-in. If that happens,
-  sign in once in Safari itself, or serve the auth handler from the app's own domain.
+- Popup sign-in is preferred on every browser, including installed iOS apps. Redirect remains
+  a last resort for blocked/unsupported popups. The GitHub Pages origin and Firebase authDomain
+  differ, so redirect recovery cannot be guaranteed on Safari; an empty return now explains
+  recovery and lets the user retry or continue without an account.
+
+## iOS sign-in recovery and hosting follow-ups
+
+Firebase is preloaded before sign-in controls become usable. `AccountController.signIn()` calls
+`client.signIn()` in the tap's original stack (no preceding await). Startup waits for both
+`authStateReady()` and `getRedirectResult()` before subscribing to user changes. After six
+seconds the gate releases with a calm explanation and an account-free escape; late auth results
+are still applied. The auth observer alone owns successful sign-in, including account preparation.
+Cancellations are visible and count alongside failures. Two attempts unlock the escape, and the
+count survives reloads. A successful user restoration clears it.
+
+Before the last-resort redirect, the controller sets `flipwise.account.v1` and the client sets
+`flipwise.auth-redirect.v1`. After a settled return without a user, the latter produces the
+Safari/retry explanation, then is consumed. A plain signed-out visit does not produce it.
+An empty `getRedirectResult()` is not by itself a failure: restored `auth.currentUser` also counts.
+
+Apple's [WWDC23 web-app guidance](https://developer.apple.com/videos/play/wwdc2023/10120/)
+explains that `window.open` stays within the web app even outside its manifest scope. This supports
+trying the popup in an installed app rather than assuming all standalone popups fail. Modern iOS
+can present an in-app browser; opener communication, Google completion and returning to the
+installed window still require a real iPhone check. Playwright WebKit emulates the browser and
+screen, not SpringBoard or the installed-app browser container. Signing in once in Safari is a
+recovery suggestion, not a promise that Firebase IndexedDB storage transfers into an existing PWA.
+
+[Firebase redirect best practices](https://firebase.google.com/docs/auth/web/redirect-best-practices)
+describes five approaches: use the app's Firebase-hosted domain, use popup sign-in, proxy the
+helper, self-host the helper, or obtain provider credentials independently. Popup is implemented.
+The remaining hosting/provider changes need Joseph:
+
+- A custom domain/Firebase Hosting deployment could align app and auth origins.
+- Proxying or self-hosting requires same-origin root `/__/auth/*` endpoints, plus Firebase/OAuth
+  configuration. GitHub project Pages only controls `/flipwise/`, cannot install a root proxy,
+  and putting helpers at `/flipwise/__/auth` does not satisfy Firebase's root helper paths.
+- Google Identity Services followed by `GoogleAuthProvider.credential(idToken)` and
+  `signInWithCredential` would avoid the Firebase redirect helper. It needs an OAuth web client
+  configured with `https://joseph-kya.github.io` as an authorized JavaScript origin in Google
+  Cloud, then client integration and device validation. See [Google's setup guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
+
+No hosting, OAuth client, Firebase production configuration, or Google Identity Services changes
+are included in this fix.
 
 ## Adversarial review (after implementation)
 
