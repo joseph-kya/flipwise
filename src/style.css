@@ -1833,3 +1833,21 @@ a.insight-card:active { transform: scale(0.99); }
 
 :root[data-motion="reduced"] .xp .xp-anim, :root[data-motion="off"] .xp .xp-anim { animation: none !important; opacity: 1 !important; }
 :root[data-motion="reduced"] .xp-track, :root[data-motion="off"] .xp-track { will-change: auto; }
+
+/* Catch-up: exit layer, drag tints, summary */
+.catchup-stage { position: relative; }
+.catchup-exit { position: absolute; inset: 0 0 auto 0; z-index: 4; pointer-events: none; will-change: transform; }
+.catchup-tint { position: absolute; inset: 0; z-index: 1; border-radius: var(--radius-md); pointer-events: none; opacity: 0; }
+.catchup-tint-knew { background: linear-gradient(to left, var(--sem-green-bg) 0%, transparent 60%); box-shadow: inset -3px 0 0 var(--sem-green-dot); }
+.catchup-tint-missed { background: linear-gradient(to right, var(--sem-red-bg) 0%, transparent 60%); box-shadow: inset 3px 0 0 var(--sem-red-dot); }
+.catchup-exit .catchup-tint { opacity: 0.85; }
+.catchup-summary-head { display: flex; align-items: center; gap: var(--spacing-4); }
+.catchup-summary-head .page-header-wrap { flex: 1; min-width: 0; }
+.catchup-summary-head .page-head { margin-bottom: 0; }
+.catchup-summary-group .group-row { animation: ob-in-forward 360ms var(--ease-out) both; animation-delay: calc(80ms + var(--row-i, 0) * 50ms); }
+.catchup-summary-group .group-row:nth-child(2) { --row-i: 1; }
+.catchup-summary-group .group-row:nth-child(3) { --row-i: 2; }
+.catchup-summary-group .group-row:nth-child(4) { --row-i: 3; }
+:root[data-motion="reduced"] .catchup-summary-group .group-row { animation: ob-fade 180ms ease both; }
+:root[data-motion="off"] .catchup-summary-group .group-row { animation: none; }
+

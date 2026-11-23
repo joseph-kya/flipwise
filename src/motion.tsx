@@ -250,3 +250,23 @@ export function animateCardExit(
   );
   return anim.finished.then(() => undefined, () => undefined);
 }
+
+/**
+ * Sampled damped spring from `from` to 0, seeded with the gesture's release velocity (px/ms),
+ * so a released drag continues at the finger's speed instead of restarting from rest.
+ * Returns positions at 60 Hz for a WAAPI animation with linear easing.
+ */
+export function springSamples(from: number, velocity: number, { stiffness = 420, damping = 34, mass = 1 } = {}) {
+  const dt = 1 / 60;
+  let x = from, v = velocity * 1000; // px/s
+  const out = [x];
+  for (let i = 0; i < 120; i++) {
+    const a = (-stiffness * x - damping * v) / mass;
+    v += a * dt;
+    x += v * dt;
+    out.push(x);
+    if (Math.abs(x) < 0.4 && Math.abs(v) < 8) break;
+  }
+  out.push(0);
+  return { samples: out, duration: Math.round((out.length - 1) * dt * 1000) };
+}

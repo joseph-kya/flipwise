@@ -7,6 +7,7 @@ import type { ReviewEvent } from './reviewLog';
 import type { QueueCard } from './scheduler';
 import type { EffectiveMotion } from './settings';
 import { Button, Group, PageHeader, RatingButton, Row, SectionFooter, Select, Switch, type SelectOption } from './ui';
+import { AccuracyRing, AnimatedNumber, springSamples } from './motion';
 
 export type CatchupCard = QueueCard & DemoCard;
 
@@ -43,6 +44,8 @@ export function CatchupPage({
   const logRef = useRef(log);
   logRef.current = log;
   const everythingId = useId();
+  const [exits, setExits] = useState<Exit[]>([]);
+  const exitKey = useRef(0);
 
   const scoped = useMemo(
     () => catalog.filter((c) => global || (c.subjectId === scope.subjectId && (scope.lessonId === 'all' || c.lessonId === scope.lessonId))),
@@ -103,6 +106,7 @@ export function CatchupPage({
     setPhase('session');
   });
 
+  const commitRef = useRef<(knew: boolean) => void>(() => undefined);
   // Keyboard: Space reveals, 1 = didn't know, 2 = knew it, ⌘/Ctrl+Z undoes. No animation on keys.
   useEffect(() => {
     if (phase !== 'session') return;
@@ -111,8 +115,8 @@ export function CatchupPage({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.stopImmediatePropagation(); void undo(); return; }
       if (e.metaKey || e.ctrlKey) return;
       if (e.code === 'Space') { e.preventDefault(); setRevealed(true); }
-      else if (e.key === '1') { e.preventDefault(); void answer(false); }
-      else if (e.key === '2') { e.preventDefault(); void answer(true); }
+      else if (e.key === '1') { e.preventDefault(); commitRef.current(false); }
+      else if (e.key === '2') { e.preventDefault(); commitRef.current(true); }
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
@@ -161,27 +165,15 @@ export function CatchupPage({
     );
   }
 
-  if (phase === 'summary') {
-    const knew = answers.filter((a) => a.knew).length;
-    const saved = answers.filter((a) => a.eventId).length;
-    const minutes = Math.max(1, Math.round((Date.now() - started) / 60_000));
-    return (
-      <div className="section-stack">
-        <PageHeader title="Caught up" subtitle={`${scopeName} · ${plural(answers.length, 'card')} in ${plural(minutes, 'minute')}`} />
-        <Group ariaLabel="Catch-up summary">
-          <Row title="Knew it" value={knew} valueStrong />
-          <Row title="Didn’t know" value={answers.length - knew} valueStrong />
-          <Row title="Reviews saved" subtitle="Due cards, rescheduled by FSRS" value={saved} />
-          {answers.length - saved > 0 && <Row title="Practice" subtitle="Not due, schedule unchanged" value={answers.length - saved} />}
-        </Group>
-        {answers.length - knew > 0 && <SectionFooter>Cards you didn’t know come back within minutes in regular study.</SectionFooter>}
-        <div className="catchup-summary-actions">
-          <Button variant="primary" size="full" href={backHref}>Done</Button>
-          <Button variant="plain" onClick={() => void undo()}>Undo last answer</Button>
-        </div>
-      </div>
-    );
-  }
+  if (phase === 'summary') return <CatchupSummary answers={answers} scopeName={scopeName} started={started} motion={motion} backHref={backHref} onUndo={() => void undo()} />;
+
+  /** Hand the answered card to the exit layer; the next card is live underneath immediately. */
+  const commit: (knew: boolean, fromTransform?: string, velocity?: number) => void = (knew: boolean, fromTransform = 'translate3d(0,0,0) rotate(0deg)', velocity = knew ? 1.6 : -1.6) => {
+    if (!current) return;
+    if (motion !== 'off') setExits((list) => [...list.slice(-2), { key: exitKey.current++, item: current, revealed, fromTransform, velocity, knew }]);
+    void answer(knew);
+  };
+  commitRef.current = commit;
 
   return (
     <div className="catchup">
@@ -193,64 +185,139 @@ export function CatchupPage({
         <span className="catchup-count tabular">{Math.min(index + 1, items.length)} / {items.length}</span>
       </div>
       {error && <p className="inline-notice inline-notice-error" role="alert">{error}</p>}
-      {current && (
-        <SwipeCard
-          key={`${index}-${current.card.cardId}`}
-          motion={motion}
-          onAnswer={(knew) => void answer(knew)}
-          onTap={() => setRevealed(true)}
-        >
-          <section className="study-card catchup-card" aria-label="Flashcard">
-            <div className="card-meta">
-              <span>{current.kind === 'practice' ? 'Practice · schedule unchanged' : 'Due'}</span>
-              {answers.length > 0 && (
-                <Button variant="plain" className="btn-compact catchup-undo" onClick={(e) => { e.stopPropagation(); void undo(); }}>Undo</Button>
-              )}
-            </div>
-            <div className="card-question"><CardContent card={current.card} side="front" media={media} /></div>
-            {revealed ? (
-              <div className="card-answer"><CardContent card={current.card} side="back" media={media} /></div>
-            ) : (
-              <p className="catchup-hint">Tap to show the answer</p>
-            )}
-          </section>
-        </SwipeCard>
-      )}
-      <div className="catchup-actions">
-        <RatingButton tone="again" className="catchup-btn" shortcut="1" onClick={() => void answer(false)}>Didn’t know</RatingButton>
-        <RatingButton tone="easy" className="catchup-btn" shortcut="2" onClick={() => void answer(true)}>Knew it</RatingButton>
+      <div className="catchup-stage">
+        {current && (
+          <SwipeCard
+            key={`${index}-${current.card.cardId}`}
+            motion={motion}
+            entering={index > 0}
+            onCommit={commit}
+            onTap={() => setRevealed(true)}
+          >
+            <CardFace item={current} revealed={revealed} media={media}
+              undo={answers.length > 0 ? () => void undo() : undefined} />
+          </SwipeCard>
+        )}
+        {exits.map((x) => (
+          <ExitCard key={x.key} exit={x} motion={motion} onDone={() => setExits((list) => list.filter((e) => e.key !== x.key))}>
+            <CardFace item={x.item} revealed={x.revealed} media={media} />
+          </ExitCard>
+        ))}
       </div>
+      <div className="catchup-actions">
+        <RatingButton tone="again" className="catchup-btn" shortcut="1" onClick={() => commit(false)}>Didn’t know</RatingButton>
+        <RatingButton tone="easy" className="catchup-btn" shortcut="2" onClick={() => commit(true)}>Knew it</RatingButton>
+      </div>
+    </div>
+  );
+}
+
+interface Exit { key: number; item: CatchupItem<CatchupCard>; revealed: boolean; fromTransform: string; velocity: number; knew: boolean }
+
+function CardFace({ item, revealed, media, undo }: { item: CatchupItem<CatchupCard>; revealed: boolean; media: Record<string, string>; undo?: () => void }) {
+  return (
+    <section className="study-card catchup-card" aria-label="Flashcard">
+      <div className="card-meta">
+        <span>{item.kind === 'practice' ? 'Practice · schedule unchanged' : 'Due'}</span>
+        {undo && <Button variant="plain" className="btn-compact catchup-undo" onClick={(e) => { e.stopPropagation(); undo(); }}>Undo</Button>}
+      </div>
+      <div className="card-question"><CardContent card={item.card} side="front" media={media} /></div>
+      {revealed ? (
+        <div className="card-answer"><CardContent card={item.card} side="back" media={media} /></div>
+      ) : (
+        <p className="catchup-hint">Tap to show the answer</p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * The answered card leaving: continues at the release velocity (a button or key gives it a
+ * brisk default), rotating a little more as it goes. Reduced motion fades it in place.
+ */
+function ExitCard({ exit, motion, onDone, children }: { exit: Exit; motion: EffectiveMotion; onDone: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof el.animate !== 'function') { onDone(); return; }
+    let anim: Animation;
+    if (motion === 'reduced') {
+      anim = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'ease-out', fill: 'forwards' });
+    } else {
+      const dir = exit.knew ? 1 : -1;
+      const dist = window.innerWidth + el.offsetWidth;
+      const speed = Math.max(Math.abs(exit.velocity), 1.4); // px/ms, never slower than the finger
+      const duration = Math.min(320, Math.max(180, dist / speed));
+      anim = el.animate(
+        [{ transform: exit.fromTransform }, { transform: `translate3d(${dir * dist}px, 24px, 0) rotate(${dir * 16}deg)` }],
+        // Starts at the finger's speed (steep, almost linear start) and keeps going off-screen.
+        { duration, easing: 'cubic-bezier(0.3, 0.5, 0.7, 1)', fill: 'forwards' },
+      );
+    }
+    anim.finished.then(onDone, onDone);
+    return () => anim.cancel();
+  }, []);
+  return (
+    <div ref={ref} className="catchup-exit" aria-hidden="true">
+      <span className={`catchup-tint ${exit.knew ? 'catchup-tint-knew' : 'catchup-tint-missed'}`} style={{ opacity: 1 }} />
+      {children}
     </div>
   );
 }
 
 /**
  * Horizontal swipe: 1:1 tracking while the finger is down (transform written directly, no
- * state per move), then commit on distance OR flick velocity, flying out at the release speed;
- * otherwise a quick snap back. Vertical drags stay native scroll (touch-action: pan-y).
+ * state per move), edge tints and a label follow the drag. Release commits on distance OR
+ * flick velocity (handing transform + velocity to the exit layer), otherwise a velocity-seeded
+ * spring brings it back. Vertical drags stay native scroll (touch-action: pan-y).
  */
-function SwipeCard({ children, motion, onAnswer, onTap }: { children: React.ReactNode; motion: EffectiveMotion; onAnswer: (knew: boolean) => void; onTap: () => void }) {
+function SwipeCard({ children, motion, entering, onCommit, onTap }: {
+  children: React.ReactNode; motion: EffectiveMotion; entering: boolean;
+  onCommit: (knew: boolean, fromTransform?: string, velocity?: number) => void; onTap: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: number; x: number; y: number; t: number; dx: number; locked: 'none' | 'x' | 'y'; hist: { x: number; t: number }[] } | null>(null);
+  const drag = useRef<{ id: number; x: number; y: number; dx: number; locked: 'none' | 'x' | 'y'; hist: { x: number; t: number }[] } | null>(null);
   const moved = useRef(false);
+  const spring = useRef<Animation | null>(null);
   const missedRef = useRef<HTMLSpanElement>(null), knewRef = useRef<HTMLSpanElement>(null);
+  const tintMissed = useRef<HTMLSpanElement>(null), tintKnew = useRef<HTMLSpanElement>(null);
 
+  // The next card settles up from the stack as the previous one flies off.
+  useEffect(() => {
+    const el = ref.current;
+    if (!entering || motion === 'off' || !el || typeof el.animate !== 'function') return;
+    const a = motion === 'full'
+      ? el.animate([{ transform: 'translate3d(0, 8px, 0) scale(0.97)', opacity: 0.6 }, { transform: 'none', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' })
+      : el.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+    return () => a.cancel();
+  }, []);
+
+  const transformFor = (dx: number) => `translate3d(${dx}px,0,0) rotate(${motion === 'full' ? dx * 0.04 : 0}deg)`;
   const setX = (dx: number) => {
     const el = ref.current;
     if (!el) return;
-    const rot = motion === 'full' ? dx * 0.04 : 0;
-    el.style.transform = `translate3d(${dx}px,0,0) rotate(${rot}deg)`;
+    el.style.transform = transformFor(dx);
     const w = el.offsetWidth || 1;
-    const [missed, knew] = [missedRef.current, knewRef.current];
-    if (missed) missed.style.opacity = String(Math.max(0, Math.min(1, -dx / (w * SWIPE_COMMIT))));
-    if (knew) knew.style.opacity = String(Math.max(0, Math.min(1, dx / (w * SWIPE_COMMIT))));
+    const p = Math.max(-1, Math.min(1, dx / (w * SWIPE_COMMIT)));
+    for (const [node, v] of [[missedRef, -p], [knewRef, p], [tintMissed, -p], [tintKnew, p]] as const)
+      if (node.current) node.current.style.opacity = String(Math.max(0, v));
   };
 
   const down = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button > 0 || drag.current) return; // ignore extra fingers
     if ((e.target as HTMLElement).closest('a, button, .table-scroll')) return;
     moved.current = false;
-    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, locked: 'none', hist: [] };
+    // Catch a card that is still springing back: continue from where it is on screen.
+    let start = 0;
+    if (spring.current && ref.current) {
+      const m = new DOMMatrixReadOnly(getComputedStyle(ref.current).transform);
+      start = m.m41;
+      spring.current.cancel();
+      spring.current = null;
+      setX(start);
+    }
+    drag.current = { id: e.pointerId, x: e.clientX - start, y: e.clientY, dx: start, locked: start ? 'x' : 'none', hist: [] };
+    if (start) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ } }
   };
   const move = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current;
@@ -277,22 +344,21 @@ function SwipeCard({ children, motion, onAnswer, onTap }: { children: React.Reac
     const first = d.hist[0], last = d.hist.at(-1);
     const v = first && last && last.t > first.t ? (last.x - first.x) / (last.t - first.t) : 0; // px/ms
     const w = el.offsetWidth || 1;
-    const commit = Math.abs(d.dx) > w * SWIPE_COMMIT || (Math.abs(v) > FLICK_VELOCITY && Math.sign(v) === Math.sign(d.dx));
-    const from = el.style.transform;
-    if (commit) {
-      const knew = d.dx > 0;
-      if (motion === 'off' || typeof el.animate !== 'function') return onAnswer(knew);
-      const dist = window.innerWidth + w;
-      const speed = Math.max(Math.abs(v), 1.2); // continue at least as fast as the finger
-      const duration = motion === 'reduced' ? 120 : Math.min(260, Math.max(140, (dist - Math.abs(d.dx)) / speed));
-      const to = motion === 'reduced' ? from : `translate3d(${knew ? dist : -dist}px,0,0) rotate(${knew ? 18 : -18}deg)`;
-      el.animate([{ transform: from, opacity: 1 }, { transform: to, opacity: motion === 'reduced' ? 0 : 1 }], { duration, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' })
-        .finished.then(() => onAnswer(knew), () => onAnswer(knew));
-    } else {
-      setX(0);
-      if (motion !== 'off' && typeof el.animate === 'function')
-        el.animate([{ transform: from }, { transform: 'translate3d(0,0,0) rotate(0deg)' }], { duration: 240, easing: 'cubic-bezier(0.22, 1.18, 0.36, 1)' });
+    const committed = Math.abs(d.dx) > w * SWIPE_COMMIT || (Math.abs(v) > FLICK_VELOCITY && Math.sign(v) === Math.sign(d.dx));
+    if (committed) {
+      const from = el.style.transform;
+      el.style.visibility = 'hidden'; // the exit layer takes over at exactly this transform
+      onCommit(d.dx > 0, from, v);
+      // If the answer could not be saved the card stays; bring it back rather than leave a hole.
+      setTimeout(() => { if (ref.current) { ref.current.style.visibility = ''; setX(0); } }, 600);
+      return;
     }
+    // Spring back, seeded with the release velocity (no bounce under reduced motion).
+    setX(0);
+    if (motion === 'off' || typeof el.animate !== 'function') return;
+    const { samples, duration } = motion === 'full' ? springSamples(d.dx, v) : { samples: [d.dx, 0], duration: 160 };
+    spring.current = el.animate(samples.map((x) => ({ transform: transformFor(x) })), { duration, easing: 'linear' });
+    spring.current.finished.then(() => { spring.current = null; }, () => undefined);
   };
 
   return (
@@ -305,9 +371,43 @@ function SwipeCard({ children, motion, onAnswer, onTap }: { children: React.Reac
       onPointerCancel={up}
       onClick={(e) => { if (!moved.current && !(e.target as HTMLElement).closest('a, button')) onTap(); }}
     >
+      <span ref={tintMissed} className="catchup-tint catchup-tint-missed" aria-hidden="true" />
+      <span ref={tintKnew} className="catchup-tint catchup-tint-knew" aria-hidden="true" />
       <span ref={missedRef} className="catchup-swipe-label catchup-swipe-missed" aria-hidden="true">Didn’t know</span>
       <span ref={knewRef} className="catchup-swipe-label catchup-swipe-knew" aria-hidden="true">Knew it</span>
       {children}
+    </div>
+  );
+}
+
+/** End of session: counts roll up and an accuracy ring draws in. A calm celebration, no confetti. */
+function CatchupSummary({ answers, scopeName, started, motion, backHref, onUndo }: {
+  answers: Answer[]; scopeName: string; started: number; motion: EffectiveMotion; backHref: string; onUndo: () => void;
+}) {
+  const knew = answers.filter((a) => a.knew).length;
+  const saved = answers.filter((a) => a.eventId).length;
+  const minutes = Math.max(1, Math.round((Date.now() - started) / 60_000));
+  const [shown, setShown] = useState(motion === 'full' ? 0 : 1);
+  useEffect(() => { if (motion === 'full') { const t = setTimeout(() => setShown(1), 120); return () => clearTimeout(t); } }, []);
+  const n = (v: number) => <AnimatedNumber value={Math.round(v * shown)} motion={motion} />;
+  const percent = answers.length ? Math.round((knew / answers.length) * 100) : 0;
+  return (
+    <div className="section-stack catchup-summary">
+      <div className="catchup-summary-head">
+        <AccuracyRing percent={percent * shown} size={64} strokeWidth={6} motion={motion} />
+        <PageHeader title="Caught up" subtitle={`${scopeName} · ${plural(answers.length, 'card')} in ${plural(minutes, 'minute')}`} />
+      </div>
+      <Group ariaLabel="Catch-up summary" className="catchup-summary-group">
+        <Row title="Knew it" value={n(knew)} valueStrong />
+        <Row title="Didn’t know" value={n(answers.length - knew)} valueStrong />
+        <Row title="Reviews saved" subtitle="Due cards, rescheduled by FSRS" value={n(saved)} />
+        {answers.length - saved > 0 && <Row title="Practice" subtitle="Not due, schedule unchanged" value={n(answers.length - saved)} />}
+      </Group>
+      {answers.length - knew > 0 && <SectionFooter>Cards you didn’t know come back within minutes in regular study.</SectionFooter>}
+      <div className="catchup-summary-actions">
+        <Button variant="primary" size="full" href={backHref}>Done</Button>
+        <Button variant="plain" onClick={onUndo}>Undo last answer</Button>
+      </div>
     </div>
   );
 }
