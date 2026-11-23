@@ -1,0 +1,39 @@
+# Adversarial improvement review — Phase 5
+
+Reviewed scheduler/replay/quota logic, study/navigation flows, imports/exports and sanitization, IndexedDB/fallback behavior, Insights aggregation, built assets and keyboard/semantic behavior at base `9d5b6c3`. This is a quick source review plus targeted browser checks, not a security certification or a screen-reader audit.
+
+Ranking is **impact × ease** (each 1–5; ease is inverse effort). It prioritizes small changes for this phase; a lower ease score does not reduce the severity of data-loss risks. The next substantial phase should prioritize rows 7–9 before relying on this as the only copy of study progress.
+
+| Rank | Score | Finding and one-line rationale | Status / implementation |
+| --- | --- | --- | --- |
+| 1 | 5×4=20 | Import controls and preview obscure the decision: native file input overlaps the label and expanded lecture text overwhelms a large package. | Done — `d5ecac5`: one styled picker, separate filename, responsive count grid, native keyboard-accessible course disclosures, switch row, full-width confirmation and per-course result counts. |
+| 2 | 4×5=20 | Empty queues celebrate zero work, and floating Undo lacks context: both undermine trust in the session state. | Done — `bdd93d9`: distinguish caught-up from completed, show the next available time and Back, move Undo beside rating controls and retain it in a real completion sheet. |
+| 3 | 4×4=16 | Settings eagerly imports the SQLite loader despite most visits needing no database parsing. | Done — `319440a`: dynamic import on export; browser verified no sql.js/WASM request before selecting an import. |
+| 4 | 3×5=15 | Imported course icons lose meaning and the Subjects Import action reads like a separate content block. | Done — `d5ecac5`, `bdd93d9`: keyword aliases reuse wave/gear/atom/brackets with a generic fallback; plain Import action sits right of the title. |
+| 5 | 4×3=12 | `aria-hidden` lesson/card faces still contain focusable links, and completion dialogs lack a focus trap/restore contract. | Left — use `inert` for hidden faces/accordions and test keyboard focus order, modal focus and screen-reader announcements. |
+| 6 | 4×3=12 | One-second rerenders repeatedly replay the whole log and recreate engines/maps, even outside study. | Left — memoize scheduling by log revision, share derived states and use rollover/due timers; measure CPU with 2,568 cards plus a large real review history. |
+| 7 | 5×2=10 | Multi-tab full-log writes can overwrite another tab's ratings/imports: IndexedDB transaction atomicity does not prevent stale-snapshot lost updates. | Left, critical data risk — serialize writers with Web Locks plus a transactional revision check, and broadcast changes; test simultaneous tabs and undo. |
+| 8 | 5×2=10 | Content exports are not complete backups: .apkg exports reset scheduling and omit Flipwise review history/settings. | Left, critical recovery gap — add versioned full-fidelity backup/restore including decks, media, log and settings, with integrity checks and a restore rehearsal. |
+| 9 | 5×2=10 | IndexedDB open failure falls back to an empty imported catalog, while blocked upgrades/quota errors lack a recovery workflow. | Left — distinguish unavailable storage from an empty collection, handle blocked/versionchange states explicitly, preserve unsaved input and expose retry/export recovery; request persistent storage when supported. |
+| 10 | 5×2=10 | ZIP/zstd/media inputs have no expanded-size/count budgets; hostile packages can exhaust worker memory, and duplicate incoming GUID/ord pairs can silently collapse. | Left — enforce decompression/media budgets, support cancellation and reject conflicting identities before preview; retain existing HTML allowlists and local-image-only policy. |
+| 11 | 4×2=8 | Cache-first offline startup is not implemented: local asset URLs alone do not guarantee an offline cold launch. | Left — add versioned service-worker precaching, update/recovery UX and offline-reload tests; do not promise that the current app is a fully installed offline PWA. |
+| 12 | 4×2=8 | Forecast uses local `studyDay` while Insights accepts a named time zone; answer-quality “accuracy” also differs from true review retention. | Left — use one explicit rollover/time-zone contract and label denominators consistently; test DST, before-4am forecast, Hard-as-retained and review-only retention. Existing retention replay correctly distinguishes Review from learning and treats Hard as passed. |
+| 13 | 4×2=8 | FSRS replay is deterministic for an ordered valid log, but native replay trusts event order while Insights sorts it; clock skew/import history can expose divergence. | Left — normalize/validate chronology once at ingestion and test late-arriving, duplicate, invalid and skewed timestamps across queue and analytics; preserve historical retention/fuzz parameters. |
+| 14 | 3×2=6 | KaTeX remains in the entry chunk and font fallbacks occupy about 1.07 MB of build output, with a large entry-chunk warning. | Left — lazy-load math rendering, reduce redundant font formats and split Insights; distinguish emitted font bytes from fonts actually fetched by a browser. |
+| 15 | 3×2=6 | Basic exports preserve GUIDs/content but are not an arbitrary Anki-template engine, and no Anki desktop round-trip has been automated. | Left — test exports in an isolated Anki profile; keep cloze/custom-template/audio limits and revlog-reconstruction caveats visible. |
+| 16 | 2×2=4 | Full Anki queue parity still lacks sibling burying, easy days, load balancing and learn-ahead. | Left — retain the honest parity table and add each feature only with scheduler/rollover regression coverage. |
+
+## Screenshot issue (e): bold answers
+
+This is source formatting, not a wrapper added by Flipwise. Read-only inspection of the supplied package found 2,360 of 2,568 answers with a whole-answer `<b>`/`<strong>` wrapper; all 2,568 have some bold markup. The sanitizer preserves these allowed tags. Browser computed styles confirmed the answer container uses weight 400 and source emphasis uses weight 700. `d5ecac5` pins the answer baseline to 400; it intentionally does not discard source-authored emphasis or mutate the imported fields.
+
+## Validation and practical limits
+
+- `npm run build` passed; `npm test` passed **58 tests across 9 files**, including two new empty-session/next-rollover regressions.
+- Fresh Chromium on `:4441` imported the real package: 2,568 notes/cards, four courses. Verified hidden native picker, selected filename, count grid, expanding course summaries, switch semantics and all four result counts.
+- Verified distinct imported course icons and right-aligned plain Import action, normal answer baseline with preserved source bold, and visible contextual Undo restoring the last rating.
+- A separate fresh profile studied the single-card Physics sample, completed it, reopened it and received “All caught up” with a next due time and Back instead of a zero-card celebration. No page errors occurred.
+- Network inspection showed no SQLite loader/WASM on Settings. Build entry JS changed from about 878.24 kB / 273.14 kB gzip to 824.23 kB / 254.35 kB gzip; SQLite is now a separate 57.99 kB / 20.16 kB gzip chunk. The 688.28 kB WASM is still a local asset, loaded on import or Anki export. Bundle warning remains.
+- Native details/summary, switch semantics and normal focus-visible styles improve the import path; no decorative motion was added, so Motion preferences are unchanged. Full a11y, browser failure injection, cross-tab races and large-history performance remain work above.
+
+Screenshots and package contents remain outside git. No real Anki collection was opened or modified. Catch-up offers Back rather than a rescheduling “Practice anyway” shortcut, whose semantics would need a separate design and test pass.
