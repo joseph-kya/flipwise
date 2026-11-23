@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { AccountController, AccountSnapshot } from '../sync/account';
 import { card, deck } from '../sync/testkit';
 import { Onboarding, type OnboardingProps } from './Onboarding';
@@ -10,12 +10,14 @@ import { Onboarding, type OnboardingProps } from './Onboarding';
 window.scrollTo = () => undefined;
 
 const snap = (over: Partial<AccountSnapshot> = {}): AccountSnapshot =>
-  ({ phase: 'signedOut', user: null, status: { kind: 'idle' }, pending: 0, error: '', confirmSignOut: null, ...over });
+  ({ phase: 'signedOut', authSettled: true, authTimedOut: false, failures: 0, user: null, status: { kind: 'idle' }, pending: 0, error: '', confirmSignOut: null, ...over });
 
+const roots: ReturnType<typeof createRoot>[] = [];
 function mount(props: Partial<OnboardingProps>) {
   const el = document.createElement('div');
   document.body.append(el);
   const root = createRoot(el);
+  roots.push(root);
   const finished: string[] = [];
   const render = (p: Partial<OnboardingProps>) => act(() => root.render(
     <Onboarding
@@ -36,7 +38,13 @@ function mount(props: Partial<OnboardingProps>) {
   return { el, click, render, finished };
 }
 
-const account = (s: AccountSnapshot) => ({ controller: { signIn: async () => undefined } as unknown as AccountController, snapshot: s });
+beforeEach(() => {
+  const values = new Map<string, string>();
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (k: string) => values.get(k) ?? null, setItem: (k: string, v: string) => values.set(k, v), removeItem: (k: string) => values.delete(k) } });
+});
+afterEach(() => { act(() => roots.splice(0).forEach((r) => r.unmount())); document.body.innerHTML = ''; });
+
+const account = (s: AccountSnapshot) => ({ controller: { signIn: async () => undefined, preload: async () => null } as unknown as AccountController, snapshot: s });
 
 describe('onboarding screens', () => {
   it('requires sign-in when it is possible: no "Continue offline" while configured and online', () => {
@@ -50,6 +58,7 @@ describe('onboarding screens', () => {
     const offline = mount({ account: account(snap()), online: false });
     offline.click(/Get started/);
     expect(offline.el.textContent).toContain('Continue offline');
+    localStorage.removeItem('flipwise.onboarding-progress.v1');
     const unconfigured = mount({ account: null, online: true });
     unconfigured.click(/Get started/);
     unconfigured.click(/Continue offline/);
@@ -62,9 +71,7 @@ describe('onboarding screens', () => {
     o.render({ account: account(snap({ phase: 'signedIn', user: { uid: 'u', name: 'J', email: '', photoURL: null }, status: { kind: 'syncing' } })) });
     expect(o.el.textContent).toContain('Checking your decks');
     o.render({ imported: deck([card(1), card(2)]), account: account(snap({ phase: 'signedIn', user: { uid: 'u', name: 'J', email: '', photoURL: null }, status: { kind: 'synced', at: 1 } })) });
-    expect(o.el.textContent).toContain('You’re all set');
-    expect(o.el.textContent).toContain('2 cards across 1 course');
-    o.click(/Start studying/);
+
     expect(o.finished).toEqual(['done']);
   });
 

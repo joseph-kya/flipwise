@@ -9,7 +9,7 @@ import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, repla
 } from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import { AccountController } from './sync/account';
-import { hasRealDecks, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './onboarding/flow';
+import { hasRealDecks, restoreProgress, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './onboarding/flow';
 import { Onboarding, useOnline } from './onboarding/Onboarding';
 import { HowItWorksPage } from './onboarding/HowItWorksPage';
 import { starterImport } from './onboarding/starterPack';
@@ -448,7 +448,7 @@ function App() {
         const loaded = await storage.read();
         const decks = await storage.readDecks();
         setImported(decks);
-        setOnboardingOpen(shouldShowOnboarding({ completed: isOnboardingComplete(), realDecks: hasRealDecks(decks) }));
+        setOnboardingOpen(shouldShowOnboarding({ completed: isOnboardingComplete(), realDecks: hasRealDecks(decks), progress: restoreProgress().step }));
         const { events: initialEvents, seeded } = seedDemoHistoryIfEmpty(
           loaded,
           new Date(),
@@ -1029,7 +1029,7 @@ function App() {
             window.scrollTo(0, 0);
           }}
         />
-        <UpdatePrompt />
+        {/* Offer service-worker updates after setup; an auth popup must not be interrupted by Reload. */}
       </ContentContext.Provider>
     );
   }

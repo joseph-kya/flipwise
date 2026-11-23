@@ -3,12 +3,12 @@ import type { ImportedData } from '../anki/types';
 import type { AccountController, AccountSnapshot } from '../sync/account';
 import { plural } from '../plural';
 import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, SubjectIcon, SubjectTile, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
-import { accountOutcome, canContinueOffline, hasRealDecks, STEPS, type OnboardingStep } from './flow';
+import { canContinueOffline, hasRealDecks, onboardingGate, persistProgress, restoreProgress, STEPS, type OnboardingStep, type StartView } from './flow';
 import { EXPLAINER_PANELS as HOW_PANELS, Explainer } from './Explainer';
 import { loadStarterPack, type StarterPack } from './starterPack';
 import { InstallButton } from '../pwa/InstallApp';
 
-type StartView = 'choose' | 'starter' | 'own' | 'anki' | 'ai';
+import { canEscapeSignIn } from '../sync/authRecovery';
 
 export interface OnboardingProps {
   account: { controller: AccountController; snapshot: AccountSnapshot } | null;
@@ -43,12 +43,14 @@ function Progress({ index }: { index: number }) {
 }
 
 export function Onboarding({ account, online, imported, onAddStarter, renderImport, renderAiGuide, onFinish }: OnboardingProps) {
-  const [step, setStep] = useState<OnboardingStep>(() => { try { const v = localStorage.getItem('flipwise.onboarding-progress.v1'); return v && STEPS.includes(JSON.parse(v).step) ? JSON.parse(v).step : 'welcome'; } catch { return 'welcome'; } });
-  const [view, setView] = useState<StartView>('choose');
-  const [panel, setPanel] = useState(0);
+  const [saved] = useState(restoreProgress);
+  const [step, setStep] = useState<OnboardingStep>(saved.step);
+  const [view, setView] = useState<StartView>(saved.view);
+  const [panel, setPanel] = useState(saved.panel);
+  const [choices, setChoices] = useState<string[] | null>(saved.choices);
   const [dir, setDir] = useState<'forward' | 'back'>('forward');
-  useEffect(() => { try { localStorage.setItem('flipwise.onboarding-progress.v1', JSON.stringify({ step, view, panel })); } catch { /* storage unavailable */ } }, [step, view, panel]);
-  useEffect(() => { if (step === 'account') void account?.controller.preload()?.catch(() => {}); }, [step, account?.controller]);
+  useEffect(() => { persistProgress({ step, view, panel, choices }); }, [step, view, panel, choices]);
+  useEffect(() => { if (step === 'account') void account?.controller.preload(); }, [step, account?.controller]);
   const realDecks = hasRealDecks(imported);
   const index = STEPS.indexOf(step);
   const headingRef = useRef<HTMLDivElement>(null);
@@ -61,13 +63,11 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
   };
   const toView = (v: StartView, d: 'forward' | 'back' = 'forward') => { setDir(d); setView(v); };
 
-  // Signed in: skip ahead once the first sync tells us whether the cloud already has decks.
-  const outcome = accountOutcome(account?.snapshot ?? null, realDecks);
+  const gate = onboardingGate({ step, account: account?.snapshot ?? null, realDecks, completed: false });
   useEffect(() => {
-    if (step !== 'account' && step !== 'welcome') return;
-    if (outcome === 'done') go('done');
-    else if (outcome === 'start') go('start');
-  }, [step, outcome]);
+    if (gate.finish) onFinish();
+    else if (!gate.loading && gate.step !== step) go(gate.step);
+  }, [gate.finish, gate.loading, gate.step, step, onFinish]);
 
   // Move focus to the new step for keyboard and screen-reader users.
   useEffect(() => { headingRef.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [step, view]);
@@ -82,7 +82,9 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
   const key = step === 'learn' ? 'learn' : `${step}/${view}`;
   let body: ReactNode, actions: ReactNode = null;
 
-  if (step === 'welcome') {
+  if (gate.loading || gate.finish || gate.step !== step) {
+    body = <p className="ob-note" role="status">{account?.snapshot.phase === 'signedIn' ? 'Checking your decks…' : 'Restoring your account…'}</p>;
+  } else if (step === 'welcome') {
     body = (
       <>
         <WelcomeHero />
@@ -121,8 +123,11 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
             disabled={!online || snap?.phase === 'loading' || snap?.phase === 'signingIn'}
             onClick={() => void account!.controller.signIn()}
           >
-            {snap?.phase === 'signingIn' ? 'Signing in…' : 'Sign in with Google'}
+            {snap?.phase === 'signingIn' ? 'Signing in…' : snap?.error ? 'Try again' : 'Sign in with Google'}
           </Button>
+        )}
+        {canEscapeSignIn(snap?.failures ?? 0, snap?.authTimedOut) && snap?.phase !== 'signedIn' && (
+          <Button variant="plain" className="ob-link" onClick={() => go('start')}>Continue without account</Button>
         )}
         {offlineOk && snap?.phase !== 'signedIn' && (
           <Button variant="plain" className="ob-link" onClick={() => go('start')}>Continue offline</Button>
@@ -153,7 +158,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
       );
       if (realDecks) actions = <Button variant="primary" size="full" onClick={() => go('learn')}>Continue</Button>;
     } else if (view === 'starter') {
-      body = <StarterPicker onAdd={onAddStarter} onDone={() => go('learn')} />;
+      body = <StarterPicker choices={choices} onChoices={setChoices} onAdd={onAddStarter} onDone={() => go('learn')} />;
     } else if (view === 'own') {
       body = (
         <>
@@ -219,7 +224,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
     <div className="onboarding">
       <div className="ob-column">
       <div className="ob-top">
-        {index > 0 && step !== 'done' ? (
+        {!gate.loading && !gate.finish && index > 0 && step !== 'done' ? (
           <IconButton ariaLabel="Back" className="ob-back" onClick={back}><ChevronLeft size={22} /></IconButton>
         ) : <span className="ob-back-spacer" aria-hidden="true" />}
         <Progress index={index} />
@@ -254,11 +259,11 @@ function WelcomeHero() {
   );
 }
 
-function StarterPicker({ onAdd, onDone }: { onAdd: (pack: StarterPack, ids: string[]) => Promise<void>; onDone: () => void }) {
+function StarterPicker({ choices, onChoices, onAdd, onDone }: { choices: string[] | null; onChoices: (ids: string[]) => void; onAdd: (pack: StarterPack, ids: string[]) => Promise<void>; onDone: () => void }) {
   const [added, setAdded] = useState(false);
   const [pack, setPack] = useState<StarterPack | null>(null);
   const [error, setError] = useState('');
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const picked = useMemo(() => new Set((choices ?? pack?.subjects.map((s) => s.id) ?? []).filter((id) => pack?.subjects.some((s) => s.id === id))), [choices, pack]);
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const baseId = useId();
@@ -267,7 +272,7 @@ function StarterPicker({ onAdd, onDone }: { onAdd: (pack: StarterPack, ids: stri
     let live = true;
     setError('');
     loadStarterPack().then(
-      (p) => { if (!live) return; setPack(p); setPicked(new Set(p.subjects.map((s) => s.id))); },
+      (p) => { if (!live) return; setPack(p); },
       (e) => live && setError(e instanceof Error ? e.message : String(e)),
     );
     return () => { live = false; };
@@ -306,7 +311,7 @@ function StarterPicker({ onAdd, onDone }: { onAdd: (pack: StarterPack, ids: stri
                     disabled={added}
                     checked={picked.has(s.id)}
                     labelledBy={`${baseId}-${i}`}
-                    onChange={(on) => setPicked((prev) => { const next = new Set(prev); if (on) next.add(s.id); else next.delete(s.id); return next; })}
+                    onChange={(on) => { const next = new Set(picked); if (on) next.add(s.id); else next.delete(s.id); onChoices([...next]); }}
                   />
                 )}
               />

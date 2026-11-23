@@ -8,12 +8,16 @@ import type { AccountUser, FirebaseClient } from './client';
 import { firebaseSetup, type FirebaseSetup } from './config';
 import { isSyncableReview } from './demo';
 import { SyncEngine, type SyncStatus } from './engine';
+import { AUTH_SETTLE_MS, AUTH_TIMEOUT_MESSAGE, nextFailureCount, readFailures, writeFailures } from './authRecovery';
 import type { SyncState } from './merge';
 
 export type AccountPhase = 'unavailable' | 'loading' | 'signedOut' | 'signingIn' | 'signedIn';
 
 export interface AccountSnapshot {
   phase: AccountPhase;
+  authSettled: boolean;
+  authTimedOut: boolean;
+  failures: number;
   user: AccountUser | null;
   status: SyncStatus;
   pending: number;
@@ -28,7 +32,6 @@ const MAX_WAIT_MS = 60_000;
 const POLL_MS = 5 * 60_000;
 
 const hint = {
-  get: () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch { return false; } },
   set: (on: boolean) => { try { if (on) localStorage.setItem(HINT_KEY, '1'); else localStorage.removeItem(HINT_KEY); } catch { /* ignore */ } },
 };
 
@@ -55,7 +58,7 @@ export class AccountController {
 
   constructor(private readonly storage: LogStorage, private readonly callbacks: AccountCallbacks, setup = firebaseSetup()) {
     this.setup = storage.sync ? setup : null;
-    this.snap = { phase: this.setup ? 'signedOut' : 'unavailable', user: null, status: { kind: 'idle' }, pending: 0, error: '', confirmSignOut: null };
+    this.snap = { phase: this.setup ? 'loading' : 'unavailable', authSettled: !this.setup, authTimedOut: false, failures: readFailures(), user: null, status: { kind: 'idle' }, pending: 0, error: '', confirmSignOut: null };
   }
 
   subscribe = (l: () => void) => { this.listeners.add(l); return () => { this.listeners.delete(l); }; };
@@ -84,7 +87,8 @@ export class AccountController {
       window.removeEventListener('pagehide', onVisibility);
       window.removeEventListener('online', onOnline);
     });
-    if (hint.get()) void this.load().catch(() => this.set({ phase: 'signedOut' }));
+    // Check persisted Firebase auth even if an earlier interrupted attempt lost the hint.
+    void this.preload();
   }
 
   dispose() {
@@ -94,16 +98,35 @@ export class AccountController {
 
   private load(): Promise<FirebaseClient> {
     if (this.loading) return this.loading;
-    this.set({ phase: 'loading' });
-    this.loading = import('./client').then(({ createFirebaseClient }) => {
+    this.set({ phase: 'loading', authSettled: false, authTimedOut: false });
+    const timeout = setTimeout(() => {
+      this.set({ authSettled: true, authTimedOut: true, phase: 'signedOut', error: AUTH_TIMEOUT_MESSAGE });
+    }, AUTH_SETTLE_MS);
+    this.cleanup.push(() => clearTimeout(timeout));
+    this.loading = import('./client').then(async ({ createFirebaseClient }) => {
       const client = createFirebaseClient(this.setup!);
       this.client = client;
-      void client.redirectError.then((error) => error && this.set({ error }));
-      this.cleanup.push(client.onUser((user) => void this.onUser(user)));
+      const error = await client.redirectError;
+      clearTimeout(timeout);
+      if (error) this.recordFailure(error);
+      this.set({ authSettled: true, authTimedOut: false });
+      this.cleanup.push(client.onUser((user) => {
+        void this.onUser(user).catch(() => this.set({ phase: 'signedOut', error: 'Couldn’t open your account. Please try again.' }));
+      }));
       return client;
     });
-    this.loading.catch(() => { this.loading = null; this.set({ phase: 'signedOut', error: 'Couldn’t load sign-in. Check your connection.' }); });
+    this.loading.catch(() => {
+      clearTimeout(timeout);
+      this.loading = null;
+      this.set({ phase: 'signedOut', authSettled: true, authTimedOut: true, error: 'Couldn’t load sign-in. Check your connection, or continue without an account.' });
+    });
     return this.loading;
+  }
+
+  private recordFailure(error: string) {
+    const failures = nextFailureCount(this.snap.failures);
+    writeFailures(failures);
+    this.set({ failures, error });
   }
 
   private async onUser(user: AccountUser | null) {
@@ -115,6 +138,8 @@ export class AccountController {
     }
     if (this.uid === user.uid || this.preparing === user.uid) { this.set({ user }); return; }
     hint.set(true);
+    writeFailures(0);
+    this.set({ failures: 0 });
     this.stopEngine();
     this.preparing = user.uid;
     const local = this.storage.sync!;
@@ -185,22 +210,25 @@ export class AccountController {
     await this.refreshPending();
   }
 
-  preload() { if (this.setup) return this.load(); return Promise.resolve(null); }
+  preload() { if (this.setup) return this.load().catch(() => null); return Promise.resolve(null); }
 
   async signIn() {
-    if (!this.setup) return;
+    if (!this.setup || this.snap.phase === 'signingIn') return;
+    // No await before client.signIn: the popup must open in the original tap's call stack.
+    if (!this.client || !this.snap.authSettled || this.snap.authTimedOut) {
+      this.recordFailure('Sign-in is still loading. Please try again in a moment.');
+      void this.preload();
+      return;
+    }
     this.set({ error: '', phase: 'signingIn' });
+    hint.set(true);
     try {
-      const client = this.client ?? await this.load();
-      hint.set(true); // survives a redirect so Firebase loads on return
-      await client.signIn();
-      if (!this.uid && !this.preparing) {
-        hint.set(false); // popup closed: don't preload Firebase next visit
-        this.set({ phase: 'signedOut' });
-      }
+      await this.client.signIn();
+      // The auth observer owns the successful transition, including local account preparation.
     } catch (e) {
       if (!this.uid) hint.set(false);
-      this.set({ phase: this.uid ? 'signedIn' : 'signedOut', error: e instanceof Error ? e.message : String(e) });
+      this.recordFailure(e instanceof Error ? e.message : String(e));
+      this.set({ phase: this.uid ? 'signedIn' : 'signedOut' });
     }
   }
 

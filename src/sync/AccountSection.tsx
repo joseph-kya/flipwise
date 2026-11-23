@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Group, Row, SectionFooter, SectionHeader } from '../ui';
 import { plural } from '../plural';
 import type { AccountController, AccountSnapshot } from './account';
@@ -35,6 +35,7 @@ function Avatar({ name, photoURL }: { name: string; photoURL: string | null }) {
 }
 
 export function AccountSection({ account, snapshot }: { account: AccountController; snapshot: AccountSnapshot }) {
+  useEffect(() => { void account.preload?.(); }, [account]);
   const { phase, user, status, pending, error, confirmSignOut } = snapshot;
   if (phase === 'unavailable') return null;
 
