@@ -21,13 +21,8 @@ function App() {
   const card = cards[index % Math.max(cards.length, 1)];
   const revealed = parts[3] === 'answer';
   const studyUrl = subject ? `#/study/${subject.id}/${parts[2]}` : '';
-  const subjectRows = (compact = false) => subjects.map((s: Subject, i) => (
-    <a className="subject-row" href={`#/subjects/${s.id}`} key={s.id}>
-      <span className="subject-icon" aria-hidden="true">{['∑', '⌘', 'φ', '{}'][i]}</span>
-      <span className="subject-copy"><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lectures</span></span>
-      {!compact && <span className="subject-action">Choose lectures</span>}
-      <span aria-hidden="true">›</span>
-    </a>
+  const subjectRows = (_compact = false) => subjects.map((s: Subject, i) => (
+    <details key={s.id}><summary className="subject-row"><span className="subject-icon">{['∑', '⌘', 'φ', '{}'][i]}</span><span className="subject-copy"><small className="muted">{['Limits, change and continuity','Motion, sensing and control','The laws of the physical world','Thinking in algorithms'][i]}</small><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lessons</span></span><span>⌄</span></summary><div className="lectures">{s.lectures.map((l,i)=><a className="lecture" key={l.id} href={`#/study/${s.id}/${l.id}`}><span aria-hidden="true">{['∿','◇','◎','⌁'][i%4]}</span><span className="lecture-name">{l.title}</span><span className="card-count">{l.cards.length}</span></a>)}</div></details>
   ));
   return (
     <div className={dark ? 'app dark' : 'app'}>
@@ -64,7 +59,7 @@ function App() {
           <div className="layout">
             <aside className="today lecture-summary"><h2>Find your focus.</h2><p>Pick a lecture, or work through the subject at your own pace.</p><a className="primary" href={`#/study/${subject.id}/all`} onClick={() => setIndex(0)}>Study all lectures <span aria-hidden="true">↗</span></a></aside>
             <section><div className="section-title"><h2>Choose a lecture</h2><span>Demo cards</span></div><div className="lectures">
-              {subject.lectures.map((l, i) => <a className="lecture" key={l.id} href={`#/study/${subject.id}/${l.id}`} onClick={() => setIndex(0)}><span className="lecture-number">{String(i + 1).padStart(2, '0')}</span><span className="lecture-name">{l.title}</span><span className="card-count">{l.cards.length}</span><span aria-hidden="true">›</span></a>)}
+              {subject.lectures.map((l, i) => <a className="lecture" key={l.id} href={`#/study/${subject.id}/${l.id}`} onClick={() => setIndex(0)}><span className="lecture-number">{['∿','◇','◎','⌁'][i%4]}</span><span className="lecture-name">{l.title}</span><span className="card-count">{l.cards.length}</span><span aria-hidden="true">›</span></a>)}
             </div></section>
           </div>
         </> : studying && card ? <>
