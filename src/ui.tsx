@@ -48,23 +48,6 @@ export function ChevronDown({ size = 16, className }: IconProps) {
   );
 }
 
-export function SunIcon({ size = 18, className }: IconProps) {
-  return (
-    <Svg size={size} className={className}>
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2.5v2M12 19.5v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2.5 12h2M19.5 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </Svg>
-  );
-}
-
-export function MoonIcon({ size = 18, className }: IconProps) {
-  return (
-    <Svg size={size} className={className}>
-      <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" />
-    </Svg>
-  );
-}
-
 export function CheckIcon({ size = 24, className }: IconProps) {
   return (
     <Svg size={size} className={className}>
@@ -73,36 +56,63 @@ export function CheckIcon({ size = 24, className }: IconProps) {
   );
 }
 
-export function SubjectIcon({ subjectId, size = 18 }: { subjectId: string; size?: number }) {
+export function TodayTabIcon({ size = 22, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M6.5 5h11" />
+      <rect x="4" y="8.5" width="16" height="11.5" rx="2.5" />
+    </Svg>
+  );
+}
+
+export function SubjectsTabIcon({ size = 22, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+    </Svg>
+  );
+}
+
+export function CalendarTabIcon({ size = 22, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M8 3v3.5M16 3v3.5M3.5 10h17" />
+    </Svg>
+  );
+}
+
+export function SubjectIcon({ subjectId, size = 22 }: { subjectId: string; size?: number }) {
   switch (subjectId) {
     case 'analysis-1':
       return (
         <Svg size={size}>
-          <path d="M4 17c2.5-9 5.5-9 8 0s5.5 9 8 0" />
-          <path d="M4 12h16" strokeOpacity={0.35} />
+          <path d="M2.5 12c2.5-6.5 6.5-6.5 9.5 0s7 6.5 9.5 0" />
         </Svg>
       );
     case 'robotics':
       return (
         <Svg size={size}>
-          <circle cx="6" cy="18" r="2.25" />
-          <circle cx="12" cy="10" r="2.25" />
-          <circle cx="18.5" cy="7" r="2" />
-          <path d="M7.5 16.2L10.6 11.9M14.1 9.1L16.7 7.9" />
+          <circle cx="12" cy="12" r="3" />
+          <circle cx="12" cy="12" r="6.25" />
+          <path d="M12 2.75v2.75M12 18.5v2.75M20 7.4l-2.4 1.38M6.4 15.22 4 16.6M20 16.6l-2.4-1.38M6.4 8.78 4 7.4" />
         </Svg>
       );
     case 'physics-1':
       return (
         <Svg size={size}>
-          <circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none" />
-          <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
-          <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+          <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+          <ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(60 12 12)" />
+          <ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(-60 12 12)" />
         </Svg>
       );
     case 'programming-1':
       return (
         <Svg size={size}>
-          <path d="M8.5 8L4.5 12l4 4M15.5 8l4 4-4 4M13.2 6.5l-2.4 11" />
+          <path d="M7.5 7.5 3 12l4.5 4.5M16.5 7.5 21 12l-4.5 4.5M13.5 5.5l-3 13" />
         </Svg>
       );
     default:
