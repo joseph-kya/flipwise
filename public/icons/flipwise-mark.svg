@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Flipwise mark: three flashcards fanned (Physics orange, Robotics teal) with the front card
+       showing its answer, as in the onboarding welcome. Transparent; the icon tile adds the ground. -->
+  <defs>
+    <linearGradient id="o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0823a"/><stop offset="1" stop-color="#d9550b"/></linearGradient>
+    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2aa6b8"/><stop offset="1" stop-color="#0b7f94"/></linearGradient>
+    <filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1b1a6b" flood-opacity="0.35"/></filter>
+  </defs>
+  <g filter="url(#s)">
+    <rect x="128" y="146" width="160" height="214" rx="26" fill="url(#o)" transform="rotate(-14 208 253)"/>
+    <rect x="224" y="146" width="160" height="214" rx="26" fill="url(#t)" transform="rotate(13 304 253)"/>
+    <rect x="176" y="136" width="160" height="220" rx="28" fill="#ffffff" transform="rotate(-2 256 246)"/>
+  </g>
+  <path d="M220 248 l26 26 l48 -54" fill="none" stroke="#5856d6" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

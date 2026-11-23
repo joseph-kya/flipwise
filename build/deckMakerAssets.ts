@@ -6,6 +6,7 @@ import type { Plugin } from 'vite';
 /** Build directly from the portable folder; no generated files enter source control. */
 export function deckMakerAssets(): Plugin {
   let root: string;
+  let base = '/';
   let serving = false;
   const virtualId = '\0virtual:deck-maker-assets';
   const guide = () => readFileSync(resolve(root, 'docs/ai-deck-guide.md'));
@@ -25,12 +26,12 @@ export function deckMakerAssets(): Plugin {
   }
   return {
     name: 'flipwise-deck-maker-assets',
-    configResolved(config) { root = config.root; serving = config.command === 'serve'; },
+    configResolved(config) { root = config.root; base = config.base; serving = config.command === 'serve'; },
     resolveId(id) { if (id === 'virtual:deck-maker-assets') return virtualId; },
     load(id) {
       if (id !== virtualId) return;
       if (serving) {
-        return `export const skillZipUrl='/__flipwise/deck-maker.zip'; export const guideUrl='/__flipwise/ai-deck-guide.md';`;
+        return `export const skillZipUrl='${base}__flipwise/deck-maker.zip'; export const guideUrl='${base}__flipwise/ai-deck-guide.md';`;
       }
       const zip = this.emitFile({ type: 'asset', name: 'flipwise-deck-maker.zip', source: archive() });
       const doc = this.emitFile({ type: 'asset', name: 'ai-deck-guide.md', source: guide() });
@@ -38,7 +39,7 @@ export function deckMakerAssets(): Plugin {
     },
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
-        const path = request.url?.split('?')[0];
+        const path = request.url?.split('?')[0]?.replace(base, '/');
         if (path !== '/__flipwise/deck-maker.zip' && path !== '/__flipwise/ai-deck-guide.md') return next();
         try {
           response.setHeader('Content-Type', path.endsWith('.zip') ? 'application/zip' : 'text/plain; charset=utf-8');
