@@ -42,6 +42,14 @@ function isReviewEvent(value: unknown): value is ReviewEvent {
   );
 }
 
+/** Entries from before ids existed get a deterministic id instead of being dropped. */
+export function withStableId(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value;
+  const e = value as Record<string, unknown>;
+  if (typeof e.id === 'string' && e.id) return value;
+  return { ...e, id: `legacy:${String(e.cardId)}:${String(e.at)}:${String(e.rating)}` };
+}
+
 function getStorage(): Storage | null {
   try {
     if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
@@ -61,7 +69,7 @@ export function loadReviewLog(): ReviewEvent[] {
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isReviewEvent);
+    return parsed.map(withStableId).filter(isReviewEvent);
   } catch {
     return [];
   }
