@@ -1,7 +1,5 @@
 import { useState } from "react";
 import type { ImportedData } from "./types";
-import { exportPackage, exportFlipwise } from "./package";
-import { loadSQL } from "./sql";
 export function DataSettings({
   data,
   showDemo,
@@ -18,9 +16,10 @@ export function DataSettings({
     setBusy(true);
     setError("");
     try {
+      const { exportPackage, exportFlipwise } = await import("./package");
       const bytes =
         format === "apkg"
-          ? exportPackage(data, await loadSQL())
+          ? exportPackage(data, await (await import("./sql")).loadSQL())
           : new TextEncoder().encode(
               JSON.stringify(exportFlipwise(data, subject), null, 2),
             );
