@@ -1009,7 +1009,7 @@ export function SwatchPicker<T extends string>({
 }
 
 /** Bottom sheet on phones, centred dialog on desktop. Escape or the backdrop closes it. */
-export function Sheet({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+export function Sheet({ open, title, onClose, children, wide = false, subtitle, leading }: { open: boolean; title: string; onClose: () => void; children: ReactNode; wide?: boolean; subtitle?: ReactNode; leading?: ReactNode }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -1025,13 +1025,124 @@ export function Sheet({ open, title, onClose, children }: { open: boolean; title
   // become the containing block for position: fixed and clip the backdrop.
   return createPortal(
     <div className="ui-sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <section className="ui-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <section className={`ui-sheet${wide ? ' ui-sheet-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="sheet-handle" aria-hidden="true" />
-        <h2 id={titleId} className="ui-sheet-title">{title}</h2>
+        <div className="ui-sheet-head">
+          {leading}
+          <div className="ui-sheet-head-text">
+            <h2 id={titleId} className="ui-sheet-title">{title}</h2>
+            {subtitle && <p className="ui-sheet-sub">{subtitle}</p>}
+          </div>
+        </div>
         {children}
         <Button ref={closeRef} variant="secondary" size="full" onClick={onClose}>Done</Button>
       </section>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Slider (role="slider"): tracks the pointer 1:1 while dragging (onChange per move), reports the
+ * settled value on release or key press (onCommit). Arrows, Page Up/Down, Home/End. 44px target.
+ */
+export function Slider({
+  value, min, max, step = 1, onChange, onCommit, ariaLabel, valueText, color, disabled = false,
+}: {
+  value: number; min: number; max: number; step?: number;
+  onChange: (value: number) => void; onCommit?: (value: number) => void;
+  ariaLabel: string; valueText?: string; color?: string; disabled?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const latest = useRef(value);
+  latest.current = value;
+  const clamp = (v: number) => Math.min(max, Math.max(min, Math.round(v / step) * step));
+  const fromX = (clientX: number) => {
+    const rect = ref.current!.getBoundingClientRect();
+    return clamp(min + ((clientX - rect.left) / Math.max(1, rect.width)) * (max - min));
+  };
+  const pct = max > min ? (Math.min(max, Math.max(min, value)) - min) / (max - min) : 0;
+  const set = (v: number) => { if (v !== latest.current) { latest.current = v; onChange(v); } };
+  return (
+    <div
+      ref={ref}
+      className={`ui-slider${disabled ? ' is-disabled' : ''}`}
+      role="slider"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={ariaLabel}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={value}
+      aria-valuetext={valueText}
+      aria-disabled={disabled || undefined}
+      style={{ '--p': pct, ...(color ? { '--slider-color': color } : {}) } as CSSProperties}
+      onPointerDown={(e) => {
+        if (disabled || e.button > 0) return;
+        dragging.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        set(fromX(e.clientX));
+      }}
+      onPointerMove={(e) => { if (dragging.current) set(fromX(e.clientX)); }}
+      onPointerUp={() => { if (!dragging.current) return; dragging.current = false; onCommit?.(latest.current); }}
+      onPointerCancel={() => { dragging.current = false; onCommit?.(latest.current); }}
+      onKeyDown={(e) => {
+        if (disabled) return;
+        const big = Math.max(step, Math.round((max - min) / 10 / step) * step);
+        const next = { ArrowRight: value + step, ArrowUp: value + step, ArrowLeft: value - step, ArrowDown: value - step, PageUp: value + big, PageDown: value - big, Home: min, End: max }[e.key];
+        if (next === undefined) return;
+        e.preventDefault();
+        const v = clamp(next);
+        set(v);
+        onCommit?.(v);
+      }}
+    >
+      <span className="ui-slider-track"><span className="ui-slider-fill" /></span>
+      <span className="ui-slider-thumb" />
+    </div>
+  );
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const isoDay = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+/** Inline month calendar for picking a day (e.g. an exam). Days before `min` are disabled. */
+export function DatePicker({ value, onChange, min, ariaLabel }: { value: string | undefined; onChange: (day: string) => void; min?: Date; ariaLabel: string }) {
+  const initial = value ? new Date(`${value}T12:00:00`) : new Date();
+  const [month, setMonth] = useState(() => new Date(initial.getFullYear(), initial.getMonth(), 1));
+  const minKey = min ? isoDay(min) : '';
+  const first = (month.getDay() + 6) % 7; // Monday first
+  const daysIn = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells = [...Array(first).fill(null), ...Array.from({ length: daysIn }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1))];
+  const label = month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return (
+    <div className="ui-datepicker" role="group" aria-label={ariaLabel}>
+      <div className="ui-datepicker-head">
+        <IconButton ariaLabel="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft size={18} /></IconButton>
+        <span className="ui-datepicker-month" aria-live="polite">{label}</span>
+        <IconButton ariaLabel="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight size={18} /></IconButton>
+      </div>
+      <div className="ui-datepicker-grid">
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i} className="ui-datepicker-dow" aria-hidden="true">{d}</span>)}
+        {cells.map((d, i) => {
+          if (!d) return <span key={`e${i}`} />;
+          const key = isoDay(d);
+          const disabled = !!minKey && key < minKey;
+          return (
+            <button
+              key={key}
+              type="button"
+              className={`ui-datepicker-day${key === value ? ' is-selected' : ''}${key === isoDay(new Date()) ? ' is-today' : ''}`}
+              disabled={disabled}
+              aria-pressed={key === value}
+              aria-label={d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              onClick={() => onChange(key)}
+            >
+              {d.getDate()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
