@@ -1,13 +1,19 @@
-import { subjects } from '../demoSubjects';
+import { useSubjects } from '../contentCatalog';
 import {
   formatDuration,
   formatPercent,
   parseDateKey,
   type DayStats,
 } from './dailyStats';
-import { ChevronRight, SubjectIcon } from '../ui';
-
-const SUBJECT_NAMES = new Map(subjects.map((subject) => [subject.id, subject.name]));
+import {
+  Button,
+  Group,
+  NavRow,
+  Row,
+  SectionHeader,
+  SubjectIcon,
+  formatSubjectDisplay,
+} from '../ui';
 
 function formatSelectedHeading(dateKey: string, referenceYear: number): {
   weekday: string;
@@ -22,16 +28,6 @@ function formatSelectedHeading(dateKey: string, referenceYear: number): {
     ...(year !== referenceYear ? { year: 'numeric' } : {}),
   }).format(displayDate);
   return { weekday, dateLine };
-}
-
-function subjectInfo(subjectId: string): { name: string; known: boolean } {
-  const name = SUBJECT_NAMES.get(subjectId);
-  if (name) return { name, known: true };
-  const pretty = subjectId
-    .split('-')
-    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : ''))
-    .join(' ');
-  return { name: pretty || subjectId, known: false };
 }
 
 interface DayDetailPanelProps {
@@ -49,6 +45,7 @@ export function DayDetailPanel({
   isFuture,
   referenceYear,
 }: DayDetailPanelProps) {
+  const subjects = useSubjects();
   const { weekday, dateLine } = formatSelectedHeading(dateKey, referenceYear);
   const hasStudy = Boolean(stats && stats.cardsStudied > 0);
 
@@ -62,11 +59,11 @@ export function DayDetailPanel({
           {isToday && <span className="cal-detail-today">Today</span>}
         </div>
 
-        <div className="group group-pad">
-          <div className="row-title" style={{ marginBottom: '4px' }}>
+        <Group divider={false} padded className="cal-empty-card">
+          <div className="row-title">
             {isFuture ? 'Upcoming day' : isToday ? 'No reviews yet' : 'No study recorded'}
           </div>
-          <p className="row-sub" style={{ margin: 0 }}>
+          <p className="cal-empty-sub">
             {isFuture
               ? 'Sessions completed on this date will appear here.'
               : isToday
@@ -74,13 +71,13 @@ export function DayDetailPanel({
                 : 'No cards were reviewed on this date.'}
           </p>
           {isToday && (
-            <div style={{ marginTop: '16px' }}>
-              <a className="btn btn-primary btn-full" href="#/subjects">
+            <div className="cal-empty-cta">
+              <Button variant="primary" size="full" href="#/subjects">
                 Study
-              </a>
+              </Button>
             </div>
           )}
-        </div>
+        </Group>
       </aside>
     );
   }
@@ -103,63 +100,48 @@ export function DayDetailPanel({
         {isToday && <span className="cal-detail-today">Today</span>}
       </div>
 
-      <div className="group group-divider" aria-label="Day summary">
+      <Group ariaLabel="Day summary">
         {metricRows.map(([label, value]) => (
-          <div className="group-row" key={label}>
-            <span className="row-main">
-              <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-                {label}
-              </span>
-            </span>
-            <span className="row-value row-value-strong">{value}</span>
-          </div>
+          <Row key={label} title={label} value={value} valueStrong />
         ))}
-      </div>
+      </Group>
 
       <section aria-label="By subject">
-        <div className="section-head">
-          <h3 className="section-title">By subject</h3>
-        </div>
-        <ul className="group group-list group-divider group-icons">
+        <SectionHeader title="By subject" />
+        <Group inset="icons" ariaLabel="Subjects studied">
           {stats.subjects.map((subject) => {
-            const meta = subjectInfo(subject.subjectId);
-            const content = (
-              <>
-                <span className="subject-tile">
-                  <SubjectIcon subjectId={subject.subjectId} />
-                </span>
-                <span className="row-main">
-                  <span className="row-title" style={{ fontSize: 'var(--text-sm)' }}>
-                    {meta.name}
-                  </span>
-                  <span className="row-sub tabular">
-                    {formatDuration(subject.durationMs)} · {formatPercent(subject.accuracy)}
-                    {subject.newCardsLearned > 0 ? ` · ${subject.newCardsLearned} new` : ''}
-                  </span>
-                </span>
-                <span className="row-value">
-                  {subject.cardsStudied} {subject.cardsStudied === 1 ? 'card' : 'cards'}
-                </span>
-                {meta.known && <ChevronRight size={14} className="row-chevron" />}
-              </>
+            const meta = formatSubjectDisplay(subject.subjectId, subjects);
+            const statsLine = `${formatDuration(subject.durationMs)} · ${formatPercent(subject.accuracy)}${
+              subject.newCardsLearned > 0 ? ` · ${subject.newCardsLearned} new` : ''
+            }`;
+            const subtitle = meta.subtitle ? `${meta.subtitle} · ${statsLine}` : statsLine;
+            const leading = (
+              <span className="subject-tile">
+                <SubjectIcon subjectId={subject.subjectId} name={meta.name} />
+              </span>
             );
+            const value = `${subject.cardsStudied} ${subject.cardsStudied === 1 ? 'card' : 'cards'}`;
 
-            return (
-              <li key={subject.subjectId}>
-                {meta.known ? (
-                  <a
-                    className="group-row group-row-interactive"
-                    href={`#/subjects/${subject.subjectId}`}
-                  >
-                    {content}
-                  </a>
-                ) : (
-                  <div className="group-row">{content}</div>
-                )}
-              </li>
+            return meta.known ? (
+              <NavRow
+                key={subject.subjectId}
+                href={`#/subjects/${subject.subjectId}`}
+                leading={leading}
+                title={meta.name}
+                subtitle={subtitle}
+                value={value}
+              />
+            ) : (
+              <Row
+                key={subject.subjectId}
+                leading={leading}
+                title={meta.name}
+                subtitle={subtitle}
+                value={value}
+              />
             );
           })}
-        </ul>
+        </Group>
       </section>
     </aside>
   );

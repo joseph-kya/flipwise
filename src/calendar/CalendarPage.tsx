@@ -17,7 +17,7 @@ import {
   weekdayMondayFirst,
 } from './dailyStats';
 import { DayDetailPanel } from './DayDetailPanel';
-import { ChevronLeft, ChevronRight } from '../ui';
+import { Button, ChevronLeft, ChevronRight, IconButton, PageHeader } from '../ui';
 
 const WEEKDAYS = [
   { short: 'Mon', full: 'Monday' },
@@ -241,10 +241,7 @@ export function CalendarPage({ events, today, timeZone, motion = 'full', headerA
 
   return (
     <div className="section-stack">
-      <div className={`page-head${headerAccessory ? ' page-head-split' : ''}`} style={{ marginBottom: 0 }}>
-        <h1 className="page-title">Calendar</h1>
-        {headerAccessory}
-      </div>
+      <PageHeader title="Calendar" trailing={headerAccessory} />
 
       <section className="group cal-summary" aria-label="Study summary">
         <div className="cal-summary-cell">
@@ -296,26 +293,16 @@ export function CalendarPage({ events, today, timeZone, motion = 'full', headerA
             <h2 className="cal-month-title">{monthTitle}</h2>
             <div className="cal-nav">
               {(!isCurrentMonth || selectedKey !== todayKey) && (
-                <button type="button" className="btn btn-plain" onClick={jumpToToday}>
+                <Button variant="plain" onClick={jumpToToday}>
                   Today
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => stepMonth(-1)}
-                aria-label="Previous month"
-              >
+              <IconButton ariaLabel="Previous month" onClick={() => stepMonth(-1)}>
                 <ChevronLeft size={18} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => stepMonth(1)}
-                aria-label="Next month"
-              >
+              </IconButton>
+              <IconButton ariaLabel="Next month" onClick={() => stepMonth(1)}>
                 <ChevronRight size={18} />
-              </button>
+              </IconButton>
             </div>
           </div>
 

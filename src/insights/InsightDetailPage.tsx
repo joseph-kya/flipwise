@@ -1,11 +1,22 @@
 import { useState } from 'react';
+import { InlineCardText } from '../anki/content';
 import { formatDuration } from '../calendar/dailyStats';
 import { useSubjects } from '../contentCatalog';
 import type { EffectiveMotion } from '../settings';
-import { ChevronLeft, ChevronRight, FlameIcon, SegmentedControl } from '../ui';
+import {
+  ChevronRight,
+  FlameIcon,
+  Group,
+  NavRow,
+  PageHeader,
+  Row,
+  SectionHeader,
+  Segmented,
+  formatSubjectDisplay,
+} from '../ui';
 import type { ChartId, InsightsData, RangeKey, SubjectFilter } from './aggregate';
 import { AreaLine, Bars, Donut, Histogram, StackedBars, YearHeatmap } from './Charts';
-import { cleanCardFront, InsightsFilterBar, STATE_COLORS, toDonutSlices } from './InsightsView';
+import { InsightsFilterBar, STATE_COLORS, toDonutSlices } from './InsightsView';
 
 const CHART_META: Record<ChartId, { title: string; subtitle: string }> = {
   heatmap: { title: 'Activity', subtitle: 'Full-year review consistency' },
@@ -46,30 +57,16 @@ function BreakdownRow({
   dotColor?: string;
   href?: string;
 }) {
-  const inner = (
-    <>
-      {dotColor && (
-        <span className="donut-dot" style={{ background: dotColor, marginTop: 2 }} aria-hidden="true" />
-      )}
-      <span className="row-main">
-        <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>
-          {label}
-        </span>
-        {sub && <span className="row-sub">{sub}</span>}
-      </span>
-      <span className="row-value row-value-strong tabular">{value}</span>
-      {href && <ChevronRight size={14} className="row-chevron" />}
-    </>
-  );
+  const leading = dotColor ? (
+    <span className="donut-dot" style={{ background: dotColor }} aria-hidden="true" />
+  ) : undefined;
 
   if (href) {
     return (
-      <a className="group-row group-row-interactive" href={href}>
-        {inner}
-      </a>
+      <NavRow href={href} leading={leading} title={label} subtitle={sub} value={value} />
     );
   }
-  return <div className="group-row">{inner}</div>;
+  return <Row leading={leading} title={label} subtitle={sub} value={value} valueStrong />;
 }
 
 export function InsightDetailPage({
@@ -95,25 +92,18 @@ export function InsightDetailPage({
   const subjectLabel =
     subjectId === 'all'
       ? 'All subjects'
-      : subjects.find((s) => s.id === subjectId)?.name ?? subjectId;
+      : formatSubjectDisplay(subjectId, subjects).name;
 
   const showRange = chartId !== 'forecast';
 
   return (
     <div className="section-stack insights-stack">
-      <div>
-        <a className="back-link" href="#/insights">
-          <ChevronLeft size={16} />
-          Insights
-        </a>
-        <div className="page-head" style={{ marginBottom: 0 }}>
-          <h1 className="page-title">{meta.title}</h1>
-          <p className="page-sub">
-            {meta.subtitle}
-            {showRange ? ` · ${range}` : ''} · {subjectLabel}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="#/insights"
+        backLabel="Insights"
+        title={meta.title}
+        subtitle={`${meta.subtitle}${showRange ? ` · ${range}` : ''} · ${subjectLabel}`}
+      />
 
       <InsightsFilterBar
         range={range}
@@ -400,7 +390,7 @@ export function InsightDetailPage({
                     : `${data.distributions.medianStabilityDays}d median`}
               </div>
               <div className="insight-detail-seg">
-                <SegmentedControl
+                <Segmented
                   ariaLabel="Distribution type"
                   options={DIST_OPTIONS}
                   value={distTab}
@@ -483,13 +473,15 @@ export function InsightDetailPage({
         <div className="section-stack">
           {data.subjects.map((sub) => (
             <section key={sub.subjectId} aria-label={sub.name}>
-              <div className="section-head">
-                <h2 className="section-title">{sub.name}</h2>
-                <span className="row-sub tabular">
-                  {sub.accuracy !== null ? `${sub.accuracy}% accuracy` : 'Not studied'} · {sub.reviews} rev
-                </span>
-              </div>
-              <div className="group group-divider">
+              <SectionHeader
+                title={sub.collectionLabel ? `${sub.name} · ${sub.collectionLabel}` : sub.name}
+                action={
+                  <span className="row-sub tabular">
+                    {sub.accuracy !== null ? `${sub.accuracy}% accuracy` : 'Not studied'} · {sub.reviews} rev
+                  </span>
+                }
+              />
+              <Group ariaLabel={sub.name}>
                 {sub.lessons.map((l) => {
                   const level = l.masteryLabel.toLowerCase().replace(' ', '-');
                   return (
@@ -508,7 +500,7 @@ export function InsightDetailPage({
                     </a>
                   );
                 })}
-              </div>
+              </Group>
             </section>
           ))}
         </div>
@@ -554,15 +546,13 @@ export function InsightDetailPage({
 
       {chartId === 'leeches' && (
         <section aria-label="Hardest cards">
-          <div className="section-head">
-            <h2 className="section-title">Top 10 hardest cards</h2>
-            <span className="row-sub tabular">{data.leeches.leechCount} leeches</span>
-          </div>
-          <div className="group group-divider">
+          <SectionHeader
+            title="Top 10 hardest cards"
+            action={<span className="row-sub tabular">{data.leeches.leechCount} leeches</span>}
+          />
+          <Group ariaLabel="Hardest cards list">
             {data.leeches.items.length === 0 ? (
-              <div className="group-row">
-                <span className="row-sub">No reviewed cards in this filter yet.</span>
-              </div>
+              <Row title="No reviewed cards in this filter yet." />
             ) : (
               data.leeches.items.map((item) => (
                 <a
@@ -571,11 +561,12 @@ export function InsightDetailPage({
                   className="group-row group-row-interactive"
                 >
                   <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)' }}>
-                      {cleanCardFront(item.front)}
+                    <span className="row-title">
+                      <InlineCardText text={item.front} />
                     </span>
                     <span className="row-sub">
-                      {item.subjectName} · {item.lessonTitle} · Difficulty {item.difficulty}
+                      {item.subjectName}
+                      {item.collectionLabel ? ` · ${item.collectionLabel}` : ''} · {item.lessonTitle} · Difficulty {item.difficulty}
                     </span>
                   </span>
                   <span className="insight-leech-meta tabular">
@@ -588,7 +579,7 @@ export function InsightDetailPage({
                 </a>
               ))
             )}
-          </div>
+          </Group>
         </section>
       )}
 

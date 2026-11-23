@@ -1,20 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { InlineCardText } from '../anki/content';
 import { useSubjects } from '../contentCatalog';
 import { formatDuration } from '../calendar/dailyStats';
 import type { EffectiveMotion } from '../settings';
-import { ChevronDown, ChevronRight, FlameIcon, SegmentedControl } from '../ui';
+import { ChevronRight, FlameIcon, Segmented, Select, type SelectOption } from '../ui';
 import type { InsightsData, RangeKey, SubjectFilter } from './aggregate';
 import { AreaLine, Bars, Donut, Histogram, StackedBars, YearHeatmap, type DonutSlice } from './Charts';
-
-export function cleanCardFront(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/__(.+?)__/g, '$1')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\$([^$]+)\$/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 export const RANGE_OPTIONS: ReadonlyArray<{ value: RangeKey; label: string }> = [
   { value: '7d', label: '7d' },
@@ -52,6 +43,18 @@ export function InsightsFilterBar({
   showRange?: boolean;
 }) {
   const subjects = useSubjects();
+  const options: SelectOption<SubjectFilter>[] = useMemo(
+    () => [
+      { value: 'all', label: 'All subjects' },
+      ...subjects.map((s) => ({
+        value: s.id,
+        label: s.name,
+        subtitle: s.collectionLabel,
+      })),
+    ],
+    [subjects],
+  );
+
   return (
     <div
       className={`insights-filters${showRange ? '' : ' insights-filters-subject-only'}`}
@@ -60,7 +63,7 @@ export function InsightsFilterBar({
     >
       {showRange && (
         <div className="insights-filters-range">
-          <SegmentedControl
+          <Segmented
             ariaLabel="Time range"
             options={RANGE_OPTIONS}
             value={range}
@@ -68,21 +71,14 @@ export function InsightsFilterBar({
           />
         </div>
       )}
-      <div className="subject-picker-wrap">
-        <select
-          className="subject-picker"
-          aria-label="Filter by subject"
+      <div className="insights-filters-subject">
+        <Select
+          ariaLabel="Filter by subject"
+          variant="pill"
+          options={options}
           value={subjectId}
-          onChange={(e) => onSubjectChange(e.target.value)}
-        >
-          <option value="all">All subjects</option>
-          {subjects.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={15} className="subject-picker-icon" />
+          onChange={onSubjectChange}
+        />
       </div>
     </div>
   );
@@ -416,7 +412,7 @@ export function InsightsView({
               <div className="insight-metric tabular">{distKeyNumber}</div>
             </a>
             <div className="insight-mini-seg">
-              <SegmentedControl
+              <Segmented
                 ariaLabel="Distribution metric"
                 options={DIST_OPTIONS}
                 value={distTab}
@@ -451,7 +447,12 @@ export function InsightsView({
             {data.subjects.map((sub) => (
               <div key={sub.subjectId} className="insight-subject-block">
                 <div className="insight-subject-head">
-                  <span className="insight-subject-name">{sub.name}</span>
+                  <div className="insight-subject-title-wrap">
+                    <span className="insight-subject-name">{sub.name}</span>
+                    {sub.collectionLabel && (
+                      <span className="insight-subject-sub">{sub.collectionLabel}</span>
+                    )}
+                  </div>
                   <span className="insight-subject-meta tabular">
                     {sub.accuracy !== null ? `${sub.accuracy}%` : '—'} · {sub.reviews} rev
                   </span>
@@ -505,9 +506,12 @@ export function InsightsView({
                   className="insight-leech-row"
                 >
                   <span className="insight-leech-main">
-                    <span className="insight-leech-front">{cleanCardFront(item.front)}</span>
+                    <span className="insight-leech-front">
+                      <InlineCardText text={item.front} />
+                    </span>
                     <span className="insight-leech-sub">
-                      {item.subjectName} · {item.lessonTitle}
+                      {item.subjectName}
+                      {item.collectionLabel ? ` · ${item.collectionLabel}` : ''} · {item.lessonTitle}
                     </span>
                   </span>
                   <span className="insight-leech-meta tabular">

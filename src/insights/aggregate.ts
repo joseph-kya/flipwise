@@ -4,6 +4,7 @@ import { stableCardId } from '../anki/types';
 import { mastery } from '../mastery';
 import type { Rating, ReviewEvent } from '../reviewLog';
 import { isLeech, schedule, studyDay } from '../scheduler';
+import { formatSubjectDisplay } from '../ui';
 import {
   aggregateByDay,
   parseDateKey,
@@ -118,6 +119,7 @@ export interface LessonAccuracyRow {
 export interface SubjectAccuracyRow {
   subjectId: string;
   name: string;
+  collectionLabel?: string;
   reviews: number;
   accuracy: number | null;
   lessons: LessonAccuracyRow[];
@@ -127,6 +129,7 @@ export interface HardCardItem {
   cardId: string;
   subjectId: string;
   subjectName: string;
+  collectionLabel?: string;
   lessonId: string;
   lessonTitle: string;
   front: string;
@@ -670,6 +673,7 @@ export function computeInsights(
     return {
       subjectId: s.id,
       name: s.name,
+      collectionLabel: s.collectionLabel,
       reviews: sEvents.length,
       accuracy: sEvents.length > 0 ? Math.round((sCorrect / sEvents.length) * 100) : null,
       lessons,
@@ -685,7 +689,6 @@ export function computeInsights(
   });
 
   // 11. Leeches & hardest cards (top 10)
-  const subjectNameMap = new Map(subjects.map((s) => [s.id, s.name]));
   const lessonTitleMap = new Map(
     subjects.flatMap((s) => s.lectures.map((l) => [`${s.id}/${l.id}`, l.title] as const)),
   );
@@ -694,10 +697,12 @@ export function computeInsights(
   for (const item of subjectCatalog) {
     const card = states.get(item.cardId);
     if (!card || card.reps === 0) continue;
+    const display = formatSubjectDisplay(item.subjectId, subjects);
     hardCandidates.push({
       cardId: item.cardId,
       subjectId: item.subjectId,
-      subjectName: subjectNameMap.get(item.subjectId) ?? item.subjectId,
+      subjectName: display.name,
+      collectionLabel: display.subtitle,
       lessonId: item.lessonId,
       lessonTitle: lessonTitleMap.get(`${item.subjectId}/${item.lessonId}`) ?? item.lessonId,
       front: item.front,
