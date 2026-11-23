@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { subjects, type Subject } from './demoSubjects';
 import './style.css';
-import { readReviews, appendReview, type ReviewEvent, type Rating } from './reviewLog';
+import { loadReviewLog, saveReviewLog, seedDemoReviewLog, appendReview, type ReviewEvent, type Rating } from './reviewLog';
 import { mastery } from './mastery';
 import { sessionStats } from './sessionStats';
+import { CalendarPage } from './calendar/CalendarPage';
 import { Markdown } from './markdown';
 
 function App() {
   const [hash, setHash] = useState(location.hash || '#/');
   const [dark, setDark] = useState(false);
   const [index, setIndex] = useState(0);
-  const [log, setLog] = useState<ReviewEvent[]>(readReviews);
+  const [log, setLog] = useState<ReviewEvent[]>(() => { const saved = loadReviewLog(); if (saved.length) return saved; const demo = seedDemoReviewLog(); saveReviewLog(demo); return demo; });
   const [session, setSession] = useState<ReviewEvent[]>([]);
   const [started, setStarted] = useState(Date.now());
   const [cardStarted, setCardStarted] = useState(Date.now());
@@ -49,7 +50,7 @@ function App() {
     };
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
   });
-  const stats = sessionStats(session, cards.length);
+  const stats = sessionStats(log.filter(e => session.some(review => review.id === e.id)), cards.length);
   const statsPanel = <aside className="stats" aria-label="Session stats"><strong>Session</strong><span>{stats.done} done · {stats.remaining} remaining</span><span>{stats.right} right · {stats.again} again · {stats.hard} hard</span><span>{stats.accuracy}% accuracy · {Math.floor(Math.max(0,now-started)/60000)}:{String(Math.floor(Math.max(0,now-started)/1000)%60).padStart(2,'0')}</span><div className="streak" aria-label="Recent ratings">{session.slice(-10).map(e=><span key={e.id} className={`pip ${e.rating}`} title={e.rating}>{e.rating[0].toUpperCase()}</span>)}</div></aside>;
   const subjectRows = (_compact = false) => subjects.map((s: Subject, i) => (
     <details key={s.id}><summary className="subject-row"><span className="subject-icon">{['∑', '⌘', 'φ', '{}'][i]}</span><span className="subject-copy"><small className="muted">{['Limits, change and continuity','Motion, sensing and control','The laws of the physical world','Thinking in algorithms'][i]}</small><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lessons</span></span><span>⌄</span></summary><div className="lectures">{s.lectures.map((l,i)=><a className="lecture" key={l.id} href={`#/study/${s.id}/${l.id}`}><span aria-hidden="true">{['∿','◇','◎','⌁'][i%4]}</span><span className="lecture-name">{l.title}</span><span className={`mastery ${mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label.toLowerCase().replace(" ","-")}`}>{mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label === "Not started" ? "✕ " : "● "}{mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label}</span><span className="card-count">{l.cards.length}</span></a>)}</div></details>
@@ -59,6 +60,7 @@ function App() {
       <header>
         <a className="brand" href="#/"><span className="mark">f</span>flipwise<span className="brand-dot">.</span></a>
         <span className="header-note">A little practice. Lasting knowledge.</span>
+        <nav aria-label="Main navigation"><a className="text-link" href="#/subjects" aria-current={parts[0] === 'subjects' ? 'page' : undefined}>Subjects</a><a className="text-link" href="#/calendar" aria-current={parts[0] === 'calendar' ? 'page' : undefined}>Calendar</a></nav>
         <button className="theme" onClick={() => setDark(!dark)} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>{dark ? '☀' : '☾'}</button>
       </header>
       <main id="main">
@@ -104,7 +106,7 @@ function App() {
             </div>}
           </section>
           <p className="study-note">Space to reveal · 1–4 to rate. Reviews saved on this device.</p>
-        </> : studying ? <><h1>Session complete.</h1>{statsPanel}<p>You reviewed {stats.done} cards. Take a breath.</p><a className="back" href="#/subjects">Back to subjects</a></> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
+        </> : studying ? <><h1>Session complete.</h1>{statsPanel}<p>You reviewed {stats.done} cards. Take a breath.</p><a className="back" href="#/subjects">Back to subjects</a></> : parts[0] === 'calendar' ? <CalendarPage events={log}/> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
         <footer><span>Built for what you want to remember.</span><span>Demo cards · display totals reflect your subjects</span></footer>
       </main>
     </div>
