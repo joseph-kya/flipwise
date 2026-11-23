@@ -773,6 +773,7 @@ export function Row({
   disabled = false,
   titleId,
   className,
+  style,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -786,6 +787,8 @@ export function Row({
   disabled?: boolean;
   titleId?: string;
   className?: string;
+  /** For per-row custom properties (e.g. a stagger index). */
+  style?: CSSProperties;
 }) {
   const cls = [
     'group-row',
@@ -816,13 +819,13 @@ export function Row({
 
   if (onClick) {
     return (
-      <button type="button" className={cls} disabled={disabled} onClick={onClick}>
+      <button type="button" className={cls} style={style} disabled={disabled} onClick={onClick}>
         {content}
       </button>
     );
   }
 
-  return <div className={cls}>{content}</div>;
+  return <div className={cls} style={style}>{content}</div>;
 }
 
 export function NavRow({

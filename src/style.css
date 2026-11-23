@@ -1851,3 +1851,8 @@ a.insight-card:active { transform: scale(0.99); }
 :root[data-motion="reduced"] .catchup-summary-group .group-row { animation: ob-fade 180ms ease both; }
 :root[data-motion="off"] .catchup-summary-group .group-row { animation: none; }
 
+/* Starter pick: courses tick in, then get a checkmark each */
+.ob-tick-in { animation: ob-in-forward 320ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.ob-added { display: inline-flex; width: 51px; justify-content: center; color: var(--sem-green-dot); animation: xp-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 90ms); }
+:root[data-motion="reduced"] .ob-tick-in, :root[data-motion="reduced"] .ob-added { animation: ob-fade 180ms ease both; }
+:root[data-motion="off"] .ob-tick-in, :root[data-motion="off"] .ob-added { animation: none; }

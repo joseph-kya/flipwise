@@ -1,8 +1,8 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ImportedData } from '../anki/types';
 import type { AccountController, AccountSnapshot } from '../sync/account';
 import { plural } from '../plural';
-import { Button, ChevronLeft, ChevronRight, Group, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
+import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
 import { accountOutcome, canContinueOffline, hasRealDecks, STEPS, type OnboardingStep } from './flow';
 import { EXPLAINER_PANELS as HOW_PANELS, Explainer } from './Explainer';
 import { loadStarterPack, type StarterPack } from './starterPack';
@@ -148,7 +148,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
       );
       if (realDecks) actions = <Button variant="primary" size="full" onClick={() => go('learn')}>Continue</Button>;
     } else if (view === 'starter') {
-      body = <StarterPicker onAdd={async (pack, ids) => { await onAddStarter(pack, ids); go('learn'); }} />;
+      body = <StarterPicker onAdd={onAddStarter} onDone={() => go('learn')} />;
     } else if (view === 'own') {
       body = (
         <>
@@ -227,7 +227,8 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
   );
 }
 
-function StarterPicker({ onAdd }: { onAdd: (pack: StarterPack, ids: string[]) => Promise<void> }) {
+function StarterPicker({ onAdd, onDone }: { onAdd: (pack: StarterPack, ids: string[]) => Promise<void>; onDone: () => void }) {
+  const [added, setAdded] = useState(false);
   const [pack, setPack] = useState<StarterPack | null>(null);
   const [error, setError] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -265,16 +266,21 @@ function StarterPicker({ onAdd }: { onAdd: (pack: StarterPack, ids: string[]) =>
             {pack.subjects.map((s, i) => (
               <Row
                 key={s.id}
+                className="ob-tick-in"
+                style={{ '--i': i } as CSSProperties}
                 titleId={`${baseId}-${i}`}
                 title={s.name}
                 subtitle={`${plural(s.lectures.length, 'lecture')} · ${plural(s.total, 'card')} · ${s.dailyNew} new a day`}
-                trailing={
+                trailing={added && picked.has(s.id) ? (
+                  <span className="ob-added" style={{ '--i': [...picked].indexOf(s.id) } as CSSProperties} aria-label="Added"><CheckIcon size={22} /></span>
+                ) : (
                   <Switch
+                    disabled={added}
                     checked={picked.has(s.id)}
                     labelledBy={`${baseId}-${i}`}
                     onChange={(on) => setPicked((prev) => { const next = new Set(prev); if (on) next.add(s.id); else next.delete(s.id); return next; })}
                   />
-                }
+                )}
               />
             ))}
           </Group>
@@ -287,10 +293,16 @@ function StarterPicker({ onAdd }: { onAdd: (pack: StarterPack, ids: string[]) =>
               onClick={async () => {
                 setBusy(true);
                 setError('');
-                try { await onAdd(pack, [...picked]); } catch (e) { setError(e instanceof Error ? e.message : String(e)); setBusy(false); }
+                try {
+                  await onAdd(pack, [...picked]);
+                  // Each added course ticks in, then the flow moves on.
+                  setAdded(true);
+                  const motion = document.documentElement.dataset.motion;
+                  setTimeout(onDone, motion === 'off' ? 0 : motion === 'reduced' ? 250 : 380 + picked.size * 90);
+                } catch (e) { setError(e instanceof Error ? e.message : String(e)); setBusy(false); }
               }}
             >
-              {busy ? 'Adding…' : picked.size === pack.subjects.length ? `Add all ${plural(total, 'card')}` : `Add ${plural(picked.size, 'course')} · ${plural(total, 'card')}`}
+              {added ? 'Added' : busy ? 'Adding…' : picked.size === pack.subjects.length ? `Add all ${plural(total, 'card')}` : `Add ${plural(picked.size, 'course')} · ${plural(total, 'card')}`}
             </Button>
           </div>
         </section>
