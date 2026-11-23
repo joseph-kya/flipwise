@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { subjects, type Subject } from './demoSubjects';
 import './style.css';
+import { Markdown } from './markdown';
 
 function App() {
   const [hash, setHash] = useState(location.hash || '#/');
@@ -24,8 +25,8 @@ function App() {
     <a className="subject-row" href={`#/subjects/${s.id}`} key={s.id}>
       <span className="subject-icon" aria-hidden="true">{['∑', '⌘', 'φ', '{}'][i]}</span>
       <span className="subject-copy"><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lectures</span></span>
-      <span aria-hidden="true">›</span>
       {!compact && <span className="subject-action">Choose lectures</span>}
+      <span aria-hidden="true">›</span>
     </a>
   ));
   return (
@@ -45,7 +46,7 @@ function App() {
               <p>A small session now. <br/>A little less to relearn later.</p>
               <a className="primary" href="#/subjects">Study now <span aria-hidden="true">↗</span></a>
               <div className="session-info"><span>About 8 minutes</span><span>Demo review count</span></div>
-              <div className="aside-bottom"><span className="status-dot"/> One subject. One step at a time.</div>
+              <div className="aside-bottom"><span className="status-dot"/> Your semester. One step at a time.</div>
             </aside>
             <section className="subjects">
               <div className="section-title"><h2>Your subjects</h2><a className="text-link" href="#/subjects">View all subjects</a></div>
@@ -71,8 +72,8 @@ function App() {
           <div className="study-heading"><div><p className="muted">{subject.name}</p><h1>{lecture?.title || 'All lectures'}</h1></div><span className="demo">Demo session</span></div>
           <section className="study-card">
             <div className="section-title"><span>Question</span><span>{index % cards.length + 1} of {cards.length}</span></div>
-            <h2>{card.front}</h2>
-            {revealed && <div className="revealed"><p className="muted">Answer</p><p className="answer">{card.back}</p></div>}
+            <div className="question"><Markdown text={card.front}/></div>
+            {revealed && <div className="revealed"><p className="muted">Answer</p><Markdown text={card.back}/></div>}
             {!revealed ? <a className="primary reveal-button" href={`${studyUrl}/answer`}>Show answer</a> : <div className="ratings">
               {['Again', 'Hard', 'Good'].map((label, i) => <button key={label} className={`rating rating-${i}`} onClick={() => { setIndex(index + 1); location.hash = studyUrl; }}><strong>{label}</strong><span>{['<1 min', '6 min', '1 day'][i]}</span></button>)}
             </div>}
