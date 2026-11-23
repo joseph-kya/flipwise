@@ -1,0 +1,7 @@
+{
+  "cards": [
+    {"id":"sample-unique-limit","deck":"Sample Semester::Analysis 1::Sequences","front":"Can a convergent real sequence have two distinct limits?","back":"No. Disjoint sufficiently small neighborhoods around two distinct limits cannot both contain every sufficiently late term of the sequence.","tags":["core","theorem"],"source":"obsidian://open?vault=Sample%20Notes&file=Sequences.md"},
+    {"id":"sample-reciprocal-limit","deck":"Sample Semester::Analysis 1::Sequences","front":"What is \\(\\lim_{n\\to\\infty}1/n\\)?","back":"The limit is \\(0\\). As the positive integer denominator grows without bound, the reciprocal becomes smaller than every positive tolerance.","tags":["core","fact"],"source":"obsidian://open?vault=Sample%20Notes&file=Sequences.md"},
+    {"id":"sample-newton-acceleration","deck":"Sample Semester::Physics 1::Newton's second law","front":"What acceleration does a net force of \\(6\\,\\mathrm{N}\\) produce on a constant mass of \\(2\\,\\mathrm{kg}\\) in an inertial frame?","back":"\\(a=F_{net}/m=3\\,\\mathrm{m/s^2}\\), directed along the net force. The relation assumes constant mass and an inertial reference frame.","tags":["core","method"],"source":"obsidian://open?vault=Sample%20Notes&file=Newton.md"}
+  ]
+}
