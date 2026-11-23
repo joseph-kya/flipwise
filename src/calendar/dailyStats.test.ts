@@ -58,9 +58,9 @@ describe('dailyStats', () => {
     ];
 
     const berlin = aggregateByDay(events, 'Europe/Berlin');
-    expect(Array.from(berlin.keys())).toEqual(['2026-11-22', '2026-11-23']);
-    expect(berlin.get('2026-11-22')?.cardsStudied).toBe(1);
-    expect(berlin.get('2026-11-23')?.cardsStudied).toBe(2);
+    expect(Array.from(berlin.keys())).toEqual(['2026-11-22']);
+    expect(berlin.get('2026-11-22')?.cardsStudied).toBe(3);
+    expect(berlin.get('2026-11-23')).toBeUndefined();
 
     const newYork = aggregateByDay(events, 'America/New_York');
     expect(Array.from(newYork.keys())).toEqual(['2026-11-22']);

@@ -12,7 +12,7 @@ import {
   parseDateKey,
   shiftDateKey,
   streak,
-  toLocalDateKey,
+  toStudyDateKey,
   weekSummary,
   weekdayMondayFirst,
 } from './dailyStats';
@@ -71,7 +71,7 @@ function buildDayAriaLabel(
 
 export function CalendarPage({ events, today, timeZone, motion = 'full' }: CalendarPageProps) {
   const todayKey = useMemo(
-    () => toLocalDateKey(today ?? new Date(), timeZone),
+    () => toStudyDateKey(today ?? new Date(), timeZone),
     [today, timeZone],
   );
   const todayParts = useMemo(() => parseDateKey(todayKey), [todayKey]);

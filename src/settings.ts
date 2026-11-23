@@ -7,6 +7,7 @@ export type MotionSetting = 'full' | 'reduced' | 'off';
 export type EffectiveMotion = 'full' | 'reduced' | 'off';
 
 export interface AppearanceSettings {
+  retention: number;
   accent: AccentId;
   theme: ThemeMode;
   cardStyle: CardStyle;
@@ -18,6 +19,7 @@ export interface AppearanceSettings {
 export const SETTINGS_STORAGE_KEY = 'flipwise.appearance.v1';
 
 export const DEFAULT_SETTINGS: AppearanceSettings = {
+  retention: .9,
   accent: 'blue',
   theme: 'auto',
   cardStyle: 'classic',
@@ -56,6 +58,7 @@ export function sanitizeSettings(input: unknown): AppearanceSettings {
   if (!input || typeof input !== 'object') return { ...DEFAULT_SETTINGS };
   const raw = input as Record<string, unknown>;
   return {
+    retention: typeof raw.retention === 'number' && raw.retention >= .7 && raw.retention <= .99 ? raw.retention : .9,
     accent: typeof raw.accent === 'string' && VALID_ACCENTS.has(raw.accent)
       ? (raw.accent as AccentId)
       : DEFAULT_SETTINGS.accent,

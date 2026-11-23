@@ -1,3 +1,5 @@
+import { queue, replay, schedule, intervalLabel, isLeech } from './scheduler';
+import { openReviewStorage, type LogStorage } from './reviewStorage';
 import {
   useEffect,
   useLayoutEffect,
@@ -12,16 +14,12 @@ import { createRoot } from 'react-dom/client';
 import { subjects, type DemoCard, type Subject, type Lecture } from './demoSubjects';
 import './style.css';
 import {
-  loadReviewLog,
-  saveReviewLog,
-  seedDemoReviewLog,
-  appendReview,
   type ReviewEvent,
   type Rating,
 } from './reviewLog';
 import { mastery } from './mastery';
 import { sessionStats } from './sessionStats';
-import { aggregateByDay, streak, toLocalDateKey } from './calendar/dailyStats';
+import { aggregateByDay, streak, toStudyDateKey } from './calendar/dailyStats';
 import { CalendarPage } from './calendar/CalendarPage';
 import { Markdown } from './markdown';
 import { AppearancePage } from './AppearancePage';
@@ -358,13 +356,17 @@ function App() {
   );
 
   const [index, setIndex] = useState(0);
-  const [log, setLog] = useState<ReviewEvent[]>(() => {
-    const saved = loadReviewLog();
-    if (saved.length) return saved;
-    const demo = seedDemoReviewLog();
-    saveReviewLog(demo);
-    return demo;
-  });
+  const [log, setLog] = useState<ReviewEvent[]>([]);
+  const storageRef = useRef<LogStorage | null>(null);
+  const [storageReady, setStorageReady] = useState(false);
+  const [storageNotice, setStorageNotice] = useState('');
+  const pendingWrite = useRef(false);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { void openReviewStorage().then(async ({storage, fallback}) => {
+    storageRef.current = storage;
+    setLog(await storage.read()); setStorageReady(true);
+    if (fallback) setStorageNotice('Using local browser storage because IndexedDB is unavailable.');
+  }).catch(() => setStorageNotice('Study storage is unavailable. Please reload before studying.')); }, []);
   const [session, setSession] = useState<ReviewEvent[]>([]);
   const [started, setStarted] = useState(Date.now());
   const [cardStarted, setCardStarted] = useState(Date.now());
@@ -452,13 +454,18 @@ function App() {
   }, [hash]);
 
   const parts = hash.replace(/^#\//, '').split('/');
-  const subject = subjects.find((s) => s.id === parts[1]);
-  const lecture = subject?.lectures.find((l) => l.id === parts[2]);
-  const studying = parts[0] === 'study' && Boolean(subject) && Boolean(lecture || parts[2] === 'all');
-  const cards = lecture?.cards || subject?.lectures.flatMap((l) => l.cards) || [];
-  const card = cards[index];
+  const catalog = useMemo(() => subjects.flatMap(s => s.lectures.flatMap((l, li) => l.cards.map((c, ci) => ({...c, cardId: `${s.id}/${l.id}/${c.id}`, subjectId: s.id, lessonId: l.id, queuePosition: li*1000+ci})))), []);
+  const globalStudy = parts[1] === 'global';
+  const available = queue(catalog.filter(c => globalStudy || c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), log, new Date(now));
+  const cards = storageReady ? available : [];
+  const card = cards[0];
+  const subject = subjects.find(s => s.id === (globalStudy ? card?.subjectId ?? session.at(-1)?.subjectId : parts[1]));
+  const lecture = subject?.lectures.find(l => l.id === (globalStudy ? card?.lessonId : parts[2]));
+  const studying = parts[0] === 'study' && storageReady && (globalStudy || Boolean(subject));
   const revealed = parts[3] === 'answer';
-  const studyUrl = subject ? `#/study/${subject.id}/${parts[2]}` : '';
+  const studyUrl = `#/study/${parts[1]}/${parts[2]}`;
+  const states = replay(log);
+  const previewAt = new Date(now);
 
   useEffect(() => {
     setIndex(0);
@@ -510,11 +517,13 @@ function App() {
     location.hash = nextHash;
   };
 
-  const rate = (rating: Rating, startTransform?: string) => {
-    if (!subject || !card || !revealed) return;
+  const rate = async (rating: Rating, startTransform?: string) => {
+    if (!subject || !card || !revealed || pendingWrite.current || !storageRef.current) return;
     const lesson = subject.lectures.find((l) => l.cards.includes(card))!;
     const cardId = `${subject.id}/${lesson.id}/${card.id}`;
     const event: ReviewEvent = {
+      retention: settings.retention,
+      fuzz: true,
       id: crypto.randomUUID(),
       cardId,
       subjectId: subject.id,
@@ -524,7 +533,11 @@ function App() {
       durationMs: Date.now() - cardStarted,
       isNew: !log.some((e) => e.cardId === cardId),
     };
-    setLog(appendReview(event));
+    pendingWrite.current = true;
+    setSaving(true);
+    const nextLog = [...log, event];
+    try { await storageRef.current.write(nextLog); } catch { setStorageNotice('Could not save your rating. Please try again.'); setSaving(false); pendingWrite.current = false; return; }
+    setLog(nextLog); setSaving(false); pendingWrite.current = false;
     setSession((events) => [...events, event]);
     setSwipeHint(null);
     prevStageHeightRef.current = null;
@@ -747,13 +760,13 @@ function App() {
 
   const stats = sessionStats(
     log.filter((e) => session.some((review) => review.id === e.id)),
-    cards.length,
+    session.length + cards.length,
   );
   const elapsed = formatElapsed(now - started);
 
   const streakStats = useMemo(
-    () => streak(aggregateByDay(log), toLocalDateKey(new Date())),
-    [log],
+    () => streak(aggregateByDay(log), toStudyDateKey(new Date(now))),
+    [log, now],
   );
 
   const restart = () => {
@@ -772,6 +785,14 @@ function App() {
     location.hash = studyUrl;
   };
 
+  const undo = async () => {
+    if (pendingWrite.current || !session.length || !storageRef.current || log.at(-1)?.id !== session.at(-1)?.id) return;
+    pendingWrite.current = true; setSaving(true);
+    try { const next=log.slice(0,-1); await storageRef.current.write(next); setLog(next); setSession(session.slice(0,-1)); setIndex(Math.max(0,index-1)); location.hash=studyUrl; setHash(studyUrl); }
+    catch { setStorageNotice('Could not undo. Please try again.'); }
+    finally { setSaving(false); pendingWrite.current = false; }
+  };
+  useEffect(() => { const handler=(e: KeyboardEvent)=>{ if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown',handler); return ()=>window.removeEventListener('keydown',handler); });
   const activeStudy = studying && Boolean(card);
   const sessionComplete = studying && !card;
   const hasMobileRatingBar = activeStudy && revealed;
@@ -818,6 +839,8 @@ function App() {
         </div>
       </header>
 
+      {storageNotice && <p role="status" className="study-hint">{storageNotice}</p>}
+      {session.length > 0 && <button className="btn btn-plain" onClick={() => void undo()}>Undo last rating</button>}
       <main
         id="main"
         className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}
@@ -833,10 +856,10 @@ function App() {
               <div className="group">
                 <div className="due-row">
                   <div>
-                    <div className="due-figure">24</div>
+                    <div className="due-figure">{queue(catalog, log, new Date(now)).filter(c => states.has(c.cardId)).length}</div>
                     <div className="due-label">Cards due</div>
                   </div>
-                  <a className="btn btn-primary" href="#/subjects">
+                  <a className="btn btn-primary" href="#/study/global/all">
                     Study
                   </a>
                 </div>
@@ -1041,10 +1064,10 @@ function App() {
                           }}
                           type="button"
                           className={`rating-btn rating-${key}`}
-                          disabled={!revealed}
+                          disabled={!revealed || saving}
                           onClick={() => rate(key)}
                         >
-                          {label}
+                          {label}<small className="rating-interval">{intervalLabel(schedule(states.get(card.cardId), key, previewAt, settings.retention), previewAt)}</small>
                         </button>
                       ))}
                     </div>
@@ -1052,7 +1075,7 @@ function App() {
                 )}
 
                 <p className="study-hint">
-                  {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
+                  {states.get(card.cardId) && isLeech(states.get(card.cardId)!) ? 'leech · ' : ''}{revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
                 </p>
               </div>
 
@@ -1163,7 +1186,7 @@ function App() {
 
       {!activeStudy && !sessionComplete && (
         <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
-          Demo data · saved locally
+          Demo deck · progress saved locally
         </footer>
       )}
 

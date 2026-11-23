@@ -80,6 +80,14 @@ export function toLocalDateKey(input: string | Date, timeZone?: string): string 
   return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
+/** Study dates use the local 04:00 boundary, including named time zones. */
+export function toStudyDateKey(input: string | Date, timeZone?: string): string {
+  const date = typeof input === 'string' ? new Date(input) : input;
+  const hour = Number(new Intl.DateTimeFormat('en-GB', {timeZone, hour: '2-digit', hourCycle: 'h23'}).format(date));
+  const key = toLocalDateKey(date, timeZone);
+  return hour < 4 ? shiftDateKey(key, -1) : key;
+}
+
 export function formatDateKey(year: number, monthIndex: number, day: number): string {
   const y = String(year).padStart(4, '0');
   const m = String(monthIndex + 1).padStart(2, '0');
@@ -158,7 +166,7 @@ export function aggregateByDay(
     const parsedDate = new Date(event.at);
     if (Number.isNaN(parsedDate.getTime())) continue;
 
-    const dateKey = toLocalDateKey(parsedDate, timeZone);
+    const dateKey = toStudyDateKey(parsedDate, timeZone);
     let day = buckets.get(dateKey);
     if (!day) {
       day = {

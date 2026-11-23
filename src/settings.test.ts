@@ -27,6 +27,7 @@ describe('settings', () => {
   it('round-trips saved appearance settings cleanly', () => {
     const storage = createMemoryStorage();
     const custom: AppearanceSettings = {
+      retention: .9,
       accent: 'purple',
       theme: 'black',
       cardStyle: 'glass',
@@ -58,6 +59,7 @@ describe('settings', () => {
       }),
     );
     expect(loadSettings(storage)).toEqual({
+      retention: .9,
       accent: 'blue',
       theme: 'dark',
       cardStyle: 'paper',

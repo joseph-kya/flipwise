@@ -75,6 +75,11 @@ export function AppearancePage({
         <h1 className="page-title">Appearance</h1>
       </div>
 
+      <section className="group" aria-label="Study">
+        <h2 className="group-title">Study</h2>
+        <div className="list-row"><span>Desired retention</span>
+        <SegmentedControl ariaLabel="Desired retention" value={String(settings.retention)} options={[{value: '0.85',label: '85%'},{value: '0.9',label: '90%'},{value: '0.95',label: '95%'}]} onChange={(value) => onChange({retention: Number(value)})} /></div>
+      </section>
       <section aria-label="Live preview" className="group preview-group">
         <div
           className={`card-stage preview-card-stage${previewFlipped ? ' is-flipped' : ''}`}
