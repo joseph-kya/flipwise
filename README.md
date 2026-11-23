@@ -1,6 +1,6 @@
 # Flipwise
 
-An open-source, general-purpose **spaced-repetition flashcard app** for studying university courses (or anything else).
+An open-source, general-purpose **spaced-repetition flashcard app** (an Anki-style clone) for studying university courses (or anything else). It's built as an offline-first **React + TypeScript PWA**.
 
 Flip a card, rate how well you knew it, and let the scheduler decide when you see it next.
 
@@ -15,7 +15,7 @@ Flip a card, rate how well you knew it, and let the scheduler decide when you se
 - **Subject → lecture navigation**: study one lecture or a whole subject.
 - **Markdown and math** on cards (KaTeX).
 - **Import / export**, including Anki decks and CSV.
-- Runs as a **desktop app** (Tauri) and on the **web** (GitHub Pages).
+- Runs as an installable, offline-first **PWA** in the browser. Desktop (Mac and Windows) comes first; phone comes later.
 
 ## What's done so far
 
@@ -24,7 +24,10 @@ Flip a card, rate how well you knew it, and let the scheduler decide when you se
 | Clickable HTML prototype / mockup of the study flow | ✅ Done (`docs/design/flipwise-mockup.html`) |
 | **Introduction to Robotics** deck (AAU Klagenfurt): 341 cards, 212 of them exam-style | ✅ Done (`decks/intro-to-robotics.flipwise.json`) |
 | Build guide: 24 step-by-step prompts in 6 phases | ✅ Done |
-| App code | 🚧 Next up |
+| Anki feature spec (scheduling, note model, study flow, `.apkg` import, sync basics) | ✅ Done (`docs/anki-feature-spec.md`, branch `docs/anki-feature-spec`) |
+| Verification skill (drives the app like a user) | ✅ Done (branch `chore/verification-skill-neon`) |
+| Design rehaul: rating colors, lesson mastery colors, live session stats, animated rating buttons | 🚧 In progress (branch `design/rehaul-merged`, demo data) |
+| Calendar page with daily study stats | 🚧 In progress (branch `design/calendar-neon`) |
 
 The mockup loads `docs/design/deck.json` (a copy of the deck). To try it locally, serve the folder, e.g. `npx serve docs/design`, and open `flipwise-mockup.html`.
 
@@ -32,8 +35,8 @@ The mockup loads `docs/design/deck.json` (a copy of the deck). To try it locally
 
 | Area | Choice |
 | --- | --- |
-| Desktop shell | [Tauri 2](https://tauri.app/) |
-| UI | React 18 + TypeScript |
+| App type | PWA (no native shell) |
+| UI | React 19 + TypeScript |
 | Build tool | Vite |
 | Styling | Tailwind CSS |
 | State | Zustand |
