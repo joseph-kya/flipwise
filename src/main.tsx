@@ -42,7 +42,7 @@ function App() {
   };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (!studying || !card || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target instanceof HTMLElement && e.target.closest('button,a,input,textarea,select,[contenteditable]'))) return;
+      if (!studying || !card || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target instanceof HTMLElement && e.target.closest('input,textarea,select,[contenteditable]'))) return;
       if (e.code === 'Space') { e.preventDefault(); if (!revealed) location.hash = `${studyUrl}/answer`; }
       const rating = (['again','hard','good','easy'] as Rating[])[Number(e.key)-1];
       if (rating && revealed) { e.preventDefault(); rate(rating); }
@@ -50,7 +50,7 @@ function App() {
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
   });
   const stats = sessionStats(session, cards.length);
-  const statsPanel = <aside className="stats" aria-label="Session stats"><strong>Session</strong><span>{stats.done} done · {stats.remaining} remaining</span><span>{stats.right} right · {stats.again} again · {stats.hard} hard</span><span>{stats.accuracy}% accuracy · {Math.floor((now-started)/60000)}:{String(Math.floor((now-started)/1000)%60).padStart(2,'0')}</span><div className="streak" aria-label="Recent ratings">{session.slice(-10).map(e=><span key={e.id} className={`pip ${e.rating}`} title={e.rating}>{e.rating[0].toUpperCase()}</span>)}</div></aside>;
+  const statsPanel = <aside className="stats" aria-label="Session stats"><strong>Session</strong><span>{stats.done} done · {stats.remaining} remaining</span><span>{stats.right} right · {stats.again} again · {stats.hard} hard</span><span>{stats.accuracy}% accuracy · {Math.floor(Math.max(0,now-started)/60000)}:{String(Math.floor(Math.max(0,now-started)/1000)%60).padStart(2,'0')}</span><div className="streak" aria-label="Recent ratings">{session.slice(-10).map(e=><span key={e.id} className={`pip ${e.rating}`} title={e.rating}>{e.rating[0].toUpperCase()}</span>)}</div></aside>;
   const subjectRows = (_compact = false) => subjects.map((s: Subject, i) => (
     <details key={s.id}><summary className="subject-row"><span className="subject-icon">{['∑', '⌘', 'φ', '{}'][i]}</span><span className="subject-copy"><small className="muted">{['Limits, change and continuity','Motion, sensing and control','The laws of the physical world','Thinking in algorithms'][i]}</small><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lessons</span></span><span>⌄</span></summary><div className="lectures">{s.lectures.map((l,i)=><a className="lecture" key={l.id} href={`#/study/${s.id}/${l.id}`}><span aria-hidden="true">{['∿','◇','◎','⌁'][i%4]}</span><span className="lecture-name">{l.title}</span><span className={`mastery ${mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label.toLowerCase().replace(" ","-")}`}>{mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label === "Not started" ? "✕ " : "● "}{mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label}</span><span className="card-count">{l.cards.length}</span></a>)}</div></details>
   ));
