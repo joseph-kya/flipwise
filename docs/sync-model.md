@@ -236,6 +236,9 @@ Scheduling:
 - **First pull on each further device:** about 3,420 reads.
 - **Worst case** (100k reviews over 3 years): about 4,100 writes or reads.
 
+After any push, the next pull re-reads the docs we just wrote, about +1 read per write (see the
+review costs below).
+
 **Re-importing an updated deck** costs one write per *changed* card only, because of hash
 detection.
 
@@ -272,6 +275,46 @@ detection.
   `firebaseapp.com`, Safari's storage partitioning can break redirect sign-in. If that happens,
   sign in once in Safari itself, or serve the auth handler from the app's own domain.
 
-## Adversarial review notes
+## Adversarial review (after implementation)
 
-See "Adversarial review" at the end, filled in after implementation.
+Every scenario below is a test in `src/sync/sync.test.ts` or `src/sync/merge.test.ts`, unless
+marked otherwise. The key rules were mutation-tested: disabling each one makes at least one test
+fail. The rules covered are the tombstone check, repair push, hybrid clock, demo card filter,
+first-sync upload, conditional `markPushed`, skew window and the storage binding check.
+
+| Attack | Result |
+| --- | --- |
+| Two devices edit the same card offline | The later edit wins on both. A device whose clock is far *behind* still wins when it edits after seeing the other version (hybrid clock). |
+| Both devices review offline, plus the same `.apkg` history imported on both | Exact union, no duplicates (deterministic Anki ids), identical `isNew`, identical FSRS replay on both. |
+| Delete vs edit, both orders | The newer change wins on both devices. A later edit resurrects a deleted card. |
+| Undo after the review synced, then a stale client re-uploads it | It stays undone everywhere, because `d[id]` is grow-only. |
+| First sign-in, local legacy data plus existing cloud data | Union of cards and reviews. A newer cloud version beats legacy local. Untouched default settings don't override the cloud. |
+| Account B signs in on A's device, with A changes pending | B sees an empty device. B's cloud contains nothing of A's. B can't read A's tree. A gets its data and pending changes back on return, uploaded only to A. |
+| **B signs in while A's sync is mid-flight** | **Found a leak during review:** A's retry would merge A's cloud docs into B's fresh partition, and later push them to B. Fixed: `commit` and `markPushed` verify `binding == uid` inside the transaction, remote settings are saved inside that checked transaction, and a stopped engine's status and callbacks are ignored. |
+| Sign-out with a pending queue (offline), keep studying, sign in again | Everything is uploaded on return (`prep = 'same'`). |
+| Crash or network loss between batches | Unconfirmed items stay dirty. The next run completes, and a fresh device gets exactly 700 cards and 1 review. |
+| Edit lands while its batch is in flight | `markPushed` only clears an unchanged version, so the edit uploads on the next run. |
+| Rating during a sync | The rev check refuses the stale commit, the merge is redone, and the rating survives and uploads. |
+| A stale client blindly overwrites a newer cloud record | The newer device repairs it on its next sync. A fresh device gets the newest version. |
+| A doc that becomes visible with a server time just below our cursor | Picked up by the 2-minute overlap window. |
+| Re-sync twice | Zero writes. Cloud docs and local data are byte-identical. |
+| Demo data | Demo history, reviews of demo cards and demo decks never reach the cloud. |
+| 1,200-card first upload | Batches of 500, 500 and 203. |
+| Missing config | Account section renders nothing and Firebase is never imported (jsdom test). |
+| Duplicate auth callbacks | A `preparing` guard stops a second engine or poller from starting for the same uid. (Code review; not unit-tested.) |
+
+Emulator proof (`npm run test:emulator`): two real Firebase clients signed in as one emulator user
+exchange offline reviews and edits through Firestore, including a review id containing `.`
+and `:` as a map key. A second sync writes nothing. Another user, and a signed-out client, get
+`permission-denied` from `firestore.rules` for reads, queries and writes.
+
+### Costs found in review
+
+- After pushing, the next pull re-reads our own just-written docs, because the cursor is set by
+  the pull, not the push. That's about +1 read per write: roughly 100 per day normally, and
+  +3,400 once after a first upload of 3,000 cards. Both stay far inside quota.
+- Cards are ordered by `pos`. Inserting a card in the *middle* of an existing lecture re-stamps the
+  cards after it (one write each, once). New Anki notes normally append at the end, so this is
+  rare.
+- Firestore **Lite** (REST, no local cache) is used. Our IndexedDB outbox already covers offline,
+  and Lite cut the lazy Firebase chunk from 713 kB to 312 kB.

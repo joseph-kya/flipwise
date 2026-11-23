@@ -121,7 +121,7 @@ describe('sync cycles (IndexedDB + in-memory cloud)', () => {
     await phone.storage.importDecks(deck([card(2, 'old local v1'), card(3)]), []);
     const legacy = (await phone.state()).meta;
     for (const k of Object.keys(legacy.records)) legacy.records[k] = { ...legacy.records[k], u: 1, dirty: undefined } as never;
-    await phone.local.commit(legacy.rev, { ...(await phone.state()), meta: legacy }, { data: false, events: false, settings: false });
+    await phone.local.commit((await phone.local.load()).binding as string, legacy.rev, { ...(await phone.state()), meta: legacy }, { data: false, events: false, settings: false });
     await phone.storage.append(review('phone-r', 3, '2026-11-11T09:00:00.000Z'));
 
     const p = await phone.signIn(A, cloud.as(A));
@@ -164,6 +164,67 @@ describe('sync cycles (IndexedDB + in-memory cloud)', () => {
     expect(ids((await dev.state()).events)).toEqual(['alice-1', 'alice-pending']);
     expect(JSON.stringify(cloud.list(A, 'reviews'))).toContain('alice-pending');
     expect(JSON.stringify(cloud.list(A, 'reviews'))).not.toContain('bob-1');
+  });
+
+  it('an account switch during an in-flight sync cannot leak data across accounts', async () => {
+    const cloud = new MemoryCloud();
+    const seed = await makeDevice('alice-elsewhere');
+    await seed.storage.importDecks(deck([card(1)]), [review('alice-cloud', 1, '2026-11-01T08:00:00.000Z')]);
+    await (await seed.signIn(A, cloud.as(A))).engine.sync();
+
+    const dev = await makeDevice('switcher');
+    const alice = await dev.signIn(A, cloud.as(A));
+    // While Alice's cycle is between pull and local commit, Bob signs in on this device.
+    const realCommit = dev.local.commit.bind(dev.local);
+    let switched = false;
+    dev.local.commit = async (...args) => {
+      if (!switched) { switched = true; await dev.local.prepareAccount(B); }
+      return realCommit(...args);
+    };
+    await expect(alice.engine.sync()).rejects.toThrow();
+    dev.local.commit = realCommit;
+    expect((await dev.state()).events).toEqual([]);
+    expect((await dev.state()).data).toBeNull();
+    const bob = await dev.signIn(B, cloud.as(B));
+    await bob.engine.sync();
+    expect(JSON.stringify(cloud.list(B, 'reviews')) + JSON.stringify(cloud.list(B, 'records'))).not.toContain('alice');
+    expect(JSON.stringify(cloud.list(B, 'records'))).not.toContain('anki:g1:0');
+  });
+
+  it('sign-out with a pending queue keeps it, and the same account uploads it on return', async () => {
+    const cloud = new MemoryCloud();
+    const dev = await makeDevice('signout');
+    const first = await dev.signIn(A, cloud.as(A));
+    await first.engine.sync();
+    cloud.online = false;
+    await dev.storage.append(review('offline-before-signout', 1, '2026-11-20T09:00:00.000Z'));
+    await expect(first.engine.sync()).rejects.toThrow();
+    // Signed out (engine dropped); studying continues locally.
+    await dev.storage.append(review('while-signed-out', 1, '2026-11-21T09:00:00.000Z'));
+    expect(await dev.local.pending()).toBe(2);
+    cloud.online = true;
+    const again = await dev.signIn(A, cloud.as(A));
+    expect(again.prep).toBe('same');
+    await again.engine.sync();
+    expect(await dev.local.pending()).toBe(0);
+    const uploaded = JSON.stringify(cloud.list(A, 'reviews'));
+    expect(uploaded).toContain('offline-before-signout');
+    expect(uploaded).toContain('while-signed-out');
+  });
+
+  it('pulls a doc that becomes visible with a server time just below the cursor (safety window)', async () => {
+    const cloud = new MemoryCloud();
+    const mac = await makeDevice('mac'), phone = await makeDevice('phone');
+    const m = await mac.signIn(A, cloud.as(A)), p = await phone.signIn(A, cloud.as(A));
+    await mac.storage.append(review('r1', 1, '2026-11-20T09:00:00.000Z'));
+    await m.engine.sync();
+    await p.engine.sync();
+    const cursor = (await phone.local.getUidMeta(A))!.cursorReviews;
+    // A commit that lands "late" with an earlier server timestamp than what the phone already saw.
+    await cloud.as(A).commit(A, [{ collection: 'reviews', id: '2026-11-19', merge: true, data: { e: { late: '{"c":"anki:g2:0","s":"anki-course","l":"L1","r":"good","t":"2026-11-19T09:00:00.000Z","ms":1}' } } }]);
+    cloud.docs.get(`${A}/reviews/2026-11-19`)!.srv = cursor - 1_000;
+    await p.engine.sync();
+    expect(ids((await phone.state()).events)).toEqual(['late', 'r1']);
   });
 
   it('never uploads demo decks or demo history', async () => {

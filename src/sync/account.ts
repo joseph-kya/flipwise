@@ -46,6 +46,7 @@ export class AccountController {
   private loading: Promise<FirebaseClient> | null = null;
   private engine: SyncEngine | null = null;
   private uid: string | null = null;
+  private preparing: string | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private firstPendingAt = 0;
   private poll: ReturnType<typeof setInterval> | null = null;
@@ -112,23 +113,31 @@ export class AccountController {
       this.set({ phase: 'signedOut', user: null, status: { kind: 'idle' }, pending: 0, confirmSignOut: null });
       return;
     }
-    if (this.uid === user.uid) { this.set({ user }); return; }
+    if (this.uid === user.uid || this.preparing === user.uid) { this.set({ user }); return; }
     hint.set(true);
     this.stopEngine();
+    this.preparing = user.uid;
     const local = this.storage.sync!;
-    const prep = await local.prepareAccount(user.uid);
+    let prep: Awaited<ReturnType<typeof local.prepareAccount>>;
+    try {
+      prep = await local.prepareAccount(user.uid);
+    } finally {
+      this.preparing = null;
+    }
     if (prep === 'switched') this.callbacks.onReplaced();
     this.uid = user.uid;
     const meta = await local.getUidMeta(user.uid);
-    this.engine = new SyncEngine({
+    const engine: SyncEngine = new SyncEngine({
       local,
       cloud: this.client!.cloud,
       uid: user.uid,
       isSyncable: isSyncableReview,
       isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
-      onApplied: (state) => this.callbacks.onApplied(state),
-      onStatus: (status) => this.set({ status }),
+      onApplied: (state) => { if (this.engine === engine) this.callbacks.onApplied(state); },
+      // A stopped engine (signed out / switched) may still finish a cycle: ignore it.
+      onStatus: (status) => { if (this.engine === engine) this.set({ status }); },
     });
+    this.engine = engine;
     this.set({
       phase: 'signedIn', user, error: '', confirmSignOut: null,
       status: meta?.lastSyncedAt ? { kind: 'synced', at: meta.lastSyncedAt } : { kind: 'idle' },
@@ -183,7 +192,10 @@ export class AccountController {
       const client = await this.load();
       hint.set(true); // survives a redirect so Firebase loads on return
       await client.signIn();
-      if (!this.uid) this.set({ phase: this.snap.user ? 'signedIn' : 'signedOut' });
+      if (!this.uid && !this.preparing) {
+        hint.set(false); // popup closed: don't preload Firebase next visit
+        this.set({ phase: 'signedOut' });
+      }
     } catch (e) {
       if (!this.uid) hint.set(false);
       this.set({ phase: this.uid ? 'signedIn' : 'signedOut', error: e instanceof Error ? e.message : String(e) });

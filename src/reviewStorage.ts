@@ -114,6 +114,8 @@ export async function openReviewStorage(options: StorageOptions = {}): Promise<{
     const getEvents = async (t: IDBTransaction) => ((await req(t.objectStore("reviewLog").get("events"))) ?? []) as ReviewEvent[];
     const getDecks = async (t: IDBTransaction) => ((await req(t.objectStore("decks").get("imported"))) ?? null) as ImportedData | null;
     const getMeta = async (t: IDBTransaction) => (await req(t.objectStore("sync").get("meta"))) as SyncMeta;
+    const getBinding = async (t: IDBTransaction) =>
+      ((await req(t.objectStore("sync").get("binding"))) as { uid: string | null } | undefined)?.uid ?? null;
     const putAll = (t: IDBTransaction, v: { events?: ReviewEvent[]; decks?: ImportedData | null; meta?: SyncMeta }) => {
       if (v.events) t.objectStore("reviewLog").put(v.events, "events");
       if (v.decks !== undefined) {
@@ -144,27 +146,31 @@ export async function openReviewStorage(options: StorageOptions = {}): Promise<{
           data: await getDecks(t),
           meta: await getMeta(t),
           settings,
-          binding: ((await req(t.objectStore("sync").get("binding"))) as { uid: string | null } | undefined)?.uid ?? null,
+          binding: await getBinding(t),
         }));
       },
-      async commit(expectedRev, next, changed) {
-        if (changed.settings && next.settings) settingsIO.save(next.settings);
-        const ok = await run(db, ALL, "readwrite", async (t) => {
+      async commit(uid, expectedRev, next, changed) {
+        return run(db, ALL, "readwrite", async (t) => {
+          if ((await getBinding(t)) !== uid) return "foreign" as const;
           const meta = await getMeta(t);
-          if (meta.rev !== expectedRev) return false;
+          if (meta.rev !== expectedRev) return "conflict" as const;
+          // Saved inside the checked transaction: if the tx then fails, the next reconcile only
+          // re-stamps identical content, and a foreign account never receives these settings.
+          if (changed.settings && next.settings) settingsIO.save(next.settings);
           putAll(t, {
             events: changed.events ? next.events : undefined,
             decks: changed.data ? next.data : undefined,
             meta: { ...next.meta, rev: meta.rev + 1 },
           });
-          return true;
+          return "ok" as const;
         });
-        return ok;
       },
-      async markPushed(items, stale, staleRecords) {
-        await run(db, ["sync"], "readwrite", async (t) => {
+      async markPushed(uid, items, stale, staleRecords) {
+        return run(db, ["sync"], "readwrite", async (t) => {
+          if ((await getBinding(t)) !== uid) return false;
           const meta = await getMeta(t);
           t.objectStore("sync").put({ ...markPushed(meta, items, stale, staleRecords), rev: meta.rev + 1 }, "meta");
+          return true;
         });
       },
       async getUidMeta(uid) {

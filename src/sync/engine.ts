@@ -28,9 +28,13 @@ export type AccountPreparation = 'same' | 'first' | 'switched';
 
 export interface SyncLocalStore {
   load(): Promise<SyncSnapshot>;
-  /** Atomically replace data + meta if nobody mutated since `expectedRev`. */
-  commit(expectedRev: number, next: SyncState, changed: { data: boolean; events: boolean; settings: boolean }): Promise<boolean>;
-  markPushed(items: readonly PushItem[], stale: readonly string[], staleRecords: readonly RecordKey[]): Promise<void>;
+  /**
+   * Atomically replace data + meta if nobody mutated since `expectedRev` and the device is
+   * still bound to `uid` ('foreign' = another account took over: abort, never retry).
+   */
+  commit(uid: string, expectedRev: number, next: SyncState, changed: { data: boolean; events: boolean; settings: boolean }): Promise<'ok' | 'conflict' | 'foreign'>;
+  /** Clear confirmed items; refused (false) if the device is no longer bound to `uid`. */
+  markPushed(uid: string, items: readonly PushItem[], stale: readonly string[], staleRecords: readonly RecordKey[]): Promise<boolean>;
   getUidMeta(uid: string): Promise<UidMeta | null>;
   setUidMeta(uid: string, meta: UidMeta): Promise<void>;
   noteSettings(settings: AppearanceSettings): Promise<void>;
@@ -63,6 +67,13 @@ export interface SyncReport {
 }
 
 export const SKEW_WINDOW_MS = 2 * 60_000;
+
+export class AccountChangedError extends Error {
+  constructor() {
+    super('Signed-in account changed during sync');
+    this.name = 'AccountChangedError';
+  }
+}
 
 export class OfflineError extends Error {
   constructor(message = 'Offline') {
@@ -134,6 +145,7 @@ export class SyncEngine {
       const uidMeta: UidMeta = (await local.getUidMeta(uid)) ?? { initialized: false, cursorRecords: 0, cursorReviews: 0 };
       const full = !uidMeta.initialized;
       const first = await local.load();
+      if (first.binding !== uid) throw new AccountChangedError();
       if (first.settings) await local.noteSettings(first.settings);
 
       const since = (cursor: number) => (full ? 0 : Math.max(0, cursor - SKEW_WINDOW_MS));
@@ -143,8 +155,11 @@ export class SyncEngine {
       let changed = { data: false, events: false, settings: false };
       for (let attempt = 0; ; attempt++) {
         const snap = await local.load();
+        if (snap.binding !== uid) throw new AccountChangedError();
         const merged = mergePulled(snap, { records, reviews }, { full, isSyncable });
-        if (await local.commit(snap.meta.rev, merged.state, merged.changed)) {
+        const result = await local.commit(uid, snap.meta.rev, merged.state, merged.changed);
+        if (result === 'foreign') throw new AccountChangedError();
+        if (result === 'ok') {
           changed = merged.changed;
           if (changed.data || changed.events || changed.settings) this.o.onApplied?.(merged.state, changed);
           break;
@@ -160,15 +175,17 @@ export class SyncEngine {
       };
       await local.setUidMeta(uid, cursors);
 
-      const plan = planPush(await local.load(), isSyncable);
+      const pushFrom = await local.load();
+      if (pushFrom.binding !== uid) throw new AccountChangedError();
+      const plan = planPush(pushFrom, isSyncable);
       const batches = chunk(plan.items);
       let pushedWrites = 0;
       for (const batch of batches) {
         await withTimeout(cloud.commit(uid, batch.map((i) => i.write)), timeout);
-        await local.markPushed(batch, [], []);
+        if (!(await local.markPushed(uid, batch, [], []))) throw new AccountChangedError();
         pushedWrites += batch.length;
       }
-      if (plan.stale.length || plan.staleRecords.length) await local.markPushed([], plan.stale, plan.staleRecords);
+      if (plan.stale.length || plan.staleRecords.length) await local.markPushed(uid, [], plan.stale, plan.staleRecords);
 
       await local.setUidMeta(uid, { ...cursors, initialized: true, lastSyncedAt: now() });
       if (plan.oversize.length)
