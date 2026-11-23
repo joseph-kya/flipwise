@@ -4,7 +4,7 @@ import type { AccountController, AccountSnapshot } from '../sync/account';
 import { plural } from '../plural';
 import { Button, ChevronLeft, ChevronRight, Group, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
 import { accountOutcome, canContinueOffline, hasRealDecks, STEPS, type OnboardingStep } from './flow';
-import { HOW_PANELS, HowItWorksPanel } from './HowItWorks';
+import { EXPLAINER_PANELS as HOW_PANELS, Explainer } from './Explainer';
 import { loadStarterPack, type StarterPack } from './starterPack';
 
 type StartView = 'choose' | 'starter' | 'own' | 'anki' | 'ai';
@@ -67,7 +67,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
   }, [step, outcome]);
 
   // Move focus to the new step for keyboard and screen-reader users.
-  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [step, view, panel]);
+  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [step, view]);
 
   const back = () => {
     if (step === 'start' && view !== 'choose') return toView(view === 'anki' || view === 'ai' ? 'own' : 'choose', 'back');
@@ -76,7 +76,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
     if (index > 0) go(STEPS[index - 1], 'back');
   };
 
-  const key = `${step}/${view}/${panel}`;
+  const key = step === 'learn' ? 'learn' : `${step}/${view}`;
   let body: ReactNode, actions: ReactNode = null;
 
   if (step === 'welcome') {
@@ -188,7 +188,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
       actions = <Button variant="secondary" size="full" onClick={() => toView('anki')}>I have my .apkg</Button>;
     }
   } else if (step === 'learn') {
-    body = <HowItWorksPanel panel={panel} />;
+    body = <Explainer index={panel} onIndex={(i) => { setDir(i > panel ? 'forward' : 'back'); setPanel(i); }} />;
     actions = (
       <Button variant="primary" size="full" onClick={() => { if (panel < HOW_PANELS - 1) { setDir('forward'); setPanel(panel + 1); } else go('done'); }}>
         {panel < HOW_PANELS - 1 ? 'Next' : 'Got it'}

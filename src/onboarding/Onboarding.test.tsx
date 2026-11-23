@@ -74,14 +74,16 @@ describe('onboarding screens', () => {
     o.click(/Continue offline/);
     o.render({ imported: deck([card(1)]) });
     o.click(/Continue/);
-    expect(o.el.textContent).toContain('just before you’d forget');
+    const active = () => o.el.querySelector('.xp-panel.is-active')?.textContent ?? '';
+    expect(active()).toContain('just before you’d forget');
     o.click(/Next/);
-    expect(o.el.textContent).toContain('Rate honestly');
+    expect(active()).toContain('Rate honestly');
+    expect(active()).toContain('you’ll see it again in 7 weeks'); // real ts-fsrs number for Good
     act(() => (o.el.querySelector('button[aria-label="Back"]') as HTMLButtonElement).click());
-    expect(o.el.textContent).toContain('just before you’d forget');
+    expect(active()).toContain('just before you’d forget');
     o.click(/Next/);
     o.click(/Next/);
-    expect(o.el.textContent).toContain('A little, every day');
+    expect(active()).toContain('A little, every day');
     o.click(/Got it/);
     expect(o.el.textContent).toContain('You’re all set');
   });

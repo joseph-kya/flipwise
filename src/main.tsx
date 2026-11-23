@@ -11,7 +11,7 @@ import { openReviewStorage, type LogStorage } from './reviewStorage';
 import { AccountController } from './sync/account';
 import { hasRealDecks, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './onboarding/flow';
 import { Onboarding, useOnline } from './onboarding/Onboarding';
-import { HOW_PANELS, HowItWorksPanel } from './onboarding/HowItWorks';
+import { HowItWorksPage } from './onboarding/HowItWorksPage';
 import { starterImport } from './onboarding/starterPack';
 import { mergeImport } from './anki/types';
 import { CatchupPage } from './CatchupPage';
@@ -1517,7 +1517,7 @@ function App() {
         ) : parts[0] === 'how-it-works' ? (
           <div className="section-stack">
             <PageHeader backHref="#/settings" backLabel="Settings" title="How Flipwise works" />
-            {Array.from({ length: HOW_PANELS }, (_, i) => <HowItWorksPanel key={i} panel={i} />)}
+            <HowItWorksPage />
           </div>
         ) : parts[0] === 'ai-guide' ? (
           <AiGuidePage />
