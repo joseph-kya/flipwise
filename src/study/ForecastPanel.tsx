@@ -101,7 +101,7 @@ export function ForecastPanel({
         </div>
         <div className="forecast-stat">
           <span className="forecast-stat-value tabular">{week8Reviews}</span>
-          <span className="forecast-stat-label">reviews / day in week 8</span>
+          <span className="forecast-stat-label">week 8 reviews / day</span>
         </div>
       </div>
       <figure

@@ -254,7 +254,6 @@ export function StudyOptionsSheet({
               <div className="pace-block">
                 <div className="pace-block-head">
                   <span className="row-title">Pace</span>
-                  <span className="source-badge">{PRESET_LABEL[courseResolved.preset]}</span>
                 </div>
                 <div className="pace-pills" role="radiogroup" aria-label="Course pace preset">
                   {PRESETS.map((id) => {
@@ -281,13 +280,13 @@ export function StudyOptionsSheet({
             <Group ariaLabel="Exam date">
               <div className="pace-block">
                 <div className="pace-block-head">
-                  <div>
+                  <div className="pace-head-text">
                     <span className="row-title">Target exam date</span>
-                    <div className="row-sub">
-                      {parsedExamDate && examSol
-                        ? `${formatFullDate(parsedExamDate)} · ${examSol.days > 0 ? `${plural(examSol.days, 'day')} left · ${examSol.buffer}-day review buffer` : 'Date has passed'}`
-                        : 'Optional — calculates new/day to finish before your exam'}
-                    </div>
+                    {parsedExamDate && examSol && (
+                      <div className="row-sub">
+                        {formatFullDate(parsedExamDate)} · {examSol.days > 0 ? `${plural(examSol.days, 'day')} left · ${examSol.buffer}-day buffer` : 'Date has passed'}
+                      </div>
+                    )}
                   </div>
                   <div className="pace-inline-actions">
                     {parsedExamDate && (
@@ -363,20 +362,18 @@ export function StudyOptionsSheet({
           <Group ariaLabel="Daily limits">
             <div className="pace-block">
               <div className="pace-block-head">
-                <div>
-                  <span className="row-title">New cards / day</span>
-                  <div className="pace-meta-row">
-                    <span className={`source-badge${newOverridden ? ' is-override' : ''}`}>
-                      {newOverridden ? sourceLabel(newSource) : `Inherited · ${sourceLabel(newSource)}`}
-                    </span>
-                    {newOverridden && (
-                      <button type="button" className="pace-link" onClick={handleResetNew}>
-                        Reset to inherited
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <span className="row-title">New cards / day</span>
                 <span className="pace-value tabular">{effectiveNew} / day</span>
+              </div>
+              <div className="pace-meta-row">
+                <span className={`source-badge${newOverridden ? ' is-override' : ''}`}>
+                  {newOverridden ? sourceLabel(newSource) : `Inherited · ${sourceLabel(newSource)}`}
+                </span>
+                {newOverridden && (
+                  <button type="button" className="pace-link" onClick={handleResetNew}>
+                    Reset to inherited
+                  </button>
+                )}
               </div>
               <Slider
                 ariaLabel="New cards per day"
@@ -403,22 +400,20 @@ export function StudyOptionsSheet({
 
             <div className="pace-block">
               <div className="pace-block-head">
-                <div>
-                  <span className="row-title">Max reviews / day</span>
-                  <div className="pace-meta-row">
-                    <span className={`source-badge${revOverridden ? ' is-override' : ''}`}>
-                      {revOverridden ? sourceLabel(revSource) : `Inherited · ${sourceLabel(revSource)}`}
-                    </span>
-                    {revOverridden && (
-                      <button type="button" className="pace-link" onClick={handleResetReviews}>
-                        Reset to inherited
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <span className="row-title">Max reviews / day</span>
                 <span className="pace-value tabular">
                   {effectiveReviews === null ? 'No limit' : `${effectiveReviews} / day`}
                 </span>
+              </div>
+              <div className="pace-meta-row">
+                <span className={`source-badge${revOverridden ? ' is-override' : ''}`}>
+                  {revOverridden ? sourceLabel(revSource) : `Inherited · ${sourceLabel(revSource)}`}
+                </span>
+                {revOverridden && (
+                  <button type="button" className="pace-link" onClick={handleResetReviews}>
+                    Reset to inherited
+                  </button>
+                )}
               </div>
 
               {effectiveReviews === null ? (

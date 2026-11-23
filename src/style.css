@@ -2084,7 +2084,10 @@ a.insight-card:active { transform: scale(0.99); }
 .ui-sheet-head { display: flex; align-items: center; gap: var(--spacing-3); }
 .ui-sheet-head-text { min-width: 0; }
 .ui-sheet-sub { margin: 2px 0 0; font-size: var(--text-sm); color: var(--label-secondary); }
-.ui-sheet { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
+.ui-sheet { max-height: 92dvh; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+@media (min-width: 768px) {
+  .ui-sheet { border: 1px solid var(--separator); box-shadow: 0 24px 64px rgba(0, 0, 0, 0.36); }
+}
 @media (min-width: 900px) { .ui-sheet-wide { max-width: 940px; } }
 
 /* ---------- Study pace, options sheet & live forecast ---------- */
@@ -2126,12 +2129,13 @@ a.insight-card:active { transform: scale(0.99); }
 }
 
 .pace-controls { display: flex; flex-direction: column; gap: var(--spacing-3); min-width: 0; }
-.pace-block { padding: var(--spacing-4); display: flex; flex-direction: column; gap: var(--spacing-2); }
+.pace-block { padding: 12px var(--spacing-4); display: flex; flex-direction: column; gap: 6px; }
 .pace-block-head {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--spacing-3);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-3);
 }
+.pace-head-text { min-width: 0; }
 .pace-meta-row {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2); margin-top: 4px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2);
 }
 .pace-value {
   font-size: var(--text-base); font-weight: 600; color: var(--label); white-space: nowrap; flex-shrink: 0;
@@ -2146,6 +2150,8 @@ a.insight-card:active { transform: scale(0.99); }
   margin: 0; padding: 0 var(--spacing-1); font-size: var(--text-xs); color: var(--label-secondary); line-height: 1.45;
 }
 .pace-reset-all { display: flex; justify-content: flex-start; }
+.pace-reset-all .btn-plain { color: var(--label-secondary); padding-left: 2px; }
+.pace-reset-all .btn-plain:hover { color: var(--label); }
 
 /* Source & preset badges */
 .source-badge {
@@ -2166,22 +2172,26 @@ a.insight-card:active { transform: scale(0.99); }
 .pace-link-accent { color: var(--subject, var(--accent)); }
 .pace-link-accent:hover { color: var(--subject, var(--accent)); }
 
-/* Pace preset pills (wrap cleanly on 390px phones without truncating) */
+/* Pace preset pills (one clean row on desktop, tidy wrap on 390px phones) */
 .pace-pills { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 2px; }
 .pace-pill {
-  min-height: 36px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--separator);
-  background: var(--surface-subtle); color: var(--label); font-size: var(--text-sm); font-weight: 500;
-  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 34px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--separator);
+  background: var(--surface-subtle); color: var(--label); font-size: var(--text-xs); font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
   transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-press) var(--ease-out);
 }
-.pace-pill:hover:not(.pace-pill-status) { background: var(--fill); }
+.pace-pill:hover:not(.pace-pill-status):not(.is-active) { background: var(--fill); }
 .pace-pill:active:not(.pace-pill-status) { transform: scale(0.96); }
 .pace-pill.is-active {
   background: var(--subject, var(--accent)); border-color: var(--subject, var(--accent));
   color: var(--accent-ink); font-weight: 600;
 }
+.pace-pill.is-active:hover:not(.pace-pill-status) {
+  background: color-mix(in srgb, var(--subject, var(--accent)) 88%, #000);
+}
 .pace-pill-status { cursor: default; opacity: 0.72; }
 .pace-pill-status.is-active { opacity: 1; }
+.pace-block .ui-slider { height: 36px; }
 
 /* Exam callout & calendar */
 .exam-callout {

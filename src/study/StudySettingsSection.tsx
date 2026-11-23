@@ -8,7 +8,6 @@ import {
   dayKey,
   parseDay,
   resolveCourse,
-  type PresetId,
 } from '../studyOptions';
 import { ChevronRight, Group, Row, SectionFooter, SectionHeader, Segmented, Slider, SubjectTile, Switch } from '../ui';
 import { ForecastPanel } from './ForecastPanel';
@@ -147,7 +146,6 @@ export function StudySettingsSection({
                     <span className="row-title">Pace preset</span>
                     <div className="row-sub">Apply to all {plural(subjects.length, 'course')}</div>
                   </div>
-                  <span className="source-badge">{PRESET_LABEL[settings.pace as PresetId]}</span>
                 </div>
                 <div className="pace-pills" role="group" aria-label="Apply pace preset to all courses">
                   {GLOBAL_PRESETS.map((id) => {
