@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { subjects, type Subject } from './demoSubjects';
+import { subjects, type Subject, type Lecture } from './demoSubjects';
 import './style.css';
 import { loadReviewLog, saveReviewLog, seedDemoReviewLog, appendReview, type ReviewEvent, type Rating } from './reviewLog';
 import { mastery } from './mastery';
@@ -52,8 +52,15 @@ function App() {
   });
   const stats = sessionStats(log.filter(e => session.some(review => review.id === e.id)), cards.length);
   const statsPanel = <aside className="stats" aria-label="Session stats"><strong>Session</strong><span>{stats.done} done · {stats.remaining} remaining</span><span>{stats.right} right · {stats.again} again · {stats.hard} hard</span><span>{stats.accuracy}% accuracy · {Math.floor(Math.max(0,now-started)/60000)}:{String(Math.floor(Math.max(0,now-started)/1000)%60).padStart(2,'0')}</span><div className="streak" aria-label="Recent ratings">{session.slice(-10).map(e=><span key={e.id} className={`pip ${e.rating}`} title={e.rating}>{e.rating[0].toUpperCase()}</span>)}</div></aside>;
+  const lessonRows = (s: Subject) => s.lectures.map((l: Lecture, i: number) => {
+    const knowledge = mastery(log, s.id, l.id, l.cards.map(c => `${s.id}/${l.id}/${c.id}`));
+    const level = knowledge.label.toLowerCase().replace(' ', '-');
+    const paths = ['M3 12 C6 3 10 3 12 12 S18 21 21 12', 'M12 3 21 12 12 21 3 12Z', 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8', 'M3 17 9 7 15 17 21 7'];
+    return <a className={`lecture lesson-${level}`} key={l.id} href={`#/study/${s.id}/${l.id}`}><span className="lesson-chip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={level === 'not-started' ? 'M6 6 18 18 M18 6 6 18' : paths[i%4]}/></svg></span><span className="lecture-name">{l.title}</span><span className="mastery">{knowledge.label}</span><span className="card-count">{l.cards.length}</span></a>;
+  });
+  const restart = () => { setIndex(0); setSession([]); setStarted(Date.now()); setCardStarted(Date.now()); location.hash = studyUrl; };
   const subjectRows = (_compact = false) => subjects.map((s: Subject, i) => (
-    <details key={s.id}><summary className="subject-row"><span className="subject-icon">{['∑', '⌘', 'φ', '{}'][i]}</span><span className="subject-copy"><small className="muted">{['Limits, change and continuity','Motion, sensing and control','The laws of the physical world','Thinking in algorithms'][i]}</small><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lessons</span></span><span>⌄</span></summary><div className="lectures">{s.lectures.map((l,i)=><a className="lecture" key={l.id} href={`#/study/${s.id}/${l.id}`}><span aria-hidden="true">{['∿','◇','◎','⌁'][i%4]}</span><span className="lecture-name">{l.title}</span><span className={`mastery ${mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label.toLowerCase().replace(" ","-")}`}>{mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label === "Not started" ? "✕ " : "● "}{mastery(log,s.id,l.id,l.cards.map(c=>`${s.id}/${l.id}/${c.id}`)).label}</span><span className="card-count">{l.cards.length}</span></a>)}</div></details>
+    <details key={s.id}><summary className="subject-row"><span className="subject-icon">{['∑', '⌘', 'φ', '{}'][i]}</span><span className="subject-copy"><small className="muted">{['Limits, change and continuity','Motion, sensing and control','The laws of the physical world','Thinking in algorithms'][i]}</small><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lessons</span></span><span className="subject-chevron">⌄</span></summary><div className="lectures">{lessonRows(s)}</div></details>
   ));
   return (
     <div className={dark ? 'app dark' : 'app'}>
@@ -91,13 +98,13 @@ function App() {
           <div className="layout">
             <aside className="today lecture-summary"><h2>Find your focus.</h2><p>Pick a lecture, or work through the subject at your own pace.</p><a className="primary" href={`#/study/${subject.id}/all`} onClick={() => setIndex(0)}>Study all lectures <span aria-hidden="true">↗</span></a></aside>
             <section><div className="section-title"><h2>Choose a lecture</h2><span>Demo cards</span></div><div className="lectures">
-              {subject.lectures.map((l, i) => <a className="lecture" key={l.id} href={`#/study/${subject.id}/${l.id}`} onClick={() => setIndex(0)}><span className="lecture-number">{['∿','◇','◎','⌁'][i%4]}</span><span className="lecture-name">{l.title}</span><span className="card-count">{l.cards.length}</span><span aria-hidden="true">›</span></a>)}
+              {lessonRows(subject)}
             </div></section>
           </div>
         </> : studying && card ? <>
           <a className="back" href={`#/subjects/${subject.id}`}>‹ {subject.name} lectures</a>
           <div className="study-heading"><div><p className="muted">{subject.name}</p><h1>{lecture?.title || 'All lectures'}</h1></div><span className="demo">Demo session</span></div>
-          {statsPanel}<section className={`study-card ${confirmed ? "leaving" : ""}`} key={index}>
+          <div className="stats-compact" aria-label="Session progress">{stats.done}/{cards.length} · {stats.right} right · {stats.again} again · {stats.hard} hard · {stats.accuracy}%</div>{statsPanel}<section className={`study-card ${confirmed ? "leaving" : ""}`} key={index}>
             <div className="section-title"><span>Question</span><span>{index % cards.length + 1} of {cards.length}</span></div>
             <div className="question"><Markdown text={card.front}/></div>
             {revealed && <div className="revealed"><p className="muted">Answer</p><Markdown text={card.back}/></div>}
@@ -106,7 +113,7 @@ function App() {
             </div>}
           </section>
           <p className="study-note">Space to reveal · 1–4 to rate. Reviews saved on this device.</p>
-        </> : studying ? <><h1>Session complete.</h1>{statsPanel}<p>You reviewed {stats.done} cards. Take a breath.</p><a className="back" href="#/subjects">Back to subjects</a></> : parts[0] === 'calendar' ? <CalendarPage events={log}/> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
+        </> : studying ? <section className="session-complete"><span className="complete-check" aria-hidden="true">✓</span><h1>Session complete.</h1><p>You reviewed {stats.done} cards. Take a breath.</p>{statsPanel}<div className="complete-actions"><a className="primary" href="#/subjects">Back to subjects</a><button className="secondary" onClick={restart}>Study again</button></div><a className="text-link" href="#/calendar">View study calendar</a></section> : parts[0] === 'calendar' ? <CalendarPage events={log}/> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
         <footer><span>Built for what you want to remember.</span><span>Demo cards · display totals reflect your subjects</span></footer>
       </main>
     </div>
