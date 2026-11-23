@@ -105,3 +105,7 @@ export const subjects: Subject[] = [
     ]),
   },
 ];
+
+// Layout proof cards remain ordinary study content.
+subjects[0].lectures[0].cards[0].back += '\n\n| Criterion | Convergent sequence | Bounded sequence | Monotone sequence | Practical test |\n| --- | --- | --- | --- | --- |\n| Definition | Approaches one finite limit | Stays in a finite interval | Moves in one direction | Check the quantifiers |\n| Guarantee | Always bounded | May oscillate forever | Converges if bounded | Bound and monotonicity together |';
+subjects[0].lectures[0].cards[1].back += '\n\n' + Array.from({length:8}, (_,i) => `**Step ${i+1}.** Given a positive tolerance ε, choose an integer N greater than 1/ε. For every n ≥ N, the distance from 1/n to zero is smaller than ε. This verifies the definition without relying on a graph or a numerical approximation.`).join('\n\n');
