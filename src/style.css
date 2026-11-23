@@ -781,7 +781,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .preview-group {
   padding: var(--spacing-4);
   display: flex; flex-direction: column; gap: var(--spacing-3);
-  overflow: visible;
 }
 .preview-card { padding: var(--spacing-4); }
 .preview-card .card-meta { margin-bottom: var(--spacing-2); }
@@ -789,12 +788,10 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .preview-ratings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--spacing-2); }
 .preview-rating { min-height: 40px; font-size: var(--text-xs); }
 
-.settings-row {
-  display: flex; flex-direction: column; gap: var(--spacing-3);
-  padding: var(--spacing-3) var(--spacing-4);
-}
-.settings-label-stack { display: flex; flex-direction: column; gap: 2px; }
-.settings-label { font-size: var(--text-sm); font-weight: 500; color: var(--label); }
+.settings-section { display: flex; flex-direction: column; }
+.settings-group-stack { display: flex; flex-direction: column; gap: var(--spacing-3); }
+.row-confirm-actions { display: inline-flex; align-items: center; gap: var(--spacing-1); }
+.section-footer-error { color: var(--sem-red); }
 
 .swatch-row { display: flex; align-items: center; gap: var(--spacing-1); flex-wrap: wrap; }
 .swatch-btn {

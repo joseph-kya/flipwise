@@ -4,7 +4,6 @@ import { ContentContext, useSubjects } from './contentCatalog';
 import { stableCardId, type ImportedData } from './anki/types';
 import { CardContent } from './anki/content';
 import { ImportPage } from './anki/ImportPage';
-import { DataSettings } from './anki/DataSettings';
 import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
 } from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
@@ -985,7 +984,7 @@ function App() {
             <a
               className="icon-btn nav-settings-btn"
               href="#/settings"
-              aria-label="Appearance settings"
+              aria-label="Settings"
               aria-current={parts[0] === 'settings' ? 'page' : undefined}
             >
               <SettingsTabIcon size={20} />
@@ -1408,33 +1407,29 @@ function App() {
               }}
             />
           ) : parts[0] === 'settings' ? (
-          <>
-              <DataSettings
-                data={
-                  imported ?? {
-                    subjects,
-                    media: {},
-                    packageName: 'Flipwise',
-                    notes: 0,
-                    revlog: [],
-                    warnings: [],
-                  }
-                }
-                showDemo={showDemo}
-                onShowDemo={(value) => {
-                  setShowDemo(value);
-                  try { localStorage.setItem('flipwise.showDemo', String(value)); } catch { /* preference stays in memory */ }
-                }}
-              />
-              <AppearancePage
+          <AppearancePage
             settings={settings}
             effectiveMotion={effectiveMotion}
             osReducedMotion={osReducedMotion}
             onChange={updateSettings}
+            data={
+              imported ?? {
+                subjects,
+                media: {},
+                packageName: 'Flipwise',
+                notes: 0,
+                revlog: [],
+                warnings: [],
+              }
+            }
+            showDemo={showDemo}
+            onShowDemo={(value) => {
+              setShowDemo(value);
+              try { localStorage.setItem('flipwise.showDemo', String(value)); } catch { /* preference stays in memory */ }
+            }}
             demoReviewCount={demoReviewCount}
             onClearDemoHistory={() => void clearDemoHistory()}
           />
-        </>
           ) : (
           <div className="section-stack">
             <h1 className="page-title">Page not found</h1>

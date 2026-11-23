@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import { guideUrl } from 'virtual:deck-maker-assets';
+import { DataSettings } from './anki/DataSettings';
+import type { ImportedData } from './anki/types';
+import { useSubjects } from './contentCatalog';
+import { STUDY_CONFIG } from './scheduler';
 import {
   ACCENTS,
   type AppearanceSettings,
@@ -9,7 +14,16 @@ import {
   type TextSize,
   type ThemeMode,
 } from './settings';
-import { CheckIcon, SegmentedControl } from './ui';
+import {
+  Group,
+  NavRow,
+  PageHeader,
+  Row,
+  SectionFooter,
+  SectionHeader,
+  Segmented,
+  SwatchPicker,
+} from './ui';
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemeMode; label: string }> = [
   { value: 'auto', label: 'Auto' },
@@ -24,17 +38,25 @@ const CARD_STYLE_OPTIONS: ReadonlyArray<{ value: CardStyle; label: string }> = [
   { value: 'paper', label: 'Paper' },
 ];
 
-const FONT_OPTIONS: ReadonlyArray<{ value: FontFamily; label: string; style: { fontFamily: string } }> = [
+const FONT_OPTIONS: ReadonlyArray<{
+  value: FontFamily;
+  label: string;
+  style: { fontFamily: string };
+}> = [
   {
     value: 'system',
     label: 'System',
-    style: { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif' },
+    style: {
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
+    },
   },
   {
     value: 'rounded',
     label: 'Rounded',
     style: {
-      fontFamily: 'ui-rounded, "SF Pro Rounded", "Nunito", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+      fontFamily:
+        'ui-rounded, "SF Pro Rounded", "Nunito", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
     },
   },
   {
@@ -56,11 +78,20 @@ const MOTION_OPTIONS: ReadonlyArray<{ value: MotionSetting; label: string }> = [
   { value: 'off', label: 'Off' },
 ];
 
+const RETENTION_OPTIONS = [
+  { value: '0.85', label: '85%' },
+  { value: '0.9', label: '90%' },
+  { value: '0.95', label: '95%' },
+] as const;
+
 export function AppearancePage({
   settings,
   effectiveMotion,
   osReducedMotion,
   onChange,
+  data,
+  showDemo = true,
+  onShowDemo,
   demoReviewCount = 0,
   onClearDemoHistory,
 }: {
@@ -68,200 +99,234 @@ export function AppearancePage({
   effectiveMotion: EffectiveMotion;
   osReducedMotion: boolean;
   onChange: (patch: Partial<AppearanceSettings>) => void;
+  data?: ImportedData;
+  showDemo?: boolean;
+  onShowDemo?: (show: boolean) => void;
   demoReviewCount?: number;
   onClearDemoHistory?: () => void;
 }) {
   const [previewFlipped, setPreviewFlipped] = useState(false);
+  const subjects = useSubjects();
+
+  const roboticsName =
+    subjects.find((s) => /robot/i.test(s.name))?.name ?? 'Robotics';
+
+  const courseCaps: ReadonlyArray<{ name: string; cap: number }> = [
+    { name: 'Physics 1', cap: STUDY_CONFIG.courseNew['physics-1'] },
+    { name: roboticsName, cap: STUDY_CONFIG.courseNew.robotics },
+    { name: 'Analysis 1', cap: STUDY_CONFIG.courseNew['analysis-1'] },
+    { name: 'Programming 1', cap: STUDY_CONFIG.courseNew['programming-1'] },
+  ];
 
   return (
     <div className="section-stack">
-      <div className="page-head" style={{ marginBottom: 0 }}>
-        <h1 className="page-title">Appearance</h1>
-      </div>
+      <PageHeader title="Settings" />
 
-      <section aria-label="Live preview" className="group preview-group">
-        <div
-          className={`card-stage preview-card-stage${previewFlipped ? ' is-flipped' : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-pressed={previewFlipped}
-          aria-label={previewFlipped ? 'Show preview question' : 'Flip preview card'}
-          onClick={() => setPreviewFlipped((f) => !f)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setPreviewFlipped((f) => !f);
-            }
-          }}
-        >
-          <div className="card-flipper">
-            <div className="study-card card-face card-face-front preview-card">
-              <div className="card-meta">
-                <span>Preview</span>
-                <span>Tap to flip</span>
+      {/* 1. Appearance */}
+      <section aria-label="Appearance" className="settings-section">
+        <SectionHeader title="Appearance" />
+        <div className="settings-group-stack">
+          <Group
+            divider={false}
+            overflowVisible
+            ariaLabel="Live card preview"
+            className="preview-group"
+          >
+            <div
+              className={`card-stage preview-card-stage${previewFlipped ? ' is-flipped' : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-pressed={previewFlipped}
+              aria-label={
+                previewFlipped ? 'Show preview question' : 'Flip preview card'
+              }
+              onClick={() => setPreviewFlipped((f) => !f)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setPreviewFlipped((f) => !f);
+                }
+              }}
+            >
+              <div className="card-flipper">
+                <div className="study-card card-face card-face-front preview-card">
+                  <div className="card-meta">
+                    <span>Preview</span>
+                    <span>Tap to flip</span>
+                  </div>
+                  <div className="card-question">
+                    What does continuity at a point mean?
+                  </div>
+                </div>
+                <div className="study-card card-face card-face-back preview-card">
+                  <div className="card-meta">
+                    <span>Answer</span>
+                    <span>Tap to flip back</span>
+                  </div>
+                  <div className="markdown">
+                    <p>The limit of f(x) as x approaches a equals f(a).</p>
+                  </div>
+                </div>
               </div>
-              <div className="card-question">What does continuity at a point mean?</div>
             </div>
-            <div className="study-card card-face card-face-back preview-card">
-              <div className="card-meta">
-                <span>Answer</span>
-                <span>Tap to flip back</span>
-              </div>
-              <div className="markdown">
-                <p>The limit of f(x) as x approaches a equals f(a).</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="preview-ratings" aria-hidden="true">
-          <span className="rating-btn rating-again preview-rating">Again</span>
-          <span className="rating-btn rating-hard preview-rating">Hard</span>
-          <span className="rating-btn rating-good preview-rating">Good</span>
-          <span className="rating-btn rating-easy preview-rating">Easy</span>
+            <div className="preview-ratings" aria-hidden="true">
+              <span className="rating-btn rating-again preview-rating">Again</span>
+              <span className="rating-btn rating-hard preview-rating">Hard</span>
+              <span className="rating-btn rating-good preview-rating">Good</span>
+              <span className="rating-btn rating-easy preview-rating">Easy</span>
+            </div>
+          </Group>
+
+          <Group ariaLabel="Color and surface">
+            <Row
+              title="Accent"
+              stacked
+              trailing={
+                <SwatchPicker
+                  ariaLabel="Accent color"
+                  options={ACCENTS}
+                  value={settings.accent}
+                  onChange={(accent) => onChange({ accent })}
+                />
+              }
+            />
+            <Row
+              title="Theme"
+              stacked
+              trailing={
+                <Segmented
+                  ariaLabel="Theme"
+                  options={THEME_OPTIONS}
+                  value={settings.theme}
+                  onChange={(theme) => onChange({ theme })}
+                />
+              }
+            />
+            <Row
+              title="Card style"
+              stacked
+              trailing={
+                <Segmented
+                  ariaLabel="Card style"
+                  options={CARD_STYLE_OPTIONS}
+                  value={settings.cardStyle}
+                  onChange={(cardStyle) => onChange({ cardStyle })}
+                />
+              }
+            />
+          </Group>
+
+          <Group ariaLabel="Reading and motion">
+            <Row
+              title="Font"
+              stacked
+              trailing={
+                <Segmented
+                  ariaLabel="Font"
+                  options={FONT_OPTIONS}
+                  value={settings.font}
+                  onChange={(font) => onChange({ font })}
+                />
+              }
+            />
+            <Row
+              title="Text size"
+              stacked
+              trailing={
+                <Segmented
+                  ariaLabel="Text size"
+                  options={TEXT_SIZE_OPTIONS}
+                  value={settings.textSize}
+                  onChange={(textSize) => onChange({ textSize })}
+                />
+              }
+            />
+            <Row
+              title="Motion"
+              subtitle={
+                osReducedMotion && settings.motion === 'full'
+                  ? `System Reduce Motion active (${effectiveMotion})`
+                  : undefined
+              }
+              stacked
+              trailing={
+                <Segmented
+                  ariaLabel="Motion"
+                  options={MOTION_OPTIONS}
+                  value={settings.motion}
+                  onChange={(motion) => onChange({ motion })}
+                />
+              }
+            />
+          </Group>
         </div>
       </section>
 
-      <section aria-label="Color and theme">
-        <div className="section-head">
-          <h2 className="section-title">Color</h2>
-        </div>
-        <div className="group group-divider">
-          <div className="settings-row">
-            <span className="settings-label">Accent</span>
-            <div className="swatch-row" role="radiogroup" aria-label="Accent color">
-              {ACCENTS.map((accent) => {
-                const selected = settings.accent === accent.id;
-                return (
-                  <button
-                    key={accent.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    aria-label={accent.label}
-                    className={`swatch-btn${selected ? ' is-selected' : ''}`}
-                    onClick={() => onChange({ accent: accent.id })}
-                  >
-                    <span className="swatch-circle" style={{ background: accent.swatch }}>
-                      {selected && <CheckIcon size={15} className="swatch-check" />}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="settings-row">
-            <span className="settings-label">Theme</span>
-            <SegmentedControl
-              ariaLabel="Theme"
-              options={THEME_OPTIONS}
-              value={settings.theme}
-              onChange={(theme) => onChange({ theme })}
+      {/* 2. Study */}
+      <section aria-label="Study" className="settings-section">
+        <SectionHeader title="Study" />
+        <div className="settings-group-stack">
+          <Group ariaLabel="Scheduling preferences">
+            <Row
+              title="Desired retention"
+              subtitle="FSRS recall target used for scheduling & insights"
+              stacked
+              trailing={
+                <Segmented
+                  ariaLabel="Desired retention"
+                  value={String(settings.retention)}
+                  options={RETENTION_OPTIONS}
+                  onChange={(value) => onChange({ retention: Number(value) })}
+                />
+              }
             />
-          </div>
+          </Group>
 
-          <div className="settings-row">
-            <span className="settings-label">Card style</span>
-            <SegmentedControl
-              ariaLabel="Card style"
-              options={CARD_STYLE_OPTIONS}
-              value={settings.cardStyle}
-              onChange={(cardStyle) => onChange({ cardStyle })}
-            />
+          <div>
+            <Group ariaLabel="New cards per day">
+              {courseCaps.map((course) => (
+                <Row
+                  key={course.name}
+                  title={course.name}
+                  value={`${course.cap} / day`}
+                />
+              ))}
+            </Group>
+            <SectionFooter>
+              New cards per day per course. All courses {STUDY_CONFIG.globalNew} / day combined.
+            </SectionFooter>
           </div>
         </div>
       </section>
 
-      <section aria-label="Typography and motion">
-        <div className="section-head">
-          <h2 className="section-title">Reading & Motion</h2>
-        </div>
-        <div className="group group-divider">
-          <div className="settings-row">
-            <span className="settings-label">Font</span>
-            <SegmentedControl
-              ariaLabel="Font"
-              options={FONT_OPTIONS}
-              value={settings.font}
-              onChange={(font) => onChange({ font })}
-            />
-          </div>
+      {/* 3. Data */}
+      {data && onShowDemo && (
+        <DataSettings
+          data={data}
+          showDemo={showDemo}
+          onShowDemo={onShowDemo}
+          demoReviewCount={demoReviewCount}
+          onClearDemoHistory={onClearDemoHistory}
+        />
+      )}
 
-          <div className="settings-row">
-            <span className="settings-label">Text size</span>
-            <SegmentedControl
-              ariaLabel="Text size"
-              options={TEXT_SIZE_OPTIONS}
-              value={settings.textSize}
-              onChange={(textSize) => onChange({ textSize })}
-            />
-          </div>
-
-          <div className="settings-row">
-            <div className="settings-label-stack">
-              <span className="settings-label">Motion</span>
-              {osReducedMotion && settings.motion === 'full' && (
-                <span className="row-sub">
-                  System Reduce Motion active ({effectiveMotion})
-                </span>
-              )}
-            </div>
-            <SegmentedControl
-              ariaLabel="Motion"
-              options={MOTION_OPTIONS}
-              value={settings.motion}
-              onChange={(motion) => onChange({ motion })}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section aria-label="Study and data">
-        <div className="section-head">
-          <h2 className="section-title">Study</h2>
-        </div>
-        <div className="group group-divider">
-          <div className="settings-row">
-            <div className="settings-label-stack">
-              <span className="settings-label">Desired retention</span>
-              <span className="row-sub">FSRS recall target used for scheduling & insights</span>
-            </div>
-            <SegmentedControl
-              ariaLabel="Desired retention"
-              value={String(settings.retention)}
-              options={[
-                { value: '0.85', label: '85%' },
-                { value: '0.9', label: '90%' },
-                { value: '0.95', label: '95%' },
-              ]}
-              onChange={(value) => onChange({ retention: Number(value) })}
-            />
-          </div>
-
-          <div className="settings-row">
-            <div className="settings-label-stack">
-              <span className="settings-label">Demo history</span>
-              <span className="row-sub tabular">
-                {demoReviewCount > 0
-                  ? `${demoReviewCount.toLocaleString()} demo reviews loaded · your real reviews are kept`
-                  : 'No demo reviews stored'}
-              </span>
-            </div>
-            {demoReviewCount > 0 && onClearDemoHistory ? (
-              <button
-                type="button"
-                className="btn btn-plain settings-quiet-btn"
-                onClick={onClearDemoHistory}
-              >
-                Clear demo history
-              </button>
-            ) : (
-              <span className="row-sub">Cleared</span>
-            )}
-          </div>
-        </div>
+      {/* 4. About */}
+      <section aria-label="About" className="settings-section">
+        <SectionHeader title="About" />
+        <Group ariaLabel="App information">
+          <Row title="Version" value="0.1.0" />
+          <Row title="Storage" value="Saved on this device" />
+          <NavRow
+            href={guideUrl}
+            title="Deck maker guide"
+            subtitle="Documentation for creating decks from notes"
+            external
+          />
+        </Group>
       </section>
     </div>
   );
 }
+
+export { AppearancePage as SettingsPage };
