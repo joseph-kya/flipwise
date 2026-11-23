@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import type { ReviewEvent } from '../reviewLog';
 import type { EffectiveMotion } from '../settings';
 import {
@@ -34,6 +34,7 @@ export interface CalendarPageProps {
   today?: Date;
   timeZone?: string;
   motion?: EffectiveMotion;
+  headerAccessory?: ReactNode;
 }
 
 function formatMonthTitle(year: number, monthIndex: number): string {
@@ -69,7 +70,7 @@ function buildDayAriaLabel(
   return `${prefix}, ${stats.cardsStudied} ${stats.cardsStudied === 1 ? 'card' : 'cards'} studied, ${formatDuration(stats.durationMs)}, ${formatPercent(stats.accuracy)} accuracy`;
 }
 
-export function CalendarPage({ events, today, timeZone, motion = 'full' }: CalendarPageProps) {
+export function CalendarPage({ events, today, timeZone, motion = 'full', headerAccessory }: CalendarPageProps) {
   const todayKey = useMemo(
     () => toStudyDateKey(today ?? new Date(), timeZone),
     [today, timeZone],
@@ -240,8 +241,9 @@ export function CalendarPage({ events, today, timeZone, motion = 'full' }: Calen
 
   return (
     <div className="section-stack">
-      <div className="page-head" style={{ marginBottom: 0 }}>
+      <div className={`page-head${headerAccessory ? ' page-head-split' : ''}`} style={{ marginBottom: 0 }}>
         <h1 className="page-title">Calendar</h1>
+        {headerAccessory}
       </div>
 
       <section className="group cal-summary" aria-label="Study summary">

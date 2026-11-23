@@ -61,11 +61,15 @@ export function AppearancePage({
   effectiveMotion,
   osReducedMotion,
   onChange,
+  demoReviewCount = 0,
+  onClearDemoHistory,
 }: {
   settings: AppearanceSettings;
   effectiveMotion: EffectiveMotion;
   osReducedMotion: boolean;
   onChange: (patch: Partial<AppearanceSettings>) => void;
+  demoReviewCount?: number;
+  onClearDemoHistory?: () => void;
 }) {
   const [previewFlipped, setPreviewFlipped] = useState(false);
 
@@ -75,11 +79,6 @@ export function AppearancePage({
         <h1 className="page-title">Appearance</h1>
       </div>
 
-      <section className="group" aria-label="Study">
-        <h2 className="group-title">Study</h2>
-        <div className="list-row"><span>Desired retention</span>
-        <SegmentedControl ariaLabel="Desired retention" value={String(settings.retention)} options={[{value: '0.85',label: '85%'},{value: '0.9',label: '90%'},{value: '0.95',label: '95%'}]} onChange={(value) => onChange({retention: Number(value)})} /></div>
-      </section>
       <section aria-label="Live preview" className="group preview-group">
         <div
           className={`card-stage preview-card-stage${previewFlipped ? ' is-flipped' : ''}`}
@@ -214,6 +213,52 @@ export function AppearancePage({
               value={settings.motion}
               onChange={(motion) => onChange({ motion })}
             />
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Study and data">
+        <div className="section-head">
+          <h2 className="section-title">Study</h2>
+        </div>
+        <div className="group group-divider">
+          <div className="settings-row">
+            <div className="settings-label-stack">
+              <span className="settings-label">Desired retention</span>
+              <span className="row-sub">FSRS recall target used for scheduling & insights</span>
+            </div>
+            <SegmentedControl
+              ariaLabel="Desired retention"
+              value={String(settings.retention)}
+              options={[
+                { value: '0.85', label: '85%' },
+                { value: '0.9', label: '90%' },
+                { value: '0.95', label: '95%' },
+              ]}
+              onChange={(value) => onChange({ retention: Number(value) })}
+            />
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-label-stack">
+              <span className="settings-label">Demo history</span>
+              <span className="row-sub tabular">
+                {demoReviewCount > 0
+                  ? `${demoReviewCount.toLocaleString()} demo reviews loaded · your real reviews are kept`
+                  : 'No demo reviews stored'}
+              </span>
+            </div>
+            {demoReviewCount > 0 && onClearDemoHistory ? (
+              <button
+                type="button"
+                className="btn btn-plain settings-quiet-btn"
+                onClick={onClearDemoHistory}
+              >
+                Clear demo history
+              </button>
+            ) : (
+              <span className="row-sub">Cleared</span>
+            )}
           </div>
         </div>
       </section>

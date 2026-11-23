@@ -21,6 +21,10 @@ import { mastery } from './mastery';
 import { sessionStats } from './sessionStats';
 import { aggregateByDay, streak, toStudyDateKey } from './calendar/dailyStats';
 import { CalendarPage } from './calendar/CalendarPage';
+import { buildDefaultCatalog, computeInsights, type RangeKey, type SubjectFilter } from './insights/aggregate';
+import { InsightDetailPage, isValidChartId } from './insights/InsightDetailPage';
+import { InsightsView } from './insights/InsightsView';
+import { markDemoCleared, seedDemoHistoryIfEmpty } from './insights/seedDemoHistory';
 import { Markdown } from './markdown';
 import { AppearancePage } from './AppearancePage';
 import {
@@ -44,6 +48,7 @@ import {
   ChevronRight,
   FlameIcon,
   SUBJECT_DESCRIPTIONS,
+  SegmentedControl,
   SettingsTabIcon,
   SubjectIcon,
   SubjectsTabIcon,
@@ -362,11 +367,35 @@ function App() {
   const [storageNotice, setStorageNotice] = useState('');
   const pendingWrite = useRef(false);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { void openReviewStorage().then(async ({storage, fallback}) => {
-    storageRef.current = storage;
-    setLog(await storage.read()); setStorageReady(true);
-    if (fallback) setStorageNotice('Using local browser storage because IndexedDB is unavailable.');
-  }).catch(() => setStorageNotice('Study storage is unavailable. Please reload before studying.')); }, []);
+  const [insightsRange, setInsightsRange] = useState<RangeKey>('90d');
+  const [insightsSubject, setInsightsSubject] = useState<SubjectFilter>('all');
+  const insightsCatalog = useMemo(() => buildDefaultCatalog(), []);
+
+  useEffect(() => {
+    void openReviewStorage()
+      .then(async ({ storage, fallback }) => {
+        storageRef.current = storage;
+        const loaded = await storage.read();
+        const { events: initialEvents, seeded } = seedDemoHistoryIfEmpty(
+          loaded,
+          new Date(),
+          settings.retention,
+        );
+        if (seeded) {
+          try {
+            await storage.write(initialEvents);
+          } catch {
+            // Keep seeded demo events in memory if persistence fails.
+          }
+        }
+        setLog(initialEvents);
+        setStorageReady(true);
+        if (fallback) {
+          setStorageNotice('Using local browser storage because IndexedDB is unavailable.');
+        }
+      })
+      .catch(() => setStorageNotice('Study storage is unavailable. Please reload before studying.'));
+  }, []);
   const [session, setSession] = useState<ReviewEvent[]>([]);
   const [started, setStarted] = useState(Date.now());
   const [cardStarted, setCardStarted] = useState(Date.now());
@@ -757,6 +786,52 @@ function App() {
     [log, now],
   );
 
+  const demoReviewCount = useMemo(
+    () => log.reduce((sum, e) => sum + (e.demo ? 1 : 0), 0),
+    [log],
+  );
+
+  const clearDemoHistory = async () => {
+    markDemoCleared(true);
+    const cleaned = log.filter((e) => !e.demo);
+    setLog(cleaned);
+    if (storageRef.current) {
+      try {
+        await storageRef.current.write(cleaned);
+      } catch {
+        setStorageNotice('Could not clear demo history. Please try again.');
+      }
+    }
+  };
+
+  const insightsData = useMemo(() => {
+    if (parts[0] !== 'insights') return null;
+    return computeInsights(log, insightsCatalog, {
+      range: insightsRange,
+      subjectId: insightsSubject,
+      targetRetention: settings.retention,
+    });
+  }, [parts[0], log, insightsCatalog, insightsRange, insightsSubject, settings.retention]);
+
+  const calendarModeControl = (
+    <div className="cal-mode-switch">
+      <SegmentedControl
+        ariaLabel="Calendar or Insights"
+        options={[
+          { value: 'calendar', label: 'Calendar' },
+          { value: 'insights', label: 'Insights' },
+        ]}
+        value={parts[0] === 'insights' ? 'insights' : 'calendar'}
+        onChange={(next) => {
+          const target = next === 'insights' ? '#/insights' : '#/calendar';
+          if (location.hash !== target) {
+            location.hash = target;
+          }
+        }}
+      />
+    </div>
+  );
+
   const restart = () => {
     setIndex(0);
     setSession([]);
@@ -811,7 +886,7 @@ function App() {
             <a
               className="nav-link"
               href="#/calendar"
-              aria-current={parts[0] === 'calendar' ? 'page' : undefined}
+              aria-current={parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined}
             >
               Calendar
             </a>
@@ -1153,13 +1228,44 @@ function App() {
             </section>
           </div>
         ) : parts[0] === 'calendar' ? (
-          <CalendarPage events={log} motion={effectiveMotion} />
+          <CalendarPage
+            events={log}
+            motion={effectiveMotion}
+            headerAccessory={calendarModeControl}
+          />
+        ) : parts[0] === 'insights' && !parts[1] && insightsData ? (
+          <div className="section-stack">
+            <div className="page-head page-head-split" style={{ marginBottom: 0 }}>
+              <h1 className="page-title">Insights</h1>
+              {calendarModeControl}
+            </div>
+            <InsightsView
+              data={insightsData}
+              range={insightsRange}
+              subjectId={insightsSubject}
+              motion={effectiveMotion}
+              onRangeChange={setInsightsRange}
+              onSubjectChange={setInsightsSubject}
+            />
+          </div>
+        ) : parts[0] === 'insights' && isValidChartId(parts[1]) && insightsData ? (
+          <InsightDetailPage
+            chartId={parts[1]}
+            data={insightsData}
+            range={insightsRange}
+            subjectId={insightsSubject}
+            motion={effectiveMotion}
+            onRangeChange={setInsightsRange}
+            onSubjectChange={setInsightsSubject}
+          />
         ) : parts[0] === 'settings' ? (
           <AppearancePage
             settings={settings}
             effectiveMotion={effectiveMotion}
             osReducedMotion={osReducedMotion}
             onChange={updateSettings}
+            demoReviewCount={demoReviewCount}
+            onClearDemoHistory={() => void clearDemoHistory()}
           />
         ) : (
           <div className="section-stack">
@@ -1205,9 +1311,9 @@ function App() {
             <a
               className="tab-item"
               href="#/calendar"
-              aria-current={parts[0] === 'calendar' ? 'page' : undefined}
+              aria-current={parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined}
             >
-              <span className="tab-icon" key={parts[0] === 'calendar' ? 'cal-on' : 'cal-off'}>
+              <span className="tab-icon" key={parts[0] === 'calendar' || parts[0] === 'insights' ? 'cal-on' : 'cal-off'}>
                 <CalendarTabIcon />
               </span>
               <span>Calendar</span>
