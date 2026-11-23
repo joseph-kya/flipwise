@@ -1,0 +1,4014 @@
+{
+ "$schema": "https://flipwise.app/schema/deck-v1.json",
+ "format": "flipwise-deck",
+ "version": 1,
+ "subject": {
+  "id": "intro-to-robotics",
+  "name": "Introduction to Robotics",
+  "code": "700.820",
+  "institution": "University of Klagenfurt (AAU)",
+  "term": "26W",
+  "lecturers": [
+   "Narendiran Anandan",
+   "Serkan Ergun"
+  ],
+  "color": "#2f5bea"
+ },
+ "exam": {
+  "durationMin": 90,
+  "totalPoints": 80,
+  "passPoints": 40,
+  "questions": "15-20",
+  "notes": "Written, open questions, closed book, no AI. ~1 point = 1 minute."
+ },
+ "contentFormat": "markdown+katex",
+ "generated": "2026-11-23",
+ "sections": [
+  {
+   "id": "L01",
+   "title": "Introduction",
+   "order": 1,
+   "date": "2026-10-06",
+   "source": "Lec1 - Introduction.pdf",
+   "preview": false
+  },
+  {
+   "id": "L02",
+   "title": "Sensors",
+   "order": 2,
+   "date": "2026-10-13",
+   "source": "Lec2 - Sensors.pdf",
+   "preview": false
+  },
+  {
+   "id": "L03",
+   "title": "Actuators",
+   "order": 3,
+   "date": "2026-10-20",
+   "source": "Lec3 - Actuators.pdf",
+   "preview": false
+  },
+  {
+   "id": "L04",
+   "title": "Measurements & Algorithms",
+   "order": 4,
+   "date": "2026-10-27",
+   "source": "Lec4 - Measurement Algorithms.pdf (+ 25W Lec9 signal processing)",
+   "preview": false
+  },
+  {
+   "id": "L05",
+   "title": "AI for Engineers",
+   "order": 5,
+   "date": "2026-11-03",
+   "source": "Lec5 - AI for Engineers.pdf",
+   "preview": false
+  },
+  {
+   "id": "L06",
+   "title": "Robot Operation",
+   "order": 6,
+   "date": "2026-11-10",
+   "source": "Lec6 - Robot Operation.pdf",
+   "preview": false
+  },
+  {
+   "id": "L07",
+   "title": "Coordinate Transformations & Kinematics",
+   "order": 7,
+   "date": "2026-11-17",
+   "source": "Lec7 - Coordinate Transformation and Kinematics.pdf",
+   "preview": false
+  },
+  {
+   "id": "L08",
+   "title": "Introduction to Electrical Engineering",
+   "order": 8,
+   "date": "2026-11-24",
+   "source": "25W Lec7 - Introduction to EE.pdf (preview: refresh after this year's lecture)",
+   "preview": true
+  },
+  {
+   "id": "L09",
+   "title": "Dynamics & Control",
+   "order": 9,
+   "date": "2026-12-01",
+   "source": "25W Lec6 - Dynamics, Control.pdf (preview)",
+   "preview": true
+  },
+  {
+   "id": "L10",
+   "title": "Human-Robot Interaction",
+   "order": 10,
+   "date": "2026-12-15",
+   "source": "25W Lec8 - Intro to HRI.pdf (preview)",
+   "preview": true
+  },
+  {
+   "id": "EXAM",
+   "title": "Exam-style questions",
+   "order": 11,
+   "date": null,
+   "source": "25W Lec11 - Exam Prep.pdf sample questions + mock questions in the same style",
+   "preview": false
+  }
+ ],
+ "cards": [
+  {
+   "id": "ir-l01-001",
+   "section": "L01",
+   "type": "basic",
+   "front": "What is a robot? (exam definition)",
+   "back": "An **automatically operated machine, controlled by a computer**, that performs jobs and replaces human effort. It does not have to look like a human or act like one.\n\n*Sources: Cambridge Dictionary, Britannica.*",
+   "tags": [
+    "definition"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l01-002",
+   "section": "L01",
+   "type": "basic",
+   "front": "Define **robotics**.",
+   "back": "The engineering discipline that deals with the **design, construction and operation** of robots (Britannica).",
+   "tags": [
+    "definition"
+   ]
+  },
+  {
+   "id": "ir-l01-003",
+   "section": "L01",
+   "type": "basic",
+   "front": "Who first used the word \"robot\", where, and when?",
+   "back": "**Karel Čapek**, a Czech writer, in his play *Rossum's Universal Robots* (R.U.R.) in **1920**.",
+   "tags": [
+    "history"
+   ]
+  },
+  {
+   "id": "ir-l01-004",
+   "section": "L01",
+   "type": "basic",
+   "front": "Who is credited with first using the term \"robotics\", and when?",
+   "back": "**Isaac Asimov**, in the **1940s**.",
+   "tags": [
+    "history"
+   ]
+  },
+  {
+   "id": "ir-l01-005",
+   "section": "L01",
+   "type": "basic",
+   "front": "State Asimov's three laws of robotics.",
+   "back": "1. A robot may not injure a human, or through inaction allow a human to come to harm.\n2. A robot must obey human orders, except where they conflict with law 1.\n3. A robot must protect its own existence, unless that conflicts with law 1 or 2.\n\n*They come from science fiction (\"Runaround\", 1942), not from engineering standards.*",
+   "tags": [
+    "history",
+    "safety"
+   ]
+  },
+  {
+   "id": "ir-l01-006",
+   "section": "L01",
+   "type": "basic",
+   "front": "Name 6 application areas of robots.",
+   "back": "Manufacturing (welding, assembly, metal forming, painting, part transfer, packaging), logistics, inspection and machine health monitoring, agriculture, healthcare, entertainment, military, exploration, autonomous driving (ADAS).",
+   "tags": [
+    "applications"
+   ]
+  },
+  {
+   "id": "ir-l01-007",
+   "section": "L01",
+   "type": "basic",
+   "front": "What does **ADAS** stand for?",
+   "back": "**Advanced Driver Assistance Systems**: robotics and automation features in cars, a step towards autonomous driving.",
+   "tags": [
+    "applications"
+   ]
+  },
+  {
+   "id": "ir-l01-008",
+   "section": "L01",
+   "type": "basic",
+   "front": "Which engineering and science fields are involved in robotics, and what does each contribute?",
+   "back": "- **Mechanical**: range, load, durability, fluid dynamics\n- **Design**: visual appearance\n- **Electrical**: power, sensing, actuation, electronics\n- **Computer science**: AI, algorithms, programming, data processing\n- **Mathematics**: control systems\n- **Material science**: skin, sensors, actuators",
+   "tags": [
+    "fields"
+   ]
+  },
+  {
+   "id": "ir-l01-009",
+   "section": "L01",
+   "type": "basic",
+   "front": "Define **end effector**.",
+   "back": "The device or tool at the end of a robot arm that interacts with the workpiece, for example a gripper, welding torch, drill or paint sprayer.",
+   "tags": [
+    "terminology"
+   ]
+  },
+  {
+   "id": "ir-l01-010",
+   "section": "L01",
+   "type": "basic",
+   "front": "Define **payload**.",
+   "back": "The maximum mass or load the robot can carry or handle at its end effector.",
+   "tags": [
+    "terminology"
+   ]
+  },
+  {
+   "id": "ir-l01-011",
+   "section": "L01",
+   "type": "basic",
+   "front": "Define **workpiece**.",
+   "back": "The object the robot works on or manipulates.",
+   "tags": [
+    "terminology"
+   ]
+  },
+  {
+   "id": "ir-l01-012",
+   "section": "L01",
+   "type": "basic",
+   "front": "Define **work envelope** (workspace).",
+   "back": "The full volume of space the end effector can reach. It is set by the robot's horizontal and vertical reach and its joint limits.",
+   "tags": [
+    "terminology"
+   ]
+  },
+  {
+   "id": "ir-l01-013",
+   "section": "L01",
+   "type": "basic",
+   "front": "What is the difference between **links** and **joints**?",
+   "back": "**Links** are the rigid bodies of the robot. **Joints** connect links and allow relative motion between them (revolute = rotation, prismatic = linear).",
+   "tags": [
+    "terminology"
+   ]
+  },
+  {
+   "id": "ir-l01-014",
+   "section": "L01",
+   "type": "basic",
+   "front": "How is **orientation** usually described?",
+   "back": "With three angles: **Roll, Pitch, Yaw** (rotation about the x, y and z axes).",
+   "tags": [
+    "terminology"
+   ]
+  },
+  {
+   "id": "ir-l01-015",
+   "section": "L01",
+   "type": "basic",
+   "front": "A robot has a fixed base and four hinge (revolute) joints. How many DoF does the robot have?",
+   "back": "**4 DoF**. Each independent revolute joint adds one degree of freedom.",
+   "tags": [
+    "dof"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l01-016",
+   "section": "L01",
+   "type": "basic",
+   "front": "**Cartesian (gantry/linear) robot**: joint configuration and 3 properties.",
+   "back": "Three **prismatic** joints that move in straight lines along x, y and z.\n- Simple and easy to program\n- High payload, rigid structure, accurate positioning\n- Needs a large volume to operate; maintenance is difficult because linear motion usually comes from converted rotary motion",
+   "tags": [
+    "robot-types"
+   ]
+  },
+  {
+   "id": "ir-l01-017",
+   "section": "L01",
+   "type": "basic",
+   "front": "**Cylindrical robot**: joint configuration, strength and weakness.",
+   "back": "**One revolute + two prismatic** joints.\n- Good for reaching into small openings and working on cylindrical surfaces\n- Has trouble reaching the floor near its base",
+   "tags": [
+    "robot-types"
+   ]
+  },
+  {
+   "id": "ir-l01-018",
+   "section": "L01",
+   "type": "basic",
+   "front": "**Spherical (polar) robot**: joint configuration and properties.",
+   "back": "**Two revolute + one prismatic** joint.\n- Large work volume, can reach all around\n- Short vertical reach",
+   "tags": [
+    "robot-types"
+   ]
+  },
+  {
+   "id": "ir-l01-019",
+   "section": "L01",
+   "type": "basic",
+   "front": "**Articulated robot arm**: properties.",
+   "back": "Only revolute joints; the structure closely resembles a human arm.\n- Usually **5–6 DoF**\n- Can reach a pose in several ways\n- Electrically or hydraulically actuated\n- Needs calibration",
+   "tags": [
+    "robot-types"
+   ]
+  },
+  {
+   "id": "ir-l01-020",
+   "section": "L01",
+   "type": "basic",
+   "front": "What does **SCARA** stand for? Give its DoF, properties and applications.",
+   "back": "**Selective Compliance Assembly Robot Arm**.\n- **4 DoF**; small, fast, highly precise\n- Used for assembly, pick-and-place, PCB soldering, laser engraving",
+   "tags": [
+    "robot-types"
+   ]
+  },
+  {
+   "id": "ir-l01-021",
+   "section": "L01",
+   "type": "basic",
+   "front": "**Delta robot**: structure and why it is so fast.",
+   "back": "Three arms connected to one base mounted **above** the workspace. Parallelograms in the arms keep the end effector's orientation fixed. The arms are extremely light, so inertia is low and the robot reaches very high speeds and accelerations (pick-and-place).",
+   "tags": [
+    "robot-types"
+   ]
+  },
+  {
+   "id": "ir-l01-022",
+   "section": "L01",
+   "type": "basic",
+   "front": "What are grippers used for? List 6 gripper types.",
+   "back": "Holding or grasping objects to move them to another position and orientation (pick-and-place, machine loading, sorting, material handling).\n\nTypes: **mechanical/electric, pneumatic, magnetic, adhesive, vacuum/suction, hooks and scoops, expandable bladder**, granular jamming.",
+   "tags": [
+    "end-effectors"
+   ]
+  },
+  {
+   "id": "ir-l01-023",
+   "section": "L01",
+   "type": "basic",
+   "front": "Name 3 end effectors that are **tools** rather than grippers.",
+   "back": "Welding torch, drill, paint sprayer (also screwdrivers, laser cutters).",
+   "tags": [
+    "end-effectors"
+   ]
+  },
+  {
+   "id": "ir-l01-024",
+   "section": "L01",
+   "type": "basic",
+   "front": "How does a **granular jamming gripper** work?",
+   "back": "A flexible membrane filled with granular material (e.g. coffee grounds) moulds around the object. A vacuum then \"jams\" the grains so they lock rigid, and the membrane holds the object's shape. It can grip almost any shape.",
+   "tags": [
+    "end-effectors"
+   ]
+  },
+  {
+   "id": "ir-l01-025",
+   "section": "L01",
+   "type": "basic",
+   "front": "Wheeled robots: advantage, and the minimum number of wheels for static and dynamic balance.",
+   "back": "Easier to design, build and program for flat, not-so-rugged terrain. **3 wheels** are enough for static and dynamic balance.",
+   "tags": [
+    "mobile"
+   ]
+  },
+  {
+   "id": "ir-l01-026",
+   "section": "L01",
+   "type": "basic",
+   "front": "Two-wheeled (self-balancing) robot: why is it hard, and what sensors does it need?",
+   "back": "It must **keep moving to stay upright**. The centre of gravity is usually kept below the axle, with the wheels parallel. It uses a **tilt sensor** for the tilt angle and **wheel encoders** for position.",
+   "tags": [
+    "mobile"
+   ]
+  },
+  {
+   "id": "ir-l01-027",
+   "section": "L01",
+   "type": "basic",
+   "front": "Three-wheeled robot: stability condition and steering types.",
+   "back": "Statically and dynamically stable; the wheels form a triangle. The **centre of gravity must lie inside that triangle**. Steering: differential steering or a single turning wheel.",
+   "tags": [
+    "mobile"
+   ]
+  },
+  {
+   "id": "ir-l01-028",
+   "section": "L01",
+   "type": "basic",
+   "front": "Four-wheeled robot: properties and 3 steering types.",
+   "back": "The most popular layout and highly stable. Steering: **Ackermann** (car-like), **differential drive**, **tank/skid steering**.",
+   "tags": [
+    "mobile"
+   ]
+  },
+  {
+   "id": "ir-l01-029",
+   "section": "L01",
+   "type": "basic",
+   "front": "Omni wheels vs mecanum wheels.",
+   "back": "Both have passive rollers on the rim, which allows **holonomic** motion (sideways and diagonal without turning).\n- **Omni**: rollers perpendicular to the wheel axis\n- **Mecanum**: rollers at **45°**",
+   "tags": [
+    "mobile"
+   ]
+  },
+  {
+   "id": "ir-l01-030",
+   "section": "L01",
+   "type": "basic",
+   "front": "Name the 4 types of aerial robots.",
+   "back": "Rotary-wing (multicopters), fixed-wing, flapping-wing, air-balloon robots.",
+   "tags": [
+    "aerial"
+   ]
+  },
+  {
+   "id": "ir-l01-031",
+   "section": "L01",
+   "type": "basic",
+   "front": "Drone components: what do the **ESC** and the **flight controller** do?",
+   "back": "- **ESC (Electronic Speed Control)**: connects the battery to the motors and sets each motor's speed\n- **Flight control computer**: the \"brain\"; turns controller commands and sensor data into signals for the ESCs\n\nOther parts: frame, motors, propellers, battery, gimbal, telecommunication, navigation sensors.",
+   "tags": [
+    "aerial"
+   ]
+  },
+  {
+   "id": "ir-l01-032",
+   "section": "L01",
+   "type": "basic",
+   "front": "What is a **gimbal** on a drone?",
+   "back": "A stabilisation platform for mounting sensors and instruments, e.g. a camera.",
+   "tags": [
+    "aerial"
+   ]
+  },
+  {
+   "id": "ir-l01-033",
+   "section": "L01",
+   "type": "basic",
+   "front": "Name 3 kinds of aquatic robots.",
+   "back": "Robotic boats (surface), submarine robots (ROV/AUV), underwater crawlers.",
+   "tags": [
+    "aquatic"
+   ]
+  },
+  {
+   "id": "ir-l01-034",
+   "section": "L01",
+   "type": "basic",
+   "front": "Humanoid vs android vs gynoid.",
+   "back": "- **Humanoid**: general-purpose, bipedal, human form factor (torso, head, 2 arms, 2 legs), built to work alongside humans\n- **Android**: designed to **closely resemble** human physique\n- **Gynoid**: robot with a feminine appearance",
+   "tags": [
+    "humanoid"
+   ]
+  },
+  {
+   "id": "ir-l01-035",
+   "section": "L01",
+   "type": "basic",
+   "front": "Give an example of a **bio-inspired** robot from the lecture.",
+   "back": "The **Festo elephant trunk** (Bionic Handling Assistant): a soft, continuum manipulator.",
+   "tags": [
+    "bio-inspired"
+   ]
+  },
+  {
+   "id": "ir-l01-036",
+   "section": "L01",
+   "type": "basic",
+   "front": "Review: which robot type would you use to move plant trays across a large greenhouse from above?",
+   "back": "A **Cartesian/gantry** robot: large rectangular workspace, linear motion on rails, high payload.",
+   "tags": [
+    "robot-types",
+    "review"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l01-037",
+   "section": "L01",
+   "type": "basic",
+   "front": "Review: which end effector suits picking up glass sheets?",
+   "back": "A **vacuum/suction gripper** with several suction cups on a frame: flat, smooth, fragile surface.",
+   "tags": [
+    "end-effectors",
+    "review"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l02-001",
+   "section": "L02",
+   "type": "basic",
+   "front": "Name the three robot primitives, and the input and output of each.",
+   "back": "| Primitive | Input | Output |\n|---|---|---|\n| **SENSE** | sensor data | sensed information |\n| **PLAN** | information (sensed, cognitive) | directives |\n| **ACT** | directives | actuator commands |",
+   "tags": [
+    "paradigms"
+   ]
+  },
+  {
+   "id": "ir-l02-002",
+   "section": "L02",
+   "type": "basic",
+   "front": "What is a **robot paradigm**, and which three exist?",
+   "back": "A philosophy or set of assumptions and techniques for organising robot intelligence, described by how **SENSE, PLAN, ACT** relate.\n**Hierarchical, Reactive, Hybrid.**",
+   "tags": [
+    "paradigms"
+   ]
+  },
+  {
+   "id": "ir-l02-003",
+   "section": "L02",
+   "type": "basic",
+   "front": "**Hierarchical paradigm**: structure, era, main problem.",
+   "back": "SENSE → PLAN → ACT in every loop; all sensing goes into **one global world model**. Oldest paradigm (1967–1990), modelled on how people think. Problem: building generic global models is hard and slow.",
+   "tags": [
+    "paradigms"
+   ]
+  },
+  {
+   "id": "ir-l02-004",
+   "section": "L02",
+   "type": "basic",
+   "front": "**Reactive paradigm**: structure and era.",
+   "back": "SENSE → ACT, with sensing **directly coupled** to actions and no planning. Heavily used 1988–1992 to study biology and intelligence (frog and insect behaviour for about 500 USD).",
+   "tags": [
+    "paradigms"
+   ]
+  },
+  {
+   "id": "ir-l02-005",
+   "section": "L02",
+   "type": "basic",
+   "front": "**Hybrid paradigm**: how does it work?",
+   "back": "Since the 1990s, the current approach. First **PLAN**: decompose the mission into subtasks and choose suitable behaviours. Then the **reactive behaviours run in parallel** (SENSE-ACT).",
+   "tags": [
+    "paradigms"
+   ]
+  },
+  {
+   "id": "ir-l02-006",
+   "section": "L02",
+   "type": "basic",
+   "front": "Define a **sensor** and an **actuator**.",
+   "back": "- **Sensor**: a device that produces an output signal in response to a physical parameter in the environment\n- **Actuator**: a device that produces motion by converting energy and signals going into the system",
+   "tags": [
+    "basics"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l02-007",
+   "section": "L02",
+   "type": "basic",
+   "front": "Draw the generic sensor block chain.",
+   "back": "Measurand (environment) → **sensing element** (interacts with the environment) → **signal conditioner** (optional) → output signal (usually electrical).",
+   "tags": [
+    "basics"
+   ]
+  },
+  {
+   "id": "ir-l02-008",
+   "section": "L02",
+   "type": "basic",
+   "front": "List 4 ways to classify sensors.",
+   "back": "Internal/external (proprioceptive/exteroceptive), **active/passive**, **contact/non-contact**, **absolute/relative**, plus by function and by physical phenomenon.",
+   "tags": [
+    "classification"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l02-009",
+   "section": "L02",
+   "type": "basic",
+   "front": "Active vs passive sensor: definition and an example of each.",
+   "back": "- **Active**: emits its own energy and measures the response, e.g. ultrasonic, LiDAR, radar\n- **Passive**: only receives energy from the environment, e.g. camera, thermometer, photodiode",
+   "tags": [
+    "classification"
+   ]
+  },
+  {
+   "id": "ir-l02-010",
+   "section": "L02",
+   "type": "basic",
+   "front": "Internal vs external sensor: examples.",
+   "back": "- **Internal** (proprioceptive): the robot's own state, e.g. wheel encoder, joint angle, battery voltage, IMU\n- **External** (exteroceptive): the environment, e.g. camera, LiDAR, ultrasonic distance",
+   "tags": [
+    "classification"
+   ]
+  },
+  {
+   "id": "ir-l02-011",
+   "section": "L02",
+   "type": "basic",
+   "front": "Sensor operating distance: three categories.",
+   "back": "- **Remote**: metres to millions of km (astronomy, navigation); background noise\n- **Near-contact**: mm to a few m\n- **Contact**: touching the measurand",
+   "tags": [
+    "attributes"
+   ]
+  },
+  {
+   "id": "ir-l02-012",
+   "section": "L02",
+   "type": "basic",
+   "front": "Sensor invasiveness vs measurand invasiveness.",
+   "back": "- **Sensor invasiveness**: how much the sensor disturbs the measurand environment\n- **Measurand invasiveness**: how much a hostile measurand (radiation, acid, heat, chemicals) damages the sensor",
+   "tags": [
+    "attributes"
+   ]
+  },
+  {
+   "id": "ir-l02-013",
+   "section": "L02",
+   "type": "basic",
+   "front": "Forms of sensor output signal.",
+   "back": "**Mechanical** or **electrical**. Electrical outputs are **analog** (voltage/current, or frequency/amplitude modulated) or **digital** (binary-coded or Gray-coded).",
+   "tags": [
+    "attributes"
+   ]
+  },
+  {
+   "id": "ir-l02-014",
+   "section": "L02",
+   "type": "basic",
+   "front": "List 6 sensor performance characteristics.",
+   "back": "Linearity/nonlinearity, range of operational accuracy, **drift**, **hysteresis**, responsiveness, reliability, **repeatability and reproducibility**.",
+   "tags": [
+    "performance"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l02-015",
+   "section": "L02",
+   "type": "basic",
+   "front": "What is **hysteresis** in a sensor?",
+   "back": "The output for the same input depends on whether the input is **rising or falling**. The loading and unloading curves differ.",
+   "tags": [
+    "performance"
+   ]
+  },
+  {
+   "id": "ir-l02-016",
+   "section": "L02",
+   "type": "basic",
+   "front": "What is **drift**?",
+   "back": "A slow change of the sensor output over time (or with temperature) while the input stays constant.",
+   "tags": [
+    "performance"
+   ]
+  },
+  {
+   "id": "ir-l02-017",
+   "section": "L02",
+   "type": "basic",
+   "front": "Repeatability vs reproducibility.",
+   "back": "- **Repeatability**: same result when the same measurement is repeated under the **same conditions** (same operator, setup, short time)\n- **Reproducibility**: same result under **changed conditions** (different operator, instrument, lab)",
+   "tags": [
+    "performance"
+   ]
+  },
+  {
+   "id": "ir-l02-018",
+   "section": "L02",
+   "type": "basic",
+   "front": "Ergonomic and economic factors when choosing a sensor.",
+   "back": "Human-machine interface, ease of installation and repair, cost, packaging, market volume.",
+   "tags": [
+    "selection"
+   ]
+  },
+  {
+   "id": "ir-l02-019",
+   "section": "L02",
+   "type": "basic",
+   "front": "Resistive displacement sensor (potentiometer): principle and formula.",
+   "back": "A sliding contact changes the effective wire length, so resistance changes: $R = \\rho\\, l / A$.",
+   "tags": [
+    "displacement"
+   ]
+  },
+  {
+   "id": "ir-l02-020",
+   "section": "L02",
+   "type": "basic",
+   "front": "Potentiometer displacement sensor: 4 advantages and 4 disadvantages.",
+   "back": "**Pros**: easy to use, low cost, simple circuit, high output amplitude, proven.\n**Cons**: limited bandwidth, frictional loading, inertial loading, wear and tear.",
+   "tags": [
+    "displacement"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l02-021",
+   "section": "L02",
+   "type": "basic",
+   "front": "What is an **LVDT** and what are its key specs?",
+   "back": "**Linear Variable Differential Transformer**: an inductive displacement sensor in which a moving core changes the coupling between primary and two secondary coils.\nRange ±0.25 mm to ±7.5 cm; operates from −265 °C to 600 °C; radiation-resistant versions exist.",
+   "tags": [
+    "displacement"
+   ]
+  },
+  {
+   "id": "ir-l02-022",
+   "section": "L02",
+   "type": "basic",
+   "front": "How does an **eddy current sensor** measure distance?",
+   "back": "An AC excitation in the coil induces **eddy currents** in a conductive target. These create an opposing magnetic field that changes the coil's **inductance**, and that change gives the distance.\nRange 0.4–80 mm, resolution 0.5 µm, linear, temperature-stable, fast. **Must be calibrated for the specific target** material and shape.",
+   "tags": [
+    "displacement"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l02-023",
+   "section": "L02",
+   "type": "basic",
+   "front": "Capacitive displacement sensor: formula and how it measures.",
+   "back": "$C = \\varepsilon A / d$. Displacement changes either the gap $d$ or the overlapping area $A$, and so the capacitance.\nNon-contact, very accurate, suitable for vacuum and clean rooms, **immune to magnetic interference**.",
+   "tags": [
+    "displacement"
+   ]
+  },
+  {
+   "id": "ir-l02-024",
+   "section": "L02",
+   "type": "basic",
+   "front": "Copper plate, 0–10 mm, sub-mm precision. (a) Fresh from a washing process. (b) In a climate-controlled clean room. Eddy current or capacitive?",
+   "back": "(a) **Eddy current**: residual water and dust in the gap change the permittivity and ruin a capacitive reading. Eddy current only needs a conductive target.\n(b) **Capacitive**: clean, dry and stable conditions suit its very high accuracy.",
+   "tags": [
+    "selection"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l02-025",
+   "section": "L02",
+   "type": "basic",
+   "front": "Explain the **Time-of-Flight (ToF)** principle. Name two sensors that use it.",
+   "back": "The sensor emits a pulse (sound or light) and measures the time $t$ until the echo returns: $d = \\dfrac{v\\,t}{2}$.\nSensors: **ultrasonic** rangefinder, **laser rangefinder / LiDAR** (also ToF cameras, radar).",
+   "tags": [
+    "tof"
+   ],
+   "examStyle": true,
+   "points": 5
+  },
+  {
+   "id": "ir-l02-026",
+   "section": "L02",
+   "type": "basic",
+   "front": "An ultrasonic echo returns after 5.8 ms (speed of sound 343 m/s). How far is the object?",
+   "back": "$d = v t/2 = 343 \\times 0.0058 / 2 \\approx$ **0.99 m**.",
+   "tags": [
+    "tof",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l02-027",
+   "section": "L02",
+   "type": "basic",
+   "front": "Three ToF measurement techniques for ultrasound.",
+   "back": "**Pulse echo**, **phase angle** (phase shift), **frequency modulation**.",
+   "tags": [
+    "tof"
+   ]
+  },
+  {
+   "id": "ir-l02-028",
+   "section": "L02",
+   "type": "basic",
+   "front": "Name 4 types of ultrasound transducers.",
+   "back": "Mechanical (whistles, sirens), electromagnetic (microphones), **piezoelectric** (quartz, ceramics), electrostatic (capacitor with a free membrane).",
+   "tags": [
+    "tof"
+   ]
+  },
+  {
+   "id": "ir-l02-029",
+   "section": "L02",
+   "type": "basic",
+   "front": "Laser range finder: method, range, resolution, drawbacks, applications.",
+   "back": "ToF; range from a few m to a few km; resolution about 10 mm; needs **line of sight**; expensive. Used in production and control, 3D mapping, high-precision guidance.",
+   "tags": [
+    "tof"
+   ]
+  },
+  {
+   "id": "ir-l02-030",
+   "section": "L02",
+   "type": "basic",
+   "front": "What is **LiDAR**?",
+   "back": "Light Detection And Ranging: a scanning laser ToF sensor that builds a 2D/3D point cloud of distances to its surroundings.",
+   "tags": [
+    "tof"
+   ]
+  },
+  {
+   "id": "ir-l02-031",
+   "section": "L02",
+   "type": "basic",
+   "front": "**FMCW radar**: what can it measure that a simple pulse ToF sensor cannot?",
+   "back": "It sends a frequency **chirp** and measures **range and relative velocity at the same time** (Doppler). It also measures very short ranges with high accuracy.",
+   "tags": [
+    "radar"
+   ]
+  },
+  {
+   "id": "ir-l02-032",
+   "section": "L02",
+   "type": "basic",
+   "front": "What do optical encoders measure, and what are their two building blocks?",
+   "back": "Angular (rotary/shaft encoders) or linear position, using light. Two blocks: a **main grating** and a **detection system** (light source, mask, photodetector).",
+   "tags": [
+    "encoders"
+   ]
+  },
+  {
+   "id": "ir-l02-033",
+   "section": "L02",
+   "type": "basic",
+   "front": "Incremental vs absolute encoder.",
+   "back": "- **Incremental**: counts pulses relative to a start position, so position is lost on power-off and needs homing\n- **Absolute**: every position has a **unique code** (N tracks give $2^N$ positions) and position is known at power-up",
+   "tags": [
+    "encoders"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l02-034",
+   "section": "L02",
+   "type": "basic",
+   "front": "Why use **Gray code** in absolute encoders instead of plain binary?",
+   "back": "In Gray code **only one bit changes** between adjacent positions. In binary, e.g. 7→8 = `0111`→`1000`, all 4 bits change; slight track misalignment can produce false intermediate readings like `1111` = 15.",
+   "tags": [
+    "encoders",
+    "gray-code"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l02-035",
+   "section": "L02",
+   "type": "basic",
+   "front": "Convert decimal 7 and 8 to 4-bit Gray code.",
+   "back": "7 = `0100`, 8 = `1100` (one bit different).\nRule: $g = b \\oplus (b \\gg 1)$, so 7 = 0111 ⊕ 0011 = 0100.",
+   "tags": [
+    "gray-code",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l02-036",
+   "section": "L02",
+   "type": "basic",
+   "front": "Convert decimal 5 and 12 to 4-bit Gray code.",
+   "back": "5 = 0101 → **0111**; 12 = 1100 → **1010**.",
+   "tags": [
+    "gray-code",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l02-037",
+   "section": "L02",
+   "type": "basic",
+   "front": "Direct binary absolute encoder: how many tracks for 256 positions? What is the resolution in degrees?",
+   "back": "$2^N = 256$, so **N = 8 tracks**. Resolution $360°/256 \\approx$ **1.41°**.",
+   "tags": [
+    "encoders",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l02-038",
+   "section": "L02",
+   "type": "basic",
+   "front": "Vision sensors: what information do they give, and what are they used for?",
+   "back": "The richest information: geometry, texture, colour (single or stereo camera). Used for distance measurement, object detection and recognition, and control.",
+   "tags": [
+    "vision"
+   ]
+  },
+  {
+   "id": "ir-l02-039",
+   "section": "L02",
+   "type": "basic",
+   "front": "How does GPS find your position?",
+   "back": "30+ satellites continuously broadcast their position and time. The receiver computes its distance to **≥ 4 satellites** and uses **trilateration** (the 4th satellite corrects the receiver clock).",
+   "tags": [
+    "gnss"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l02-040",
+   "section": "L02",
+   "type": "basic",
+   "front": "Name 4 global navigation satellite systems and their owners.",
+   "back": "**GPS** (USA), **GLONASS** (Russia), **Galileo** (EU), **BeiDou** (China). Planned or regional: IRNSS (India), QZSS (Japan). Devices usually combine several.",
+   "tags": [
+    "gnss"
+   ]
+  },
+  {
+   "id": "ir-l02-041",
+   "section": "L02",
+   "type": "basic",
+   "front": "GPS accuracy: consumer vs military.",
+   "back": "Consumer: a few metres. Military: (sub-)millimetre.",
+   "tags": [
+    "gnss"
+   ]
+  },
+  {
+   "id": "ir-l02-042",
+   "section": "L02",
+   "type": "basic",
+   "front": "What does **MEMS** stand for, and which robot sensors use it?",
+   "back": "**Micro-Electro-Mechanical Systems**: tiny accelerometers and gyroscopes (IMUs).",
+   "tags": [
+    "mems"
+   ]
+  },
+  {
+   "id": "ir-l02-043",
+   "section": "L02",
+   "type": "basic",
+   "front": "MEMS accelerometer grades: which has the widest g-range?",
+   "back": "Consumer (1 g, static), automotive (crash: <200 g), industrial (25 g), tactical (8 g), navigation (15 g). **Automotive crash sensing** has the widest range (up to 200 g).",
+   "tags": [
+    "mems"
+   ]
+  },
+  {
+   "id": "ir-l02-044",
+   "section": "L02",
+   "type": "basic",
+   "front": "Name 3 light sensors.",
+   "back": "Photoresistor (LDR), phototransistor, photodiode (an LED used in reverse can also sense light).",
+   "tags": [
+    "light"
+   ]
+  },
+  {
+   "id": "ir-l02-045",
+   "section": "L02",
+   "type": "basic",
+   "front": "What are **tactile sensors** used for in robotics?",
+   "back": "Sensing **contact, pressure and force distribution** on grippers or robot skin, e.g. for grasp control and collision detection.",
+   "tags": [
+    "tactile"
+   ]
+  },
+  {
+   "id": "ir-l02-046",
+   "section": "L02",
+   "type": "basic",
+   "front": "Force sensor must cover 5–15 N, and the ADC input is 0–10 V. How do you choose between two sensors from their V-vs-F graphs?",
+   "back": "Choose the sensor whose output **stays within 0–10 V over the whole 5–15 N range without saturating**, while using **as much of the 0–10 V span as possible** (highest sensitivity and resolution), ideally linear. Reject one that saturates (clips at 10 V) before 15 N or gives only a tiny voltage change.",
+   "tags": [
+    "selection"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l03-001",
+   "section": "L03",
+   "type": "basic",
+   "front": "Draw the robot control chain from sensors to actuators.",
+   "back": "Sensors → **ADC** → computer → **DAC / drivers** → actuators.",
+   "tags": [
+    "basics"
+   ]
+  },
+  {
+   "id": "ir-l03-002",
+   "section": "L03",
+   "type": "basic",
+   "front": "List 7 actuator types.",
+   "back": "Hydraulic, pneumatic/vacuum, mechanical, piezoelectric, magnetic, thermal/shape-memory, electric motors (AC, DC, servo, stepper), and combinations (electro-hydraulic etc.).",
+   "tags": [
+    "types"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l03-003",
+   "section": "L03",
+   "type": "basic",
+   "front": "Hydraulic actuators: typical pressure, 3 pros, 3 cons.",
+   "back": "**100–300 bar** of pressurised liquid.\n**Pros**: very high power and force; can **hold force without consuming more fluid** (incompressible); liquid is easy to transport.\n**Cons**: fluid leaks and contamination; regular maintenance and cleaning; many extra parts (reservoir, pump, valves, heat exchanger).",
+   "tags": [
+    "hydraulic"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l03-004",
+   "section": "L03",
+   "type": "basic",
+   "front": "Pneumatic actuators: typical pressure and why the forces are lower than hydraulic.",
+   "back": "**5–7 bar** of compressed air. Forces are lower because the **pressure is much lower** and **gas is compressible**, so the system is less stiff and less precise.",
+   "tags": [
+    "pneumatic"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l03-005",
+   "section": "L03",
+   "type": "basic",
+   "front": "Pneumatic vs hydraulic: list 3 differences.",
+   "back": "Pneumatic: lower pressure and force, compressible medium, air leaks (less contaminating, though oil mist can contaminate clean rooms and food), fewer tubes, cleaner, cheaper. Hydraulic: high force, stiff, holds load, messy leaks.",
+   "tags": [
+    "pneumatic",
+    "hydraulic"
+   ]
+  },
+  {
+   "id": "ir-l03-006",
+   "section": "L03",
+   "type": "basic",
+   "front": "How do vacuum actuators work, and what are they used for?",
+   "back": "They use **negative pressure** (suction) in a closed chamber, with lower forces than pneumatics. The system must be airtight. Mainly for handling **light, fragile parts** (suction grippers).",
+   "tags": [
+    "vacuum"
+   ]
+  },
+  {
+   "id": "ir-l03-007",
+   "section": "L03",
+   "type": "basic",
+   "front": "Vacuum gripper rule of thumb: how much mass per cm² at 100 % vacuum, and with the usual safety factor?",
+   "back": "Theoretically **1 kg per cm²** (1 bar × 1 cm² ≈ 10 N). With safety factor **S = 2**, only **0.5 kg per cm²**. Typical operation is 60–80 % vacuum (0.2–0.4 bar absolute).",
+   "tags": [
+    "vacuum",
+    "calc"
+   ]
+  },
+  {
+   "id": "ir-l03-008",
+   "section": "L03",
+   "type": "basic",
+   "front": "With 100 % vacuum and safety factor 2, what suction area do you need to lift 3 kg?",
+   "back": "0.5 kg per cm², so 3 / 0.5 = **6 cm²**.",
+   "tags": [
+    "vacuum",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-009",
+   "section": "L03",
+   "type": "basic",
+   "front": "Why do engineers use **safety factors**?",
+   "back": "To conservatively account for uncertain or complex influences (surface roughness, vacuum stability, acceleration, workplace safety) that are hard to model.",
+   "tags": [
+    "design"
+   ]
+  },
+  {
+   "id": "ir-l03-010",
+   "section": "L03",
+   "type": "basic",
+   "front": "How does a **piezoelectric actuator** work, and where is it used?",
+   "back": "An applied voltage makes the piezo material **deform**. Very small, very precise and fast motions (nanopositioning, inkjet heads, wearables).",
+   "tags": [
+    "piezo"
+   ]
+  },
+  {
+   "id": "ir-l03-011",
+   "section": "L03",
+   "type": "basic",
+   "front": "Magnetic actuators: principle and main limitation.",
+   "back": "Usually an electromagnet (coil + core) attracts or repels ferromagnetic objects. Force depends on the magnetic cross-section and the number of poles. **Doesn't work on non-ferromagnetic objects.**",
+   "tags": [
+    "magnetic"
+   ]
+  },
+  {
+   "id": "ir-l03-012",
+   "section": "L03",
+   "type": "basic",
+   "front": "Thermal actuators: principle and advantages.",
+   "back": "Thermal energy (usually electrical heating) expands a volume or causes a phase change (e.g. wax melting). Linear actuation or valves. **Compact, low maintenance, quiet.**",
+   "tags": [
+    "thermal"
+   ]
+  },
+  {
+   "id": "ir-l03-013",
+   "section": "L03",
+   "type": "basic",
+   "front": "What is a **shape-memory alloy** actuator?",
+   "back": "An alloy deformed in its \"cold\" state **returns to its remembered shape when heated** (or, for magnetic SMAs, when a magnetic field is applied).",
+   "tags": [
+    "thermal"
+   ]
+  },
+  {
+   "id": "ir-l03-014",
+   "section": "L03",
+   "type": "basic",
+   "front": "What principle does a DC motor work on?",
+   "back": "A **current-carrying conductor in a magnetic field experiences a force**; the direction follows **Fleming's left-hand rule**.",
+   "tags": [
+    "motors"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-015",
+   "section": "L03",
+   "type": "basic",
+   "front": "AC motors: 3 properties, and why they are rare in robotics.",
+   "back": "Run on alternating current (single or three phase). **Single-phase motors are not self-starting**. Heavier than DC motors, with lower starting torque, so they are not commonly used in robots.",
+   "tags": [
+    "motors"
+   ]
+  },
+  {
+   "id": "ir-l03-016",
+   "section": "L03",
+   "type": "basic",
+   "front": "What is a **servo motor**, and where is it used?",
+   "back": "A motor (usually DC) **plus a position encoder in a closed control loop**, so it can turn the shaft to a precise position. Used in robot joints, camera autofocus, antenna and telescope pointing.",
+   "tags": [
+    "motors"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l03-017",
+   "section": "L03",
+   "type": "basic",
+   "front": "What is a **stepper motor**? Pros, cons and uses.",
+   "back": "It rotates in **fixed step angles** and divides a full turn into N steps. **Open-loop** position control (an encoder is optional), accurate, runs forward or backward.\nCons: lower efficiency, **torque drops fast with speed**.\nUses: printers (inkjet, 3D), scanners.",
+   "tags": [
+    "motors"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l03-018",
+   "section": "L03",
+   "type": "basic",
+   "front": "Servo vs stepper: which is open loop and which is closed loop?",
+   "back": "**Stepper = open loop** (counts steps). **Servo = closed loop** (encoder feedback).",
+   "tags": [
+    "motors"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-019",
+   "section": "L03",
+   "type": "basic",
+   "front": "A stepper motor has 200 steps per revolution. What is the step angle?",
+   "back": "360° / 200 = **1.8°**.",
+   "tags": [
+    "motors",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l03-020",
+   "section": "L03",
+   "type": "basic",
+   "front": "What are **soft actuators**?",
+   "back": "Actuators made from compliant materials (e.g. pneumatic elastomer chambers) that bend or stretch. Safe for human contact and good for delicate grasping.",
+   "tags": [
+    "soft"
+   ]
+  },
+  {
+   "id": "ir-l03-021",
+   "section": "L03",
+   "type": "basic",
+   "front": "Define mechanical engineering (lecture).",
+   "back": "The study of machines that involve force and movement; the design, development and production of machines and systems.",
+   "tags": [
+    "mech-eng"
+   ]
+  },
+  {
+   "id": "ir-l03-022",
+   "section": "L03",
+   "type": "basic",
+   "front": "Force: definition, type of quantity, unit.",
+   "back": "An influence that expresses physical impact. A **vector** (magnitude + direction). Unit: **newton (N)**. $F = m\\,a$, and weight is $F_G = m\\,g$.",
+   "tags": [
+    "mech-eng"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-023",
+   "section": "L03",
+   "type": "basic",
+   "front": "Pressure: definition, unit, scalar or vector?",
+   "back": "Force per area, $p = F/A$. Unit **Pa = N/m²**, with **1 bar = 10⁵ Pa**. A **scalar**.",
+   "tags": [
+    "mech-eng"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-024",
+   "section": "L03",
+   "type": "basic",
+   "front": "The pressure of a hydraulic system is 200 bar. Convert it to N/m².",
+   "back": "200 × 10⁵ = **2 × 10⁷ N/m²** (20 MPa).",
+   "tags": [
+    "units",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-025",
+   "section": "L03",
+   "type": "basic",
+   "front": "A pneumatic cylinder runs at 6 bar with a piston area of 20 cm². What force does it produce?",
+   "back": "p = 6 × 10⁵ Pa, A = 20 × 10⁻⁴ m², so F = pA = **1200 N**.",
+   "tags": [
+    "units",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l03-026",
+   "section": "L03",
+   "type": "basic",
+   "front": "Stress vs pressure.",
+   "back": "Stress is the general force per unit area inside a material. It is a **tensor** (3×3) with normal and shear components. Pressure is a scalar.",
+   "tags": [
+    "mech-eng"
+   ]
+  },
+  {
+   "id": "ir-l03-027",
+   "section": "L03",
+   "type": "basic",
+   "front": "Stress-strain diagram: what are the two main regions, and what is E?",
+   "back": "**Elastic** region (returns to its shape, linear, $E = \\sigma/\\varepsilon$ = Young's modulus) and **plastic** region (permanent deformation, used in metal forming), up to fracture (cutting).",
+   "tags": [
+    "mech-eng"
+   ]
+  },
+  {
+   "id": "ir-l03-028",
+   "section": "L03",
+   "type": "basic",
+   "front": "Torque: definition, formula, unit.",
+   "back": "The rotational analogue of force: $\\vec\\tau = \\vec r \\times \\vec F$ (a pseudo-vector). Unit **N·m**. Force gives linear motion; torque gives rotation.",
+   "tags": [
+    "mech-eng"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-029",
+   "section": "L03",
+   "type": "basic",
+   "front": "Work: definition, unit, scalar or vector? Convert 1 kWh to J.",
+   "back": "The energy transferred by a force acting along a displacement, $W = F\\,s$. A **scalar**. Unit **J = W·s = N·m**. **1 kWh = 3.6 × 10⁶ J**.",
+   "tags": [
+    "mech-eng",
+    "units"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-030",
+   "section": "L03",
+   "type": "basic",
+   "front": "Name 4 forms of energy.",
+   "back": "Potential, kinetic (linear and rotational), thermal/heat, electrical (also chemical).",
+   "tags": [
+    "mech-eng"
+   ]
+  },
+  {
+   "id": "ir-l03-031",
+   "section": "L03",
+   "type": "basic",
+   "front": "Power: definition and unit. How much energy does a 1 kW device use in 1 h?",
+   "back": "$P = W/t$, unit **W = J/s = N·m/s**. 1 kW for 1 h = **1 kWh**.",
+   "tags": [
+    "mech-eng"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-032",
+   "section": "L03",
+   "type": "basic",
+   "front": "Power formulas: linear, rotary, electrical.",
+   "back": "Linear $P = F\\,v$. Rotary $P = M\\,\\omega$ (with $\\omega = 2\\pi n/60$). Electrical $P = U\\,I$.",
+   "tags": [
+    "mech-eng"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-033",
+   "section": "L03",
+   "type": "basic",
+   "front": "Define efficiency.",
+   "back": "$\\eta = P_{out}/P_{in}$, the share of input energy/power turned into useful output. The rest is \"lost\", mostly as heat (friction).",
+   "tags": [
+    "efficiency"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-034",
+   "section": "L03",
+   "type": "basic",
+   "front": "A drivetrain has a combustion engine (η = 30 %) and a gearbox (η = 50 %). What is the total efficiency?",
+   "back": "Series efficiencies multiply: 0.30 × 0.50 = **15 %**.",
+   "tags": [
+    "efficiency",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-035",
+   "section": "L03",
+   "type": "basic",
+   "front": "Combustion motor η = 35 %, then clutch and gearbox η = 95 %. Total efficiency?",
+   "back": "0.35 × 0.95 = **33.25 %**.",
+   "tags": [
+    "efficiency",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l03-036",
+   "section": "L03",
+   "type": "basic",
+   "front": "A DC motor runs at 600 rpm with 7 N·m torque and draws 5 A at 100 V. Efficiency?",
+   "back": "ω = 2π·600/60 = 62.83 rad/s. P_out = Mω = 439.8 W. P_in = UI = 500 W.\nη = **87.96 %**.",
+   "tags": [
+    "efficiency",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l03-037",
+   "section": "L03",
+   "type": "basic",
+   "front": "Friction: where does the \"lost\" energy go? Name 4 types and 2 useful applications.",
+   "back": "It turns into **heat**. Types: sliding (gliding), rolling, fluid/liquid, air. Useful in brakes, clutches, heating.",
+   "tags": [
+    "friction"
+   ]
+  },
+  {
+   "id": "ir-l03-038",
+   "section": "L03",
+   "type": "basic",
+   "front": "Rank electric, diesel and gasoline engines by efficiency.",
+   "back": "**Electric** (~70–90 %) > diesel (~40 %) > gasoline (~30 %).",
+   "tags": [
+    "efficiency"
+   ]
+  },
+  {
+   "id": "ir-l04-001",
+   "section": "L04",
+   "type": "basic",
+   "front": "List the steps of the general robot operation loop.",
+   "back": "**Measurement → filtering → state estimation → mapping → path planning → motion**, then repeat.",
+   "tags": [
+    "loop"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-002",
+   "section": "L04",
+   "type": "basic",
+   "front": "Maze robot example: which key information does it need to explore and navigate?",
+   "back": "Its **position and orientation** (from wheel encoders and wall distances), **wall distances** (front, left, right), a **map** of the explored cells, and a **goal / planning strategy**.",
+   "tags": [
+    "loop"
+   ]
+  },
+  {
+   "id": "ir-l04-003",
+   "section": "L04",
+   "type": "basic",
+   "front": "Define **measurand** and **measurement**.",
+   "back": "- **Measurand**: the particular quantity being measured (room temperature, distance to a wall)\n- **Measurement**: the set of operations performed to determine the measurand's value",
+   "tags": [
+    "measurement"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-004",
+   "section": "L04",
+   "type": "basic",
+   "front": "What does an ADC do?",
+   "back": "An **Analog-to-Digital Converter** turns a continuous analog sensor signal into digital numbers by **sampling** (time) and **quantising** (amplitude).",
+   "tags": [
+    "adc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-005",
+   "section": "L04",
+   "type": "basic",
+   "front": "Sampling vs quantisation.",
+   "back": "- **Sampling**: discretising **time** (values taken at periodic intervals)\n- **Quantisation**: discretising **amplitude** (rounding to a finite set of levels)",
+   "tags": [
+    "adc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-006",
+   "section": "L04",
+   "type": "basic",
+   "front": "ADC resolution formula. A 0–20 m range with an 8-bit ADC gives what resolution?",
+   "back": "Resolution = range / ($2^n$ − 1) = 20 / 255 ≈ **7.8 cm**. Each extra bit roughly halves it.",
+   "tags": [
+    "adc",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-007",
+   "section": "L04",
+   "type": "basic",
+   "front": "How many bits does an ADC need to resolve 1 cm over a 0–20 m range?",
+   "back": "20 / ($2^n$ − 1) ≤ 0.01, so $2^n$ ≥ 2001 and **n = 11 bits** (20/2047 ≈ 0.98 cm).",
+   "tags": [
+    "adc",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-008",
+   "section": "L04",
+   "type": "basic",
+   "front": "How does a transistor relate to binary logic?",
+   "back": "A transistor acts as a switch: **HIGH = TRUE = ON = 1**, **LOW = FALSE = OFF = 0**. Boolean logic gates are built from it.",
+   "tags": [
+    "digital"
+   ]
+  },
+  {
+   "id": "ir-l04-009",
+   "section": "L04",
+   "type": "basic",
+   "front": "Convert 11011101₂ to decimal.",
+   "back": "128 + 64 + 16 + 8 + 4 + 1 = **221**.",
+   "tags": [
+    "binary",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-010",
+   "section": "L04",
+   "type": "basic",
+   "front": "Convert 110101₂ to decimal.",
+   "back": "32 + 16 + 4 + 1 = **53**.",
+   "tags": [
+    "binary",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-011",
+   "section": "L04",
+   "type": "basic",
+   "front": "Convert 45 to binary.",
+   "back": "45 = 32 + 8 + 4 + 1 = **101101₂**.",
+   "tags": [
+    "binary",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-012",
+   "section": "L04",
+   "type": "basic",
+   "front": "Define measurement **error**.",
+   "back": "Error = **measured value − true value**.",
+   "tags": [
+    "errors"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l04-013",
+   "section": "L04",
+   "type": "basic",
+   "front": "What is the **true value**?",
+   "back": "The value attributed to a quantity and accepted, sometimes by convention, with an uncertainty appropriate for the purpose. Required precision depends on context, e.g. weighing 3 g of NaCl in a lab vs 3 g of salt in a kitchen.",
+   "tags": [
+    "errors"
+   ]
+  },
+  {
+   "id": "ir-l04-014",
+   "section": "L04",
+   "type": "basic",
+   "front": "Random vs systematic error: cause and remedy.",
+   "back": "- **Random**: unpredictable variation of influence quantities. Reduce it by **taking more measurements** and averaging\n- **Systematic**: imperfections of the instrument or process (bias, nonlinearity). It cannot be eliminated by repeating, but can often be **corrected by calibration**",
+   "tags": [
+    "errors"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l04-015",
+   "section": "L04",
+   "type": "basic",
+   "front": "Define measurement **uncertainty** and give an example.",
+   "back": "A parameter that characterises the **dispersion of values** that could reasonably be attributed to the measurand. Example: distance to the wall = **35 cm ± 0.2 cm**.",
+   "tags": [
+    "errors"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-016",
+   "section": "L04",
+   "type": "basic",
+   "front": "Readings: 34.94, 34.96, 35.21, 35.18, 35.17, 35.04, 35.00, 35.06, 34.61, 35.02. How do you report the result?",
+   "back": "Mean ≈ **35.02 cm**, with the standard deviation (≈ 0.17 cm) as the uncertainty: about **35.0 ± 0.2 cm**.",
+   "tags": [
+    "errors",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-017",
+   "section": "L04",
+   "type": "basic",
+   "front": "Moving average vs median filter: which handles outlier spikes?",
+   "back": "**Median**. In the lecture data, a 55.2 spike pushed a 5-sample average to 39.11 while the median stayed at 35.15. A moving average smooths random noise but gets dragged by outliers.",
+   "tags": [
+    "filtering"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-018",
+   "section": "L04",
+   "type": "basic",
+   "front": "Low-pass, high-pass and band-pass filters: what does each keep?",
+   "back": "- **Low-pass**: keeps slow/low frequencies, removes high-frequency noise\n- **High-pass**: keeps fast changes, removes slow drift and DC offset\n- **Band-pass**: keeps only a frequency band",
+   "tags": [
+    "filtering"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-019",
+   "section": "L04",
+   "type": "basic",
+   "front": "What is a filter in signal processing?",
+   "back": "A device or process that **completely or partially suppresses unwanted components** of a signal, most often certain frequencies or frequency bands.",
+   "tags": [
+    "filtering"
+   ]
+  },
+  {
+   "id": "ir-l04-020",
+   "section": "L04",
+   "type": "basic",
+   "front": "Wheel encoder distance formula (N full rotations + last angle θ, wheel radius R).",
+   "back": "$D = N\\,(2\\pi R) + \\theta R$ (θ in radians).",
+   "tags": [
+    "state-estimation",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-021",
+   "section": "L04",
+   "type": "basic",
+   "front": "Wheel radius 5 cm; the encoder reports 3 full rotations + 90°. Distance travelled?",
+   "back": "D = 3·2π·0.05 + (π/2)·0.05 = 0.942 + 0.079 ≈ **1.02 m**.",
+   "tags": [
+    "state-estimation",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-022",
+   "section": "L04",
+   "type": "basic",
+   "front": "How can a maze robot estimate its distance travelled from the wall sensor?",
+   "back": "$D = D_{initial} - D_{final}$, the change in front-wall distance.",
+   "tags": [
+    "state-estimation"
+   ]
+  },
+  {
+   "id": "ir-l04-023",
+   "section": "L04",
+   "type": "basic",
+   "front": "What is **sensor fusion** (maze-robot example)?",
+   "back": "Combining several sensors for a better estimate. The robot **predicts** its position from wheel odometry, **measures** the wall distance, **compares** observation with prediction (considering sensor geometry) and **refines** its position estimate.",
+   "tags": [
+    "state-estimation"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-024",
+   "section": "L04",
+   "type": "basic",
+   "front": "What is an **occupancy grid**?",
+   "back": "A map that divides the world into cells (e.g. 10 × 10 cm), each marked **free, occupied or unknown** (or with an occupancy probability). It is updated as the robot explores.",
+   "tags": [
+    "mapping"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-025",
+   "section": "L04",
+   "type": "basic",
+   "front": "Occupancy grid vs continuous map.",
+   "back": "- **Grid**: discretised cells, simple, but memory grows with resolution\n- **Continuous**: obstacles as geometric objects (vertex coordinates), compact and precise, and used by visibility/Voronoi planners",
+   "tags": [
+    "mapping"
+   ]
+  },
+  {
+   "id": "ir-l04-026",
+   "section": "L04",
+   "type": "basic",
+   "front": "What is a graph (graph theory)?",
+   "back": "A data structure of **nodes (vertices)** connected by **edges**, which can be weighted (e.g. distances). Used for path search.",
+   "tags": [
+    "planning"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l04-027",
+   "section": "L04",
+   "type": "basic",
+   "front": "How is a **visibility graph** built?",
+   "back": "Nodes = **start, goal and obstacle vertices**. Edges = every straight connection between nodes that doesn't pass through an obstacle (including obstacle edges). Then a graph search finds the shortest path.",
+   "tags": [
+    "planning"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-028",
+   "section": "L04",
+   "type": "basic",
+   "front": "What is a **reduced visibility graph**?",
+   "back": "It drops the edges that are never useful and keeps only lines that go around obstacles or through their extreme vertices. The shortest path stays the same, but the search is much faster.",
+   "tags": [
+    "planning"
+   ]
+  },
+  {
+   "id": "ir-l04-029",
+   "section": "L04",
+   "type": "basic",
+   "front": "Visibility graphs assume a point robot. How do you handle a real robot's size?",
+   "back": "**Grow (expand) each obstacle by the robot's size** (radius), then plan for a point in the expanded obstacle set.",
+   "tags": [
+    "planning"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-030",
+   "section": "L04",
+   "type": "basic",
+   "front": "How does a **Voronoi graph** plan paths?",
+   "back": "Its edges are points **equidistant to the nearest obstacles**, so it **maximises clearance**. Start and goal are connected to the graph, then a graph search runs.",
+   "tags": [
+    "planning"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l04-031",
+   "section": "L04",
+   "type": "basic",
+   "front": "Compare visibility and Voronoi graphs.",
+   "back": "- **Visibility**: shortest path, but close to obstacles, so execution errors can cause collisions\n- **Voronoi**: maximum clearance, safe but conservative/longer, and small obstacle changes can change the graph a lot\n- Both get complicated in higher dimensions",
+   "tags": [
+    "planning"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l04-032",
+   "section": "L04",
+   "type": "basic",
+   "front": "Why is path planning harder for real mobile robots?",
+   "back": "The world **changes**. The robot must keep updating its knowledge (**localisation, mapping, navigation**) and re-decide based on feedback, so motion planning becomes part of a **mission re-planning loop**.",
+   "tags": [
+    "planning"
+   ]
+  },
+  {
+   "id": "ir-l04-033",
+   "section": "L04",
+   "type": "basic",
+   "front": "Define **configuration space (C-space)** and $C_{free}$.",
+   "back": "C-space is the set of all possible robot configurations (every DoF specified). $C_{free} = C \\setminus C_{O}$: the collision-free configurations.",
+   "tags": [
+    "planning",
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l04-034",
+   "section": "L04",
+   "type": "basic",
+   "front": "Path vs trajectory.",
+   "back": "- **Path**: a continuous geometric curve in C-space\n- **Trajectory**: a path **with time parametrisation** (velocities, accelerations, motion laws)",
+   "tags": [
+    "planning",
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-035",
+   "section": "L04",
+   "type": "basic",
+   "front": "Sampling theorem (Nyquist).",
+   "back": "The sample rate must be **at least twice the highest frequency** in the signal: $f_s \\ge 2 f_{max}$. In practice, sample somewhat faster.",
+   "tags": [
+    "signals",
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-036",
+   "section": "L04",
+   "type": "basic",
+   "front": "A vibration contains frequencies up to 400 Hz. What is the minimum sampling rate?",
+   "back": "$f_s \\ge 2 \\times 400 =$ **800 Hz** (in practice more, e.g. 1–2 kHz).",
+   "tags": [
+    "signals",
+    "calc",
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-037",
+   "section": "L04",
+   "type": "basic",
+   "front": "Analog vs discrete-time vs digital signal.",
+   "back": "- **Analog**: continuous in time and amplitude, s(t)\n- **Discrete-time**: sampled, s[n], with continuous values\n- **Digital**: sampled **and quantised**, so only a finite set of values",
+   "tags": [
+    "signals",
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l04-038",
+   "section": "L04",
+   "type": "basic",
+   "front": "Name 3 common signals and what they represent.",
+   "back": "- **DC**: a constant offset\n- **Unit step (Heaviside)**: 0 before t = 0, then 1; represents switching on\n- **Sinusoid**: $s(t) = A\\cos(\\omega t + \\varphi)$, the most important signal",
+   "tags": [
+    "signals",
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l04-039",
+   "section": "L04",
+   "type": "basic",
+   "front": "Sinusoid parameters: what do A, ω, f and φ mean?",
+   "back": "A = amplitude, ω = angular frequency = **2πf**, f = frequency, φ = phase. A sine is fully described by amplitude, frequency and phase.",
+   "tags": [
+    "signals",
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l04-040",
+   "section": "L04",
+   "type": "basic",
+   "front": "What does the Fourier transform do?",
+   "back": "It turns a function of **time** x(t) into a function of **frequency** X(ω). Any composite signal is a sum of sinusoids.",
+   "tags": [
+    "signals",
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l05-001",
+   "section": "L05",
+   "type": "basic",
+   "front": "What is AI, and what tasks do AI systems perform?",
+   "back": "Systems that perform tasks such as **perception, prediction and planning**.",
+   "tags": [
+    "ai-basics"
+   ]
+  },
+  {
+   "id": "ir-l05-002",
+   "section": "L05",
+   "type": "basic",
+   "front": "Machine learning vs deep learning vs LLM.",
+   "back": "- **ML**: fits model parameters using examples\n- **Deep learning**: ML with **multi-layer neural networks**\n- **LLM**: a large language model that generates and processes language",
+   "tags": [
+    "ai-basics"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l05-003",
+   "section": "L05",
+   "type": "basic",
+   "front": "Training vs inference.",
+   "back": "- **Training**: compare predictions with known examples and **adjust parameters** to reduce the error\n- **Inference**: apply the trained model to **new inputs**",
+   "tags": [
+    "ml"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-004",
+   "section": "L05",
+   "type": "basic",
+   "front": "Why do you evaluate a model on **separate** data?",
+   "back": "To check what the model actually learned (generalisation), not just whether it memorised the training examples.",
+   "tags": [
+    "ml"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-005",
+   "section": "L05",
+   "type": "basic",
+   "front": "Spring example: extension 0, 5, 10 mm → force 0, 10, 20 N. What model and parameter does ML learn?",
+   "back": "$F \\approx k x$ with **k ≈ 2 N/mm**.",
+   "tags": [
+    "ml"
+   ]
+  },
+  {
+   "id": "ir-l05-006",
+   "section": "L05",
+   "type": "basic",
+   "front": "Classification: what are **features** and **labels**?",
+   "back": "Features are the inputs (e.g. height and body weight). The label is the class to predict (e.g. jockey, basketball player, sumo wrestler).",
+   "tags": [
+    "ml"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-007",
+   "section": "L05",
+   "type": "basic",
+   "front": "How does an LLM generate text?",
+   "back": "Text is split into **tokens**. The model **predicts a probability for each possible next token**, appends one, and repeats. A likely continuation can still be factually wrong.",
+   "tags": [
+    "llm"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-008",
+   "section": "L05",
+   "type": "basic",
+   "front": "What is a **hallucination**?",
+   "back": "Output that **sounds plausible but is false or unsupported**: invented references, wrong facts, nonexistent APIs. A confident explanation is not verification.",
+   "tags": [
+    "llm"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-009",
+   "section": "L05",
+   "type": "basic",
+   "front": "Developer vs model family: match Anthropic, Google, Meta, OpenAI, Mistral AI.",
+   "back": "Anthropic → **Claude**, Google → **Gemini**, Meta → **Llama**, OpenAI → **GPT**, Mistral AI → **Mistral** (also DeepSeek, Alibaba Qwen, xAI Grok). Company, model and application are different things.",
+   "tags": [
+    "llm"
+   ]
+  },
+  {
+   "id": "ir-l05-010",
+   "section": "L05",
+   "type": "basic",
+   "front": "Planar 2-link arm, L₁ = 0.40 m, L₂ = 0.30 m, target (0.6, 0.6). Reachable? Which check matters?",
+   "back": "Check the **distance to the target**: r = √(0.6² + 0.6²) ≈ 0.85 m. Reachable workspace: |L₁−L₂| ≤ r ≤ L₁+L₂, i.e. **0.1–0.7 m**, so **not reachable**.",
+   "tags": [
+    "checking",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l05-011",
+   "section": "L05",
+   "type": "basic",
+   "front": "Memory estimate: an 8-billion-parameter model at 4 bits per weight?",
+   "back": "8 × 10⁹ × 0.5 byte ≈ **4 GB** of raw weights, plus runtime and context cache.",
+   "tags": [
+    "local",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-012",
+   "section": "L05",
+   "type": "basic",
+   "front": "Local vs cloud AI: key difference.",
+   "back": "- **Local**: weights run on your own computer (CPU/GPU); privacy depends on the app and network\n- **Cloud**: the provider runs the model, so prompts and uploads **leave your device**, and GDPR and university rules apply",
+   "tags": [
+    "local"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-013",
+   "section": "L05",
+   "type": "basic",
+   "front": "What are the parts of running a local model?",
+   "back": "The **model repository** (weights, licence, model card; e.g. Hugging Face), the **runtime** (loads the model and generates; e.g. Ollama) and the **interface** (terminal, desktop app, WebUI, editor extension).",
+   "tags": [
+    "local"
+   ]
+  },
+  {
+   "id": "ir-l05-014",
+   "section": "L05",
+   "type": "basic",
+   "front": "What is an **AI agent**?",
+   "back": "A model plus **tools**, working towards a goal. It inspects results, chooses the next step and repeats (e.g. inspect code → propose fix → run tests → report).",
+   "tags": [
+    "agents"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l05-015",
+   "section": "L05",
+   "type": "basic",
+   "front": "AI rules for the Intro to Robotics exam?",
+   "back": "**Closed-book exam, no AI assistance.** Course rules decide which uses are allowed; open-book doesn't automatically permit AI.",
+   "tags": [
+    "rules"
+   ]
+  },
+  {
+   "id": "ir-l05-016",
+   "section": "L05",
+   "type": "basic",
+   "front": "What should an AI-use disclosure contain?",
+   "back": "The tool, provider, model/version and date; the task and which parts it affected; the relevant prompts and outputs; and citations of original sources for factual claims.",
+   "tags": [
+    "rules"
+   ]
+  },
+  {
+   "id": "ir-l05-017",
+   "section": "L05",
+   "type": "basic",
+   "front": "What makes a good prompt for engineering help?",
+   "back": "State the task and background, give known values **with units and assumptions**, include your attempt, specify the kind of help you want, and ask the model to name missing information before calculating.",
+   "tags": [
+    "prompting"
+   ]
+  },
+  {
+   "id": "ir-l05-018",
+   "section": "L05",
+   "type": "basic",
+   "front": "Learning with AI: the recommended 4-step routine.",
+   "back": "1. Attempt it yourself. 2. Ask for feedback or one hint. 3. Explain the corrected solution in your own words. 4. Solve a new variant **without** AI.",
+   "tags": [
+    "prompting"
+   ]
+  },
+  {
+   "id": "ir-l05-019",
+   "section": "L05",
+   "type": "basic",
+   "front": "How do you check an AI's engineering answer?",
+   "back": "Compare with course material and sources, check **units, assumptions and limiting cases**, test code on cases with known results, and use a second model to find disagreements, then verify.",
+   "tags": [
+    "checking"
+   ]
+  },
+  {
+   "id": "ir-l06-001",
+   "section": "L06",
+   "type": "basic",
+   "front": "Forward vs inverse operation of a robot.",
+   "back": "- **Forward**: set joint angles directly (forward kinematics)\n- **Inverse**: set a target in x/y/z and the robot computes the joint angles (inverse kinematics)",
+   "tags": [
+    "operation"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-002",
+   "section": "L06",
+   "type": "basic",
+   "front": "What can you command a robot with?",
+   "back": "Target position (x, y, z or angles), velocity (per joint or Cartesian), acceleration, a **trajectory** (multiple waypoints), and force/torque.",
+   "tags": [
+    "operation"
+   ]
+  },
+  {
+   "id": "ir-l06-003",
+   "section": "L06",
+   "type": "basic",
+   "front": "Name the 4 ways to operate a robot.",
+   "back": "**Manual** (incl. tele-operation), **teaching**, **programming**, **autonomous** (with or without AI).",
+   "tags": [
+    "operation"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-004",
+   "section": "L06",
+   "type": "basic",
+   "front": "Manual operation: what is it, one safety rule, and examples?",
+   "back": "The user controls the robot via control panel, joystick or RC (or an API). The robot **must stop when inputs stop**. Used for complex, highly variable tasks: forestry and shipyard cranes, humanoids with bodysuit control, deep-sea and cave exploration.",
+   "tags": [
+    "operation"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l06-005",
+   "section": "L06",
+   "type": "basic",
+   "front": "What is **teaching** in robot operation?",
+   "back": "Manually guiding the robot (by hand or pendant) while it **stores the trajectory as waypoints**, then **replaying** it. Common for fixed industrial paths such as welding.",
+   "tags": [
+    "operation"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-006",
+   "section": "L06",
+   "type": "basic",
+   "front": "Programmed trajectories: what are they, and what can a state machine add?",
+   "back": "The robot replays trajectories coded in a supported language. As a **state machine** it can switch between predefined tasks, and sensor readings can change the path (obstacle avoidance).",
+   "tags": [
+    "operation"
+   ]
+  },
+  {
+   "id": "ir-l06-007",
+   "section": "L06",
+   "type": "basic",
+   "front": "Why does each joint need boundary limits, and which?",
+   "back": "Limits on **position/angle, velocity and torque/force** keep the robot in its work envelope and prevent damage to the surroundings, people and the robot itself (self-collision poses aren't always blocked by default).",
+   "tags": [
+    "limits"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-008",
+   "section": "L06",
+   "type": "basic",
+   "front": "What is a robot **singularity**?",
+   "back": "A configuration where the robot **loses one or more DoF** (axes align, e.g. wrist axes 4 and 6). Some Cartesian motions become impossible and the required joint speeds go towards infinity.",
+   "tags": [
+    "limits"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l06-009",
+   "section": "L06",
+   "type": "basic",
+   "front": "Name 5 robot communication protocols.",
+   "back": "TCP/IP, UDP, ControlNet, DeviceNet, EtherCAT, ROS / ROS 2.",
+   "tags": [
+    "communication"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-010",
+   "section": "L06",
+   "type": "basic",
+   "front": "TCP vs UDP.",
+   "back": "- **TCP**: checks that all packets arrive **in the right order** and re-requests missing ones (reliable, slower)\n- **UDP**: no guarantee of order or arrival, **much faster**; good when speed matters and losing some packets is fine",
+   "tags": [
+    "communication"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l06-011",
+   "section": "L06",
+   "type": "basic",
+   "front": "In TCP/IP, what does IP do and what does TCP do?",
+   "back": "**IP** addresses and routes each packet (but doesn't care about loss or order). **TCP** makes sure all packets arrive in the correct sequence.",
+   "tags": [
+    "communication"
+   ]
+  },
+  {
+   "id": "ir-l06-012",
+   "section": "L06",
+   "type": "basic",
+   "front": "ControlNet / DeviceNet: what are they?",
+   "back": "Open **industrial fieldbus** protocols connecting control devices. ControlNet has built-in support for **redundant cables** and is **highly deterministic**, with strict scheduling.",
+   "tags": [
+    "communication"
+   ]
+  },
+  {
+   "id": "ir-l06-013",
+   "section": "L06",
+   "type": "basic",
+   "front": "What is special about **EtherCAT**?",
+   "back": "Ethernet for Control Automation Technology: real-time and deterministic on standard Ethernet hardware. Frames are **processed on the fly**: each node reads its data and inserts new data as the frame passes through.",
+   "tags": [
+    "communication"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-014",
+   "section": "L06",
+   "type": "basic",
+   "front": "What is **ROS**?",
+   "back": "**Robot Operating System**: open-source robotics **middleware/framework** (not an actual OS). It handles communication between robots, computers and sensors. ROS 2 is for industrial use, with more security.",
+   "tags": [
+    "ros"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-015",
+   "section": "L06",
+   "type": "basic",
+   "front": "ROS: messages/topics vs services.",
+   "back": "- **Topics/messages**: **published continuously**; nodes publish and subscribe (sensor data, motor commands)\n- **Services**: request/response **on demand**",
+   "tags": [
+    "ros"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l06-016",
+   "section": "L06",
+   "type": "basic",
+   "front": "ROS: what are the core/master and a node?",
+   "back": "The **core/master** coordinates the network (on the robot or a remote PC). A **node** is an executable; several can run on one machine. All clients must be on the same network.",
+   "tags": [
+    "ros"
+   ]
+  },
+  {
+   "id": "ir-l06-017",
+   "section": "L06",
+   "type": "basic",
+   "front": "Name 3 ROS visualisation and simulation tools.",
+   "back": "**RViz** (3D visualisation), **rqt_plot** (plots), **Gazebo** (simulator).",
+   "tags": [
+    "ros"
+   ]
+  },
+  {
+   "id": "ir-l06-018",
+   "section": "L06",
+   "type": "basic",
+   "front": "Scratch/Blockly: what is it, and who is it for?",
+   "back": "Block-based programming (MIT), running on JavaScript and generating Python in the background. For kids and robotics beginners.",
+   "tags": [
+    "programming"
+   ]
+  },
+  {
+   "id": "ir-l06-019",
+   "section": "L06",
+   "type": "basic",
+   "front": "Which machines rely on G-code?",
+   "back": "**CNC machines** (drilling, lathe, mill), **3D printers**, and Cartesian robots. Simple line-based commands.",
+   "tags": [
+    "programming"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-020",
+   "section": "L06",
+   "type": "basic",
+   "front": "Python vs C/C++ for robotics.",
+   "back": "- **Python**: high-level, readable, many libraries, no type declarations, slower for large data; \"programming language of engineers\" (recommended)\n- **C/C++**: best CPU performance, OS kernels, less user-friendly",
+   "tags": [
+    "programming"
+   ]
+  },
+  {
+   "id": "ir-l06-021",
+   "section": "L06",
+   "type": "basic",
+   "front": "Why use simulation environments? (4 reasons)",
+   "back": "Lower development cost, **faster prototyping**, less hardware needed, less time for experiments, **easy generation of training data for ML**, and digital twins.",
+   "tags": [
+    "simulation"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l06-022",
+   "section": "L06",
+   "type": "basic",
+   "front": "What is a **digital twin**?",
+   "back": "A virtual replica of a real system, kept in sync with it, for **condition monitoring and predictive maintenance** (expected vs actual behaviour).",
+   "tags": [
+    "simulation"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l06-023",
+   "section": "L06",
+   "type": "basic",
+   "front": "CoppeliaSim: key facts.",
+   "back": "Formerly **V-REP**. Commercial robot simulator with a free educational licence, drag-and-drop robot library, embedded **Lua** and Python scripts, and several remote APIs.",
+   "tags": [
+    "simulation"
+   ]
+  },
+  {
+   "id": "ir-l06-024",
+   "section": "L06",
+   "type": "basic",
+   "front": "Game engines for robot simulation: examples, pros, cons.",
+   "back": "**Unity, Unreal**. Highly realistic collision, lighting and scenery, plus AR/VR. They need high-performance PCs and GPUs.",
+   "tags": [
+    "simulation"
+   ]
+  },
+  {
+   "id": "ir-l06-025",
+   "section": "L06",
+   "type": "basic",
+   "front": "Gazebo: key facts.",
+   "back": "**Free, open-source** robot simulator with **full ROS compatibility**, optimised for robotics.",
+   "tags": [
+    "simulation"
+   ]
+  },
+  {
+   "id": "ir-l06-026",
+   "section": "L06",
+   "type": "basic",
+   "front": "If a robot gets commands from several sources, who has priority?",
+   "back": "**Safety mechanisms first; they are always hard-wired.** Then **direct manual operation** overrides remote or automated control (high-level vs low-level control).",
+   "tags": [
+    "control-order"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-001",
+   "section": "L07",
+   "type": "basic",
+   "front": "Kinematics vs dynamics.",
+   "back": "- **Kinematics**: describes motion (position, velocity, acceleration) **without the forces** that cause it\n- **Dynamics**: describes **why** things move (forces, torques)",
+   "tags": [
+    "basics"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-002",
+   "section": "L07",
+   "type": "basic",
+   "front": "What three key questions does robot kinematics answer?",
+   "back": "1. End-effector **pose** for given joint angles (FK)\n2. Joint angles for a desired pose (IK)\n3. Cartesian velocity for given joint velocities",
+   "tags": [
+    "basics"
+   ]
+  },
+  {
+   "id": "ir-l07-003",
+   "section": "L07",
+   "type": "basic",
+   "front": "What is a **frame of reference**?",
+   "back": "A coordinate system (origin + axes orientation) relative to which positions are given. Any consistent frame is valid; frames can move relative to each other.",
+   "tags": [
+    "frames"
+   ]
+  },
+  {
+   "id": "ir-l07-004",
+   "section": "L07",
+   "type": "basic",
+   "front": "Displacement vs distance.",
+   "back": "- **Displacement** Δx = x₁ − x₀: change in position, a **vector**, path-independent\n- **Distance**: total path length, a **scalar**",
+   "tags": [
+    "frames"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-005",
+   "section": "L07",
+   "type": "basic",
+   "front": "You drive 20 km east, then 15 km west. Positive = west, start at the origin. Position, displacement, distance?",
+   "back": "Position **−5 km** (5 km east). Displacement **−5 km**. Distance **35 km**.",
+   "tags": [
+    "frames",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-006",
+   "section": "L07",
+   "type": "basic",
+   "front": "Velocity vs speed.",
+   "back": "Velocity is a **vector** (rate of change of position, with direction). Speed is its magnitude (a scalar).",
+   "tags": [
+    "motion"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l07-007",
+   "section": "L07",
+   "type": "basic",
+   "front": "Uniform-acceleration equations.",
+   "back": "$v = a t + v_0$, $x = \\tfrac12 a t^2 + v_0 t + x_0$.",
+   "tags": [
+    "motion"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-008",
+   "section": "L07",
+   "type": "basic",
+   "front": "An object is dropped with initial velocity 1 m/s downward (a = −9.81 m/s²). Velocity after 3 s? Speeding up or slowing down?",
+   "back": "v = −1 + (−9.81)(3) = **−30.43 m/s** (downward). **Speeding up**: velocity and acceleration have the same sign.",
+   "tags": [
+    "motion",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-009",
+   "section": "L07",
+   "type": "basic",
+   "front": "A ball is kicked at 15 m/s, 30° above the ground. Horizontal and vertical components?",
+   "back": "vₓ = 15 cos 30° ≈ **12.99 m/s**, v_y = 15 sin 30° = **7.5 m/s**.",
+   "tags": [
+    "vectors",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-010",
+   "section": "L07",
+   "type": "basic",
+   "front": "Three types of links.",
+   "back": "- **Rigid**: no deformation (industrial arm)\n- **Flexible**: partial deformation (belt drive)\n- **Fluid**: motion transmitted by fluid pressure (hydraulics, brakes)",
+   "tags": [
+    "links"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-011",
+   "section": "L07",
+   "type": "basic",
+   "front": "How are joints classified?",
+   "back": "By the **type of contact** between links, the **type of relative motion**, and the **nature of the constraint**.",
+   "tags": [
+    "joints"
+   ]
+  },
+  {
+   "id": "ir-l07-012",
+   "section": "L07",
+   "type": "basic",
+   "front": "Define **degree of freedom** (DoF). How many does a free rigid body in space have?",
+   "back": "The number of independent displacements a body or mechanism can make. A free body in space has **6 DoF**: 3 translations (x, y, z) + 3 rotations (about x, y, z).",
+   "tags": [
+    "dof"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-013",
+   "section": "L07",
+   "type": "basic",
+   "front": "How many DoF does the human arm have? Break them down.",
+   "back": "**7 DoF**: shoulder 3 (pitch, roll, yaw), elbow 1, wrist 3 (pitch, roll, yaw).",
+   "tags": [
+    "dof"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-014",
+   "section": "L07",
+   "type": "basic",
+   "front": "What is a **kinematic chain**?",
+   "back": "An assembly of rigid bodies (links) connected by joints to provide constrained motion; the mathematical model of a mechanism.",
+   "tags": [
+    "chain"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-015",
+   "section": "L07",
+   "type": "basic",
+   "front": "Forward vs inverse kinematics for a **robot arm**.",
+   "back": "- **FK**: joint angles → end-effector position and orientation\n- **IK**: desired end-effector pose → joint angles",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-016",
+   "section": "L07",
+   "type": "basic",
+   "front": "Forward vs inverse kinematics for a **mobile robot**.",
+   "back": "- **FK**: wheel velocities/angles → robot position and orientation\n- **IK**: goal position → wheel velocities to reach it",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-017",
+   "section": "L07",
+   "type": "basic",
+   "front": "Joint space vs Cartesian space.",
+   "back": "- **Joint space**: configuration as joint angles / linear positions\n- **Cartesian space**: end-effector/tooltip pose in x, y, z (+ orientation)",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-018",
+   "section": "L07",
+   "type": "basic",
+   "front": "How many solutions can IK have? Give an example.",
+   "back": "**Zero, one or many.** FK always gives exactly one result. Example: a 2-link arm reaches a point with **elbow up** or **elbow down**; a point out of reach has none.",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-019",
+   "section": "L07",
+   "type": "basic",
+   "front": "Which is generally harder, FK or IK? Exception?",
+   "back": "**IK** is generally much harder. Exception: for **parallel robots** (e.g. delta), IK is easier than FK.",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-020",
+   "section": "L07",
+   "type": "basic",
+   "front": "What is coordinate transformation?",
+   "back": "Representing a quantity given in one frame (K) in another frame (K′).",
+   "tags": [
+    "transform"
+   ]
+  },
+  {
+   "id": "ir-l07-021",
+   "section": "L07",
+   "type": "basic",
+   "front": "Four basic 2D transformations.",
+   "back": "**Translation** (position), **scaling** (size), **rotation** (orientation), **shear** (shape).",
+   "tags": [
+    "transform"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-022",
+   "section": "L07",
+   "type": "basic",
+   "front": "Write the 2D homogeneous translation matrix.",
+   "back": "$T(t_x,t_y)=\\begin{bmatrix}1&0&t_x\\\\0&1&t_y\\\\0&0&1\\end{bmatrix}$ applied to $(x,y,1)^T$.",
+   "tags": [
+    "transform"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-023",
+   "section": "L07",
+   "type": "basic",
+   "front": "Why use homogeneous coordinates (x, y, 1)?",
+   "back": "They make **translation a matrix multiplication**, so translation, rotation and scaling can all be chained into one matrix product.",
+   "tags": [
+    "transform"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-024",
+   "section": "L07",
+   "type": "basic",
+   "front": "Write the 2D rotation matrix (about the origin, angle θ counter-clockwise).",
+   "back": "$R(\\theta)=\\begin{bmatrix}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{bmatrix}$ (3×3 homogeneous: add a row and column [0 0 1]).",
+   "tags": [
+    "transform"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-025",
+   "section": "L07",
+   "type": "basic",
+   "front": "Rotate the point (1, 0) by 90° counter-clockwise.",
+   "back": "(cos 90°, sin 90°) = **(0, 1)**.",
+   "tags": [
+    "transform",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l07-026",
+   "section": "L07",
+   "type": "basic",
+   "front": "Rotate the point (2, 1) by 90° counter-clockwise about the origin.",
+   "back": "x′ = 2·0 − 1·1 = **−1**, y′ = 2·1 + 1·0 = **2**, so **(−1, 2)**.",
+   "tags": [
+    "transform",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-027",
+   "section": "L07",
+   "type": "basic",
+   "front": "2D scaling matrix, and its side effect.",
+   "back": "$S=\\mathrm{diag}(s_x,s_y,1)$. It changes size **and also moves the object** unless it is centred at the origin.",
+   "tags": [
+    "transform"
+   ]
+  },
+  {
+   "id": "ir-l07-028",
+   "section": "L07",
+   "type": "basic",
+   "front": "How do you rotate about an arbitrary point P = (pₓ, p_y)?",
+   "back": "Translate P to the origin, rotate, translate back:\n$P' = T(p_x,p_y)\\,R(\\theta)\\,T(-p_x,-p_y)\\,P$.",
+   "tags": [
+    "transform"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-029",
+   "section": "L07",
+   "type": "basic",
+   "front": "Composite transformations: associative? Commutative?",
+   "back": "Matrix multiplication is **associative** (M₃M₂M₁ = (M₃M₂)M₁) but **not commutative** (AB ≠ BA). **Order matters.** Apply M₁ first, so it sits on the right.",
+   "tags": [
+    "transform"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-030",
+   "section": "L07",
+   "type": "basic",
+   "front": "Point at the origin: translate by (5, 0) then rotate 60°, vs rotate then translate. Results?",
+   "back": "Translate then rotate: (5, 0) → **(2.5, 4.33)**.\nRotate then translate: (0, 0) → **(5, 0)**.\nDifferent results, so order matters.",
+   "tags": [
+    "transform",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l07-031",
+   "section": "L07",
+   "type": "basic",
+   "front": "Forward kinematics of a 2-link planar arm.",
+   "back": "$x = L_1\\cos\\theta_1 + L_2\\cos(\\theta_1+\\theta_2)$\n$y = L_1\\sin\\theta_1 + L_2\\sin(\\theta_1+\\theta_2)$\nOrientation φ = θ₁ + θ₂.",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l07-032",
+   "section": "L07",
+   "type": "basic",
+   "front": "General FK of an n-link planar arm (relative angles).",
+   "back": "$x=\\sum_i L_i\\cos(\\theta_1+\\dots+\\theta_i)$, $y=\\sum_i L_i\\sin(\\theta_1+\\dots+\\theta_i)$, $\\varphi = \\sum \\theta_i$.",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l07-033",
+   "section": "L07",
+   "type": "basic",
+   "front": "2-link arm, L₁ = L₂ = 1 m, θ₁ = 30°, θ₂ = 60°. End-effector position?",
+   "back": "x = cos 30° + cos 90° = **0.866 m**, y = sin 30° + sin 90° = **1.5 m**, φ = 90°.",
+   "tags": [
+    "fk-ik",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l07-034",
+   "section": "L07",
+   "type": "basic",
+   "front": "IK of a 2-link planar arm: formula for θ₂.",
+   "back": "$\\cos\\theta_2 = \\dfrac{x^2+y^2-L_1^2-L_2^2}{2L_1L_2}$, with ± giving elbow up/down.\nThen $\\theta_1 = \\operatorname{atan2}(y,x) - \\operatorname{atan2}(L_2\\sin\\theta_2,\\ L_1+L_2\\cos\\theta_2)$.",
+   "tags": [
+    "fk-ik"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l07-035",
+   "section": "L07",
+   "type": "basic",
+   "front": "3D homogeneous coordinates: vector and matrix size.",
+   "back": "Point (x, y, z, **1**); transformations are **4×4** matrices.",
+   "tags": [
+    "3d"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l07-036",
+   "section": "L07",
+   "type": "basic",
+   "front": "Right-hand coordinate system: cross-product rules.",
+   "back": "X × Y = Z, Y × Z = X, Z × X = Y.",
+   "tags": [
+    "3d"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l07-037",
+   "section": "L07",
+   "type": "basic",
+   "front": "3D rotation about z.",
+   "back": "$R_z(\\theta)=\\begin{bmatrix}\\cos\\theta&-\\sin\\theta&0\\\\\\sin\\theta&\\cos\\theta&0\\\\0&0&1\\end{bmatrix}$; z is unchanged. Counter-clockwise (looking down the axis towards the origin) is positive.",
+   "tags": [
+    "3d"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-038",
+   "section": "L07",
+   "type": "basic",
+   "front": "3D rotation about x and about y.",
+   "back": "$R_x=\\begin{bmatrix}1&0&0\\\\0&c&-s\\\\0&s&c\\end{bmatrix}$, $R_y=\\begin{bmatrix}c&0&s\\\\0&1&0\\\\-s&0&c\\end{bmatrix}$.",
+   "tags": [
+    "3d"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-039",
+   "section": "L07",
+   "type": "basic",
+   "front": "What is trajectory planning?",
+   "back": "Finding joint values **as functions of time**, q₁(t), q₂(t) and their velocities, so the end effector follows a desired path (e.g. a straight line at constant velocity).",
+   "tags": [
+    "trajectory"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l07-040",
+   "section": "L07",
+   "type": "basic",
+   "front": "Relative kinematics: how do you get the end-effector velocity from joint velocities?",
+   "back": "Differentiate the FK equations with respect to time. In general $\\dot{p} = J(q)\\,\\dot q$, where J is the **Jacobian**. Speed = |velocity|.",
+   "tags": [
+    "trajectory"
+   ]
+  },
+  {
+   "id": "ir-l08-001",
+   "section": "L08",
+   "type": "basic",
+   "front": "Name the four blocks of a robot's electrical system.",
+   "back": "**Power source, sensors, processing unit, actuators.**",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l08-002",
+   "section": "L08",
+   "type": "basic",
+   "front": "Charge, voltage, current: definitions and units.",
+   "back": "- **Charge** Q in **coulombs (C)**\n- **Voltage** = energy per charge, $V = W/Q$ (**volt**)\n- **Current** = charge per time, $I = Q/t$ (**ampere**)",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l08-003",
+   "section": "L08",
+   "type": "basic",
+   "front": "Derive P = VI.",
+   "back": "$P = W/t$ and $W = VQ$, so $P = VQ/t = V\\,I$.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-004",
+   "section": "L08",
+   "type": "basic",
+   "front": "Ohm's law and the three forms of power.",
+   "back": "$V = I R$. $P = VI = I^2R = V^2/R$.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-005",
+   "section": "L08",
+   "type": "basic",
+   "front": "A 9 V battery powers a 36 Ω bulb. Power?",
+   "back": "$P = V^2/R = 81/36 =$ **2.25 W** (I = 0.25 A).",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-006",
+   "section": "L08",
+   "type": "basic",
+   "front": "A 9 V battery is connected to a 40 Ω resistor. Current, and voltage across the resistor?",
+   "back": "I = 9/40 = **0.225 A**. The voltage across the resistor is **9 V** (it is the only load).",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-007",
+   "section": "L08",
+   "type": "basic",
+   "front": "Ideal voltage source vs real voltage source.",
+   "back": "Ideal: **constant voltage**; the current depends on the load. Real: has a **maximum current** (internal resistance).",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l08-008",
+   "section": "L08",
+   "type": "basic",
+   "front": "Ideal current source vs real current source.",
+   "back": "Ideal: **constant current**; the voltage depends on the load. Real: has a **maximum voltage** it can develop.",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l08-009",
+   "section": "L08",
+   "type": "basic",
+   "front": "Conductance vs resistance; resistance from geometry.",
+   "back": "Conductance $G = 1/R$ (siemens). $R = \\rho\\, l / A$ (resistivity × length / area).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-010",
+   "section": "L08",
+   "type": "basic",
+   "front": "Rank silver, copper and gold by resistivity.",
+   "back": "**Silver** (1.59) < **copper** (1.68) < **gold** (2.44) × 10⁻⁶ Ω·cm. Silver conducts best.",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l08-011",
+   "section": "L08",
+   "type": "basic",
+   "front": "A 220 Ω resistor has 10 % tolerance. What range can its actual value be in?",
+   "back": "±22 Ω, so **198–242 Ω**.",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-012",
+   "section": "L08",
+   "type": "basic",
+   "front": "Equivalent of resistors in series. Example: 120, 390, 560, 470 Ω.",
+   "back": "$R_{eq} = \\sum R_i$ = 120 + 390 + 560 + 470 = **1540 Ω**.",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-013",
+   "section": "L08",
+   "type": "basic",
+   "front": "Equivalent of resistors in parallel. Example: 100 Ω ∥ 100 Ω and 6 Ω ∥ 3 Ω.",
+   "back": "$1/R_{eq} = \\sum 1/R_i$; for two resistors $R_1R_2/(R_1+R_2)$.\n100 ∥ 100 = **50 Ω**; 6 ∥ 3 = **2 Ω**.",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-014",
+   "section": "L08",
+   "type": "basic",
+   "front": "Rules for connecting sources in series and parallel.",
+   "back": "- Voltage sources in **series**: OK (sum with polarity)\n- Current sources in **series**: **not allowed**\n- Current sources in **parallel**: OK (sum)\n- Voltage sources in **parallel**: **not allowed** (unless they are equal)",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l08-015",
+   "section": "L08",
+   "type": "basic",
+   "front": "State Kirchhoff's Voltage Law (KVL).",
+   "back": "Around any closed loop, the **sum of voltage rises = sum of voltage drops** (the sum of voltages is 0). Sources cause rises; resistors cause drops.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-016",
+   "section": "L08",
+   "type": "basic",
+   "front": "State Kirchhoff's Current Law (KCL).",
+   "back": "At any node, the **sum of currents entering = sum leaving** (the algebraic sum is 0).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-017",
+   "section": "L08",
+   "type": "basic",
+   "front": "Voltage divider: 12 V across 2 kΩ and 4 kΩ in series. Voltage across 4 kΩ?",
+   "back": "$V = 12 \\cdot \\dfrac{4}{2+4} =$ **8 V** (I = 2 mA).",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l08-018",
+   "section": "L08",
+   "type": "basic",
+   "front": "Current divider: 6 A splits between 2 Ω and 4 Ω in parallel. Current through each?",
+   "back": "$I_{2Ω} = 6 \\cdot \\dfrac{4}{6} = 4$ A, $I_{4Ω} = 2$ A (smaller R takes more current).",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l08-019",
+   "section": "L08",
+   "type": "basic",
+   "front": "How do you simplify a series-parallel circuit?",
+   "back": "Find subgroups that are purely series or parallel, replace each with its equivalent resistance, and repeat until one resistance (or a simple series/parallel circuit) remains.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l08-020",
+   "section": "L08",
+   "type": "basic",
+   "front": "Superposition theorem: when does it apply, and what are the steps?",
+   "back": "Only for **linear, bilateral** networks. For each source, make a sub-circuit with all other sources **set to zero** (voltage source → short, current source → open). Solve each one, then **add the contributions** (watch polarities).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l09-001",
+   "section": "L09",
+   "type": "basic",
+   "front": "What does dynamics describe?",
+   "back": "**Why** things move: forces and torques generated in or applied to the system. A robot is a complex multi-body system.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l09-002",
+   "section": "L09",
+   "type": "basic",
+   "front": "Name 6 forces that can act on a robot.",
+   "back": "Weight (mg), friction and normal force, inertial (ma), centripetal/centrifugal, **Coriolis**, electrical, magnetic, fluid/gas, thermal.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l09-003",
+   "section": "L09",
+   "type": "basic",
+   "front": "Linear ↔ rotational analogues (6 pairs).",
+   "back": "Displacement ↔ angle; velocity ↔ angular velocity; acceleration ↔ angular acceleration; **mass ↔ moment of inertia**; **force ↔ torque**; momentum p = mv ↔ angular momentum L = Iω.\n$F = ma \\;\\leftrightarrow\\; T = J\\alpha$.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l09-004",
+   "section": "L09",
+   "type": "basic",
+   "front": "Moment of inertia: definition, and values for a thin rod about its end and a point mass.",
+   "back": "$J = \\int r^2\\,dm$. Thin rod about its end: $J = \\tfrac13 mL^2$. Point mass at distance r: $J = m r^2$.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l09-005",
+   "section": "L09",
+   "type": "basic",
+   "front": "Horizontal 1-DoF arm: rod m = 10 kg, L = 1 m, point mass m₁ = 3 kg at the tip, g = 10 m/s². Holding torque?",
+   "back": "Rod weight acts at L/2: $T = m g \\tfrac L2 + m_1 g L = 50 + 30 =$ **80 N·m**.",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l09-006",
+   "section": "L09",
+   "type": "basic",
+   "front": "Same arm (rod 10 kg, 1 m; tip mass 3 kg). Torque to accelerate at α = 1 rad/s² counter-clockwise (upwards), starting horizontal?",
+   "back": "$J = \\tfrac13 \\cdot 10 \\cdot 1^2 + 3 \\cdot 1^2 = 6.33$ kg·m².\n$T = 80 + J\\alpha \\approx$ **86.3 N·m**.",
+   "tags": [
+    "25W",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 5
+  },
+  {
+   "id": "ir-l09-007",
+   "section": "L09",
+   "type": "basic",
+   "front": "Centripetal and Coriolis force formulas.",
+   "back": "$F_{cen} = m v^2 / r$. $F_{cor} = -2m\\,(\\vec\\omega \\times \\vec v)$.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l09-008",
+   "section": "L09",
+   "type": "basic",
+   "front": "What is the **Jacobian** used for in robotics?",
+   "back": "It **maps between domains**: joint velocities ↔ Cartesian velocities, and Cartesian forces ↔ joint torques.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l09-009",
+   "section": "L09",
+   "type": "basic",
+   "front": "To move a robot from P1 to P2, what do you need to provide?",
+   "back": "Joint angles for P2 and intermediate points (path/trajectory), speed or allowed time, acceleration/jerk limits, and the torques needed, all translated into motor inputs (voltage/current) by a **controller**.",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l09-010",
+   "section": "L09",
+   "type": "basic",
+   "front": "Open-loop vs closed-loop control.",
+   "back": "- **Open loop**: no feedback, the output isn't measured (toaster timer, stepper motor, washing machine program)\n- **Closed loop**: measures the output and corrects the **error** (thermostat, cruise control, servo)\n\nRobots prefer **closed loop**: robust to disturbances.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l09-011",
+   "section": "L09",
+   "type": "basic",
+   "front": "Name the 5 components of a control system.",
+   "back": "1. Input (reference) 2. Process being controlled (plant) 3. Output 4. Sensing elements 5. Controller and actuating devices.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l09-012",
+   "section": "L09",
+   "type": "basic",
+   "front": "Control signals: define x, y, r, e, u.",
+   "back": "- **x** = state (true output)\n- **y** = estimate (from sensors, y ≈ x)\n- **r** = reference (goal)\n- **e** = error = r − y\n- **u** = control signal to the actuators",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l09-013",
+   "section": "L09",
+   "type": "basic",
+   "front": "Thermostat set to 23 °C: name the reference, controller output and disturbances.",
+   "back": "Reference = 23 °C. The controller sets heater current or valve opening from the error. Disturbances: open window, outside temperature, sun, people in the room.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l09-014",
+   "section": "L09",
+   "type": "basic",
+   "front": "What does a controller have to do? (5 points)",
+   "back": "Map the input to an output (desired temperature → heater current); respect actuator limits; apply a control scheme (e.g. PID); use a **tolerance**; handle **modes/states** (fast heating, eco); react to external influences (open window).",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l09-015",
+   "section": "L09",
+   "type": "basic",
+   "front": "What does a PID controller do? What do P, I and D each contribute?",
+   "back": "It turns a sharp change of reference into a smooth, fast response without big overshoot.\n- **P (proportional)**: reacts to the current error\n- **I (integral)**: sums past error and **removes steady-state offset**\n- **D (derivative)**: reacts to the rate of change and **damps overshoot**",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l09-016",
+   "section": "L09",
+   "type": "basic",
+   "front": "Why can heating \"as fast as possible\" be bad?",
+   "back": "It causes **overshoot**: the room gets too hot and the controller must cool it again (oscillation). PID smooths the approach.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l09-017",
+   "section": "L09",
+   "type": "basic",
+   "front": "Five key requirements for a robot controller.",
+   "back": "Reduce error to **e = 0** (y = r), **robust** (adapts to unknown changes), **stable** (doesn't go out of control), **smooth**, **responsive** (reaches the reference quickly).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l09-018",
+   "section": "L09",
+   "type": "basic",
+   "front": "Why do robots often need multiple controllers?",
+   "back": "Different subsystems (cruise, arm linear motion, rotation) need their own, and the **dynamics change over time** (floor material, pose, load).",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l09-019",
+   "section": "L09",
+   "type": "basic",
+   "front": "Autonomous indoor service robot between two factory locations, with humans around: actuators, sensors, controller tasks?",
+   "back": "**Actuators**: DC/servo wheel motors (differential drive). **Sensors**: wheel encoders, IMU, LiDAR/ultrasonic for obstacles and humans, camera, bumpers. **Controllers**: velocity/path following, obstacle and human detection → slow or stop, localisation, emergency stop.",
+   "tags": [
+    "25W",
+    "design"
+   ],
+   "examStyle": true,
+   "points": 6
+  },
+  {
+   "id": "ir-l10-001",
+   "section": "L10",
+   "type": "basic",
+   "front": "What is HRI? Name its 4 levels.",
+   "back": "Human-Robot Interaction. **Coexistence** (shared workspace) → **collaboration** (doing something together) → **interaction** (communication) → **physical interaction** (communicating by touch).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-002",
+   "section": "L10",
+   "type": "basic",
+   "front": "What is a **cobot**?",
+   "back": "A **collaborative robot** designed to work safely alongside humans in a shared workspace (e.g. UR robots).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l10-003",
+   "section": "L10",
+   "type": "basic",
+   "front": "Safety vs security.",
+   "back": "- **Safety**: accident avoidance (the robot must not hurt people)\n- **Security**: crime prevention (hacking, theft, sabotage)",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l10-004",
+   "section": "L10",
+   "type": "basic",
+   "front": "Name the key safety standards for robots.",
+   "back": "- **ISO 10218-1/-2:2025**: industrial robots and robot cells\n- **ISO/TS 15066**: collaborative robots\n- **ISO 13482**: personal care robots\n- **ISO 14971**: medical device risk management\n- **IEC 80601-2-78**: medical rehabilitation robots\nEU machinery directive → CE marking.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-005",
+   "section": "L10",
+   "type": "basic",
+   "front": "Name the four collaborative operation modes (ISO/TS 15066).",
+   "back": "1. **Safety-rated monitored stop**\n2. **Hand guiding**\n3. **Speed and separation monitoring**\n4. **Power and force limiting**",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l10-006",
+   "section": "L10",
+   "type": "basic",
+   "front": "Safety-rated monitored stop: how does it work?",
+   "back": "The robot enforces a low-level **stop as soon as a human enters** the collaborative cell.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l10-007",
+   "section": "L10",
+   "type": "basic",
+   "front": "Speed and separation monitoring: how does it work?",
+   "back": "The human's pose is **monitored**; the robot slows down and **must stop if the human gets too close**.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l10-008",
+   "section": "L10",
+   "type": "basic",
+   "front": "Power and force limiting: how does it work, and what is forbidden?",
+   "back": "Motor torque/current is limited so collision forces and pressures stay **below body-region limits**. The robot keeps working, but **collisions with the head are not allowed**.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-009",
+   "section": "L10",
+   "type": "basic",
+   "front": "Hand guiding: what is required?",
+   "back": "A **guiding device with an emergency stop** switch (used for teaching).",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 1
+  },
+  {
+   "id": "ir-l10-010",
+   "section": "L10",
+   "type": "basic",
+   "front": "Hierarchy of controls (NIOSH), from most to least effective.",
+   "back": "1. **Elimination** 2. **Substitution** 3. **Engineering controls** 4. **Administrative controls** 5. **PPE**.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-011",
+   "section": "L10",
+   "type": "basic",
+   "front": "Give a robotics example for each level of the hierarchy of controls.",
+   "back": "Elimination: remove the human from the task. Substitution: use a smaller, lighter cobot. Engineering: fences, light curtains, force limiting. Administrative: training, procedures, signs. PPE: gloves, safety glasses.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 5
+  },
+  {
+   "id": "ir-l10-012",
+   "section": "L10",
+   "type": "basic",
+   "front": "\"A robot itself is never safe.\" What does that mean?",
+   "back": "Only a specific **application** (robot + task + environment + people) can be made safe, just as a hair dryer is safe only when used as intended.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-l10-013",
+   "section": "L10",
+   "type": "basic",
+   "front": "What must you understand to make a cobot application safe and productive?",
+   "back": "The participants and their capabilities, environment influences, the task, who does what, what information is exchanged, and **usability**, so workers don't try to bypass safety measures.",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l10-014",
+   "section": "L10",
+   "type": "basic",
+   "front": "What is **FMEA**?",
+   "back": "**Failure Mode and Effects Analysis**: identify risks, quantify them (severity, occurrence, detection), add countermeasures if the risk is too high.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-015",
+   "section": "L10",
+   "type": "basic",
+   "front": "Explain **Risk Priority Numbers** and give an example.",
+   "back": "RPN = **Severity × Occurrence × Detection**, each rated 1–10 (so 1–1000). A higher RPN means a higher priority for countermeasures. (A higher D score means the failure is **harder** to detect.)\nExample: a cobot gripper drops a part, S = 6, O = 4, D = 3 → **RPN = 72**. After adding a grip sensor, D = 1 → RPN = 24.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-l10-016",
+   "section": "L10",
+   "type": "basic",
+   "front": "Name 4 active safety measures for HRI.",
+   "back": "Ubiquitous sensing of the robot and its surroundings, human monitoring (with AI), **active collision avoidance** (path planning + human motion prediction), extensive testing with real people, simulation, a **digital twin** for continuous monitoring.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-017",
+   "section": "L10",
+   "type": "basic",
+   "front": "Name 4 open research topics in HRI.",
+   "back": "Human detection and tracking in crowds, health and elderly care (e.g. dressing), real-time contact force estimation, verbal and non-verbal communication with AI, reading emotions, realistic real-time simulation.",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-l10-018",
+   "section": "L10",
+   "type": "basic",
+   "front": "Give an example of bias in HRI/AI, its cause and a remedy.",
+   "back": "A soap dispenser whose IR sensor didn't detect darker skin. Cause: **unrepresentative test and training data**. Remedy: diverse testing and datasets.",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-019",
+   "section": "L10",
+   "type": "basic",
+   "front": "Name 3 ethical questions in HRI.",
+   "back": "Should robots look and behave like humans? Robotic warfare? How do robots affect human-human relationships? Who is to blame if something goes wrong? (Laws are still missing.)",
+   "tags": [
+    "25W"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-l10-020",
+   "section": "L10",
+   "type": "basic",
+   "front": "Name two \"exotic\" HRI examples.",
+   "back": "**Lovotics** (love + robotics, sharing emotions) and **HuggieBot 2.0** (a huggable robot, Max Planck Institute).",
+   "tags": [
+    "25W"
+   ]
+  },
+  {
+   "id": "ir-exam-001",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "What is the format of the Intro to Robotics exam?",
+   "back": "Written, pen and paper, **90 min**, open questions, **80 points (40 to pass)**, about 1 point = 1 min, **15–20 questions** across all lecture slides. Keep answers short and on point. Closed book, no AI.",
+   "tags": [
+    "exam-prep",
+    "format"
+   ]
+  },
+  {
+   "id": "ir-exam-002",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] What is a robot?",
+   "back": "A computer-controlled machine that operates automatically to perform jobs and replace human effort. It doesn't need to look human.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-003",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] A robot must transport heavy materials on a factory floor between fixed pickup and delivery points, automatically. Which robot type is suitable? Justify.",
+   "back": "A **wheeled mobile robot / AGV** (4 wheels, differential or Ackermann drive). The floor is flat, so wheels are simple, efficient and stable. 4 wheels give high stability for heavy payloads. Fixed routes make navigation easy (line or marker following, known map). Legs or drones add needless complexity and have low payload.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-004",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[5 pts] How does the ToF principle work? Name two different sensors that use ToF.",
+   "back": "An active sensor emits a signal (sound/light pulse) and measures the time *t* until the reflection returns. Distance $d = v t / 2$ (v = speed of sound or light; divide by 2 for the round trip).\nSensors: **ultrasonic distance sensor**, **LiDAR / laser range finder** (also ToF cameras).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 5
+  },
+  {
+   "id": "ir-exam-005",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] Force sensor for 5–15 N, digitised by a 0–10 V ADC. Sensors S1 and S2 are shown as output-voltage-vs-force graphs. How do you choose?",
+   "back": "Read each graph at **5 N and 15 N**. Reject a sensor that **saturates** (flat at 10 V) or exceeds 10 V before 15 N, because forces above that can't be distinguished. Among the rest, choose the one with the **largest voltage span over 5–15 N** (highest sensitivity, best ADC resolution) and a **linear** curve.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-006",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] Explain the concept of Risk Priority Numbers and give an example.",
+   "back": "In FMEA every failure mode is rated 1–10 for **Severity, Occurrence and Detection** (high D = hard to detect). **RPN = S × O × D**. The highest RPNs get countermeasures first.\nExample: a cobot fails to stop on contact. S = 9, O = 2, D = 4 → RPN = 72. Adding a redundant force sensor lowers O and D.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-007",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] The pressure of a hydraulic system is specified as 200 bar. Convert it to N/m².",
+   "back": "1 bar = 10⁵ N/m², so **2 × 10⁷ N/m²**.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-008",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] A drivetrain has a combustion engine (η = 30 %) and a gearbox (η = 50 %). Total efficiency?",
+   "back": "η = 0.3 × 0.5 = **15 %**.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-009",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[10 pts] Derive the forward kinematics of a 3-link planar arm and compute the end-effector pose for L₁ = 2 m, L₂ = 2 m, L₃ = 1 m, θ₁ = 45°, θ₂ = 10°, θ₃ = 20° (relative angles).",
+   "back": "$x = L_1c_1 + L_2c_{12} + L_3c_{123}$, $y = L_1s_1 + L_2s_{12} + L_3s_{123}$, $\\varphi = \\theta_1+\\theta_2+\\theta_3$\nwith θ₁ = 45°, θ₁₂ = 55°, θ₁₂₃ = 75°:\nx = 2(0.7071) + 2(0.5736) + 1(0.2588) ≈ **2.82 m**\ny = 2(0.7071) + 2(0.8192) + 1(0.9659) ≈ **4.02 m**\nφ = **75°**",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 10
+  },
+  {
+   "id": "ir-exam-010",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Name the three robot paradigms and how SENSE-PLAN-ACT is arranged in each.",
+   "back": "Hierarchical: S → P → A. Reactive: S → A. Hybrid: P, then S → A behaviours in parallel.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-011",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Why do absolute encoders often use Gray code? Give 6 in Gray code.",
+   "back": "Only one bit changes between neighbouring positions, so there are no false intermediate readings. 6 = 0110 (binary) → **0101** (Gray).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-012",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] Compare hydraulic and pneumatic actuators (pressure, force, pros, cons).",
+   "back": "Hydraulic: 100–300 bar oil, very high force, stiff, holds load; leaks and contamination, lots of maintenance and parts. Pneumatic: 5–7 bar air, lower force (lower p, compressible), cleaner and cheaper; less precise, air leaks.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-013",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Stepper vs servo motor.",
+   "back": "Stepper: fixed step angle, open loop, accurate at low speed, torque drops with speed, low efficiency (printers). Servo: motor + encoder, closed loop, precise positioning (robot joints).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-014",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] A DC motor at 1500 rpm delivers 2 N·m and draws 4 A at 100 V. Efficiency?",
+   "back": "ω = 2π·1500/60 = 157.1 rad/s. P_out = 314.2 W, P_in = 400 W, so η ≈ **78.5 %**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-015",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Random vs systematic error, with a remedy for each.",
+   "back": "Random: unpredictable variation, reduce by averaging many measurements. Systematic: bias from the instrument or method, correct by calibration.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-016",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] A sensor stream contains occasional spikes. Which filter, and why?",
+   "back": "**Median filter**: the outlier is never the middle value, so it is ignored. A moving average would be pulled up by the spike.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-017",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] Compare visibility-graph and Voronoi-graph path planning.",
+   "back": "Visibility: nodes = start, goal, obstacle vertices; shortest path but close to obstacles (inflate obstacles by the robot size). Voronoi: equidistant to obstacles, maximum clearance, safer but longer, sensitive to obstacle changes.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-018",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] 0–20 m range, 10-bit ADC. Resolution?",
+   "back": "20 / 1023 ≈ **1.96 cm**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-019",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] What is teaching in robot operation? Give an application.",
+   "back": "Guiding the robot by hand or pendant while it records waypoints, then replaying them. Example: welding along a fixed seam.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-020",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] TCP vs UDP: when would you use each for a robot?",
+   "back": "TCP: reliable and ordered, for commands and configuration. UDP: fast, no guarantees, for streaming sensor data or video where an occasional lost packet doesn't matter.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-021",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] Which machines rely on G-code?",
+   "back": "CNC machines (mills, lathes, drills), 3D printers, Cartesian robots.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-022",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] What is the benefit of simulation environments? Name two simulators.",
+   "back": "Cheaper and faster development, less hardware, safe testing, training data for ML, digital twins. Gazebo, CoppeliaSim (Unity/Unreal).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-023",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] Forward vs inverse kinematics; how many solutions does each have?",
+   "back": "FK: joints → pose, exactly one solution. IK: pose → joints, 0, 1 or many (elbow up/down), and harder (except for parallel robots).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-024",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Rotate the point (3, 0) by 90° counter-clockwise about (1, 0).",
+   "back": "Translate by (−1, 0) → (2, 0). Rotate 90° → (0, 2). Translate back → **(1, 2)**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-025",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] 2-link arm L₁ = 0.5 m, L₂ = 0.3 m, θ₁ = 90°, θ₂ = −90°. End-effector position?",
+   "back": "x = 0.5 cos 90° + 0.3 cos 0° = **0.3 m**; y = 0.5 sin 90° + 0.3 sin 0° = **0.5 m**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-026",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] How many DoF does a free rigid body in 3D space have? List them.",
+   "back": "6: translation along x, y, z and rotation about x, y, z (roll, pitch, yaw).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-027",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] Name the four collaborative operation modes for cobots.",
+   "back": "Safety-rated monitored stop; hand guiding; speed and separation monitoring; power and force limiting.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-028",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Open- vs closed-loop control, with one example each.",
+   "back": "Open: no feedback (toaster timer, stepper drive). Closed: measures output and corrects the error (thermostat, servo, cruise control).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-029",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[4 pts] What do the P, I and D terms of a PID controller do?",
+   "back": "P: proportional to the current error (fast response). I: integrates past error, removes steady-state offset. D: reacts to the rate of change, damps overshoot.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 4
+  },
+  {
+   "id": "ir-exam-030",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Resistors 100 Ω and 300 Ω in parallel, in series with 25 Ω, on 10 V. Source current?",
+   "back": "100 ∥ 300 = 75 Ω; + 25 = 100 Ω; I = 10/100 = **0.1 A**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-031",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] State KVL and KCL.",
+   "back": "KVL: voltages around a closed loop sum to zero. KCL: currents into a node equal currents out.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-032",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Vacuum gripper: lift 2 kg at 100 % vacuum with safety factor 2. Suction area needed?",
+   "back": "0.5 kg/cm² → **4 cm²**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-033",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Eddy current vs capacitive displacement sensor: when do you choose which?",
+   "back": "Eddy current: conductive target, dirty or wet environment, needs target-specific calibration. Capacitive: clean, dry environment (clean room or vacuum), very high accuracy, any target, immune to magnetic fields.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 3
+  },
+  {
+   "id": "ir-exam-034",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] What is a singularity, and why is it dangerous?",
+   "back": "A pose where the robot loses DoF (axes align). Joint speeds go towards infinity, causing unpredictable or fast motion and loss of control.",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-035",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[2 pts] Name 4 types of grippers.",
+   "back": "Mechanical/electric, pneumatic, vacuum/suction, magnetic (also adhesive, hooks/scoops, bladder, jamming).",
+   "tags": [
+    "exam-prep"
+   ],
+   "examStyle": true,
+   "points": 2
+  },
+  {
+   "id": "ir-exam-036",
+   "section": "EXAM",
+   "type": "basic",
+   "front": "[3 pts] Wheel radius 3 cm; the encoder reports 10 rotations + 180°. Distance travelled?",
+   "back": "D = 10·2π·0.03 + π·0.03 = 1.885 + 0.094 ≈ **1.98 m**.",
+   "tags": [
+    "exam-prep",
+    "calc"
+   ],
+   "examStyle": true,
+   "points": 3
+  }
+ ]
+}

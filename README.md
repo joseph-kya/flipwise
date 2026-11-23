@@ -26,7 +26,7 @@ Flip a card, rate how well you knew it, and let the scheduler decide when you se
 | Build guide: 24 step-by-step prompts in 6 phases | ✅ Done |
 | App code | 🚧 Next up |
 
-The deck and mockup files are being added to the repo next.
+The mockup loads `docs/design/deck.json` (a copy of the deck). To try it locally, serve the folder, e.g. `npx serve docs/design`, and open `flipwise-mockup.html`.
 
 ## Tech stack
 

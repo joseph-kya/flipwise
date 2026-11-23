@@ -1,0 +1,283 @@
+<title>Flipwise mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one-screen study app. Sticky top bar (brand, subject, lecture, view tabs), centered card stage, rating dock below. */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --surface-2:#f6f8fb; --line:#d9dfe8; --ink:#152033; --muted:#5b6678;
+  --accent:#2f5bea; --accent-soft:#e3e9fd;
+  --again:#e5484d; --again-soft:#fde8e8; --hard:#f08c16; --hard-soft:#fdf0df; --good:#2a9d63; --good-soft:#e1f4ea;
+  --shadow:0 1px 2px rgba(21,32,51,.06),0 12px 32px -12px rgba(21,32,51,.18);
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#18202f; --surface-2:#1e2738; --line:#2b3549; --ink:#e7ecf5; --muted:#97a3b8;
+  --accent:#7c9bff; --accent-soft:#24304d;
+  --again:#ff6b6f; --again-soft:#3a1f25; --hard:#ffad4d; --hard-soft:#3a2a17; --good:#4cc98a; --good-soft:#173326;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px -16px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#18202f; --surface-2:#1e2738; --line:#2b3549; --ink:#e7ecf5; --muted:#97a3b8;
+  --accent:#7c9bff; --accent-soft:#24304d;
+  --again:#ff6b6f; --again-soft:#3a1f25; --hard:#ffad4d; --hard-soft:#3a2a17; --good:#4cc98a; --good-soft:#173326;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px -16px rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1180px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:-.01em;margin-right:6px}
+.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);position:relative;transform:rotate(-8deg)}
+.logo::after{content:"";position:absolute;inset:5px 6px;border-radius:3px;background:var(--surface);transform:rotate(14deg)}
+.pick{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pick label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.pick select{appearance:none;background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23889' fill='none' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid var(--line);border-radius:8px;padding:6px 30px 6px 10px;font-weight:600;max-width:100%}
+.tabs{display:flex;gap:4px;margin-left:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tabs button{border:0;background:transparent;padding:6px 12px;border-radius:7px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+main{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* study view */
+.study{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:24px;align-items:start}
+.counts{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--muted);margin-bottom:10px}
+.counts b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+.c-new b{color:var(--accent)} .c-learn b{color:var(--again)} .c-rev b{color:var(--good)}
+.bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:18px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+
+.stage{perspective:1600px}
+.card{position:relative;width:100%;min-height:400px;cursor:pointer;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.7,.2,1);border:0;background:transparent;padding:0;text-align:left;display:block}
+.card.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:26px 30px 22px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.back{transform:rotateY(180deg)}
+.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.chip.lec{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.exam{background:var(--hard-soft);color:var(--hard);border-color:transparent}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(20px,2.6vw,27px);line-height:1.25;letter-spacing:-.01em;text-wrap:balance;margin:auto 0}
+.a{font-size:16.5px;line-height:1.6;margin:auto 0}
+.a ul{margin:.3em 0 0;padding-left:1.2em}
+.a code,.q code{font-family:var(--f-mono);font-size:.9em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.qsmall{font-size:13px;color:var(--muted);border-bottom:1px dashed var(--line);padding-bottom:10px}
+.hint{font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface-2)}
+
+.dock{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;transition:opacity .2s}
+.dock.off{opacity:.35;pointer-events:none}
+.rate{border:1.5px solid transparent;border-radius:14px;padding:12px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:600;transition:transform .12s}
+.rate:hover{transform:translateY(-2px)} .rate:active{transform:translateY(0)}
+.rate small{font-family:var(--f-mono);font-weight:400;font-size:12px;opacity:.85}
+.rate .k{font-family:var(--f-mono);font-size:10.5px;opacity:.6}
+.r-again{background:var(--again-soft);color:var(--again);border-color:var(--again)}
+.r-hard{background:var(--hard-soft);color:var(--hard);border-color:var(--hard)}
+.r-good{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+
+.side{display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.panel h3{margin:0 0 10px;font-family:var(--f-display);font-size:15px;font-weight:600}
+.row{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:4px 0}
+.row span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+.done{text-align:center;padding:60px 20px}
+.done h2{font-family:var(--f-display);font-size:28px;margin:0 0 6px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* decks view */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.deck{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.deck h3{margin:0;font-family:var(--f-display);font-size:18px}
+.lec-row{display:grid;grid-template-columns:minmax(0,1fr) 70px 34px;gap:10px;align-items:center;font-size:13px}
+.lec-row .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--good)}
+.lec-row .n{font-family:var(--f-mono);color:var(--muted);text-align:right}
+.import{border:1.5px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;color:var(--muted);text-align:center}
+
+/* stats view */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.heat{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;gap:3px;overflow-x:auto;padding-bottom:4px}
+.heat i{border-radius:3px;background:var(--line)}
+.kpis{display:flex;gap:22px;flex-wrap:wrap}
+.kpi b{display:block;font-family:var(--f-display);font-size:28px}
+.kpi span{font-size:12px;color:var(--muted)}
+svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+
+.opts{display:flex;gap:12px}.opts label{display:flex;gap:5px;align-items:center;cursor:pointer}
+.a p,.q p,.qsmall p{margin:.2em 0}.a table{border-collapse:collapse;font-size:14px}.a td,.a th{border:1px solid var(--line);padding:3px 8px}.a mjx-container,.q mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden}
+.legend{margin-top:26px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+
+@media (max-width:860px){.study{grid-template-columns:minmax(0,1fr)}.tabs{margin-left:0}}
+@media (max-width:520px){.face{padding:20px}.card{min-height:380px}.rate{padding:10px 4px;font-size:14px}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+</style>
+
+<header class="top"><div class="top-in">
+  <div class="brand"><span class="logo" aria-hidden="true"></span>Flipwise</div>
+  <div class="pick"><label for="subject">Subject</label>
+    <select id="subject">
+      <option>Intro to Robotics</option><option>Analysis 1</option><option>Physics for Engineers</option><option>Programming (Python)</option><option>+ New subject…</option>
+    </select></div>
+  <div class="pick"><label for="lecture">Lecture / week</label>
+    <select id="lecture"><option>Loading…</option></select></div>
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" aria-selected="true" data-v="study">Study</button>
+    <button role="tab" aria-selected="false" data-v="decks">Decks</button>
+    <button role="tab" aria-selected="false" data-v="stats">Stats</button>
+  </nav>
+</div></header>
+
+<main>
+  <section id="v-study">
+    <div class="study">
+      <div>
+        <div class="counts"><span class="c-new">New <b id="cNew">0</b></span><span class="c-learn">Learning <b id="cLearn">0</b></span><span class="c-rev">Review <b id="cRev">0</b></span><span class="opts"><label><input type="checkbox" id="examOnly"> Exam-style only</label><label><input type="checkbox" id="shuffle"> Shuffle new</label></span><span style="margin-left:auto">Card <b id="pos">1</b> of <b id="tot">0</b></span></div>
+        <div class="bar"><i id="prog"></i></div>
+        <div class="panel done" id="endPanel" hidden></div>
+        <div id="stageWrap">
+          <div class="stage"><button class="card" id="card" aria-label="Flashcard, press to flip">
+            <div class="face front"><div class="meta" id="fMeta"></div><div class="q" id="fQ"></div><div class="hint"><span>Click the card or press <kbd>Space</kbd> to reveal</span><span id="fSrc" style="font-family:var(--f-mono)"></span></div></div>
+            <div class="face back"><div class="meta" id="bMeta"></div><div class="qsmall" id="bQ"></div><div class="a" id="bA"></div><div class="hint"><span>Rate with <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span id="bSrc" style="font-family:var(--f-mono)"></span></div></div>
+          </button></div>
+          <div class="dock off" id="dock">
+            <button class="rate r-again" data-g="1"><span>Didn't know</span><small id="iv1">10 min</small><span class="k">1</span></button>
+            <button class="rate r-hard" data-g="2"><span>Unsure</span><small id="iv2">1 day</small><span class="k">2</span></button>
+            <button class="rate r-good" data-g="3"><span>Knew it</span><small id="iv3">3 days</small><span class="k">3</span></button>
+          </div>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="panel"><h3>This session</h3>
+          <div class="row"><span style="color:var(--again)">Didn't know</span><span id="sA">0</span></div>
+          <div class="row"><span style="color:var(--hard)">Unsure</span><span id="sH">0</span></div>
+          <div class="row"><span style="color:var(--good)">Knew it</span><span id="sG">0</span></div>
+          <div class="row"><span>Time</span><span id="sT">0:00</span></div></div>
+        <div class="panel"><h3>Exam: Intro to Robotics</h3>
+          <div class="row"><span>Format</span><span>90 min · 80 pts</span></div>
+          <div class="row"><span>To pass</span><span>40 pts</span></div>
+          <div class="row"><span>Questions</span><span>15–20</span></div>
+          <p class="note">Cards tagged <span class="chip exam" style="padding:1px 6px">Exam-style</span> copy the wording and point values of the sample questions from the lecturers' exam-prep slides.</p></div>
+        <div class="panel"><h3>How rating works</h3>
+          <p class="note">Each button shows when you'll see the card again. Red brings it back in this session, orange makes the gap shorter, green makes it longer. Gaps grow every time you know it.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="v-decks" hidden>
+    <div class="grid" id="deckGrid"></div>
+  </section>
+
+  <section id="v-stats" hidden>
+    <div class="stats">
+      <div class="panel"><h3>Overview</h3><div class="kpis">
+        <div class="kpi"><b id="kRet">—</b><span>Rated orange or green</span></div>
+        <div class="kpi"><b id="kLearned">0</b><span>Cards studied</span></div></div></div>
+      <div class="panel"><h3>Activity, last 20 weeks</h3><div class="heat" id="heat"></div><p class="note" style="margin-top:8px">Sample pattern. The real app tracks your daily activity.</p></div>
+      <div class="panel" style="grid-column:1/-1"><h3>Reviews due, next 14 days</h3><div style="overflow-x:auto"><svg id="fc" viewBox="0 0 700 170" width="100%" style="min-width:420px" role="img" aria-label="Forecast of reviews due per day"></svg></div></div>
+    </div>
+  </section>
+
+  <p class="legend">Mockup for approval. This prototype runs the full Intro to Robotics deck (341 cards). Your ratings are saved in this browser only. The desktop app will store them properly and sync.</p>
+</main>
+
+<script>
+window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]},svg:{fontCache:'global'},options:{enableMenu:false},startup:{typeset:false}};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.min.js" async></script>
+<script>
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let DECK=null,SEC={},srs=store.get('fw.srs',{});
+const DAY=86400000;
+
+/* markdown with math kept intact */
+function md(src){
+  const keep=[];let s=src.replace(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g,m=>{keep.push(m);return '\u0000'+(keep.length-1)+'\u0000'});
+  let h=window.marked?marked.parse(s,{breaks:true}):s.replace(/\n/g,'<br>');
+  return h.replace(/\u0000(\d+)\u0000/g,(_,i)=>keep[+i].replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+}
+function typeset(els){if(window.MathJax&&MathJax.typesetPromise){MathJax.typesetClear&&MathJax.typesetClear(els);MathJax.typesetPromise(els).catch(()=>{})}}
+
+/* scheduler: SM-2 style, three grades */
+function st(id){return srs[id]||{ease:2.5,ivl:0,reps:0,due:0,lapses:0}}
+function fmt(d){return d<1?"10 min":d<31?d+(d===1?" day":" days"):d<365?(d/30).toFixed(1).replace('.0','')+" mo":(d/365).toFixed(1)+" yr"}
+function next(s,g){const n={...s};
+  if(g===1){n.reps=0;n.ivl=0;n.ease=Math.max(1.3,s.ease-.2);n.lapses=(s.lapses||0)+1}
+  else if(g===2){n.ivl=s.reps===0?1:Math.max(s.ivl+1,Math.round(s.ivl*1.2));n.ease=Math.max(1.3,s.ease-.15);n.reps=s.reps+1}
+  else{n.ivl=s.reps===0?3:s.reps===1?Math.max(6,s.ivl+1):Math.round(s.ivl*s.ease);n.ease=s.ease+.1;n.reps=s.reps+1}
+  n.due=Date.now()+(n.ivl?n.ivl*DAY:10*60000);return n}
+
+let queue=[],idx=0,flipped=false,done=0,stats={1:0,2:0,3:0},t0=Date.now(),learning=new Set();
+function build(){
+  const v=$('lecture').value,examOnly=$('examOnly').checked,now=Date.now();
+  const pool=DECK.cards.filter(c=>(v==='all'||c.section===v)&&(!examOnly||c.examStyle));
+  const due=pool.filter(c=>srs[c.id]&&srs[c.id].due<=now).sort((a,b)=>srs[a.id].due-srs[b.id].due);
+  const fresh=pool.filter(c=>!srs[c.id]);
+  if($('shuffle').checked){for(let i=fresh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[fresh[i],fresh[j]]=[fresh[j],fresh[i]]}}
+  queue=[...due,...fresh];idx=0;done=0;learning.clear();
+  render()}
+function chips(c){const s=SEC[c.section];return `<span class="chip lec">${c.section==='EXAM'?'Exam':'L'+(+c.section.slice(1))} · ${s.title}</span>`+(c.examStyle?`<span class="chip exam">Exam-style · ${c.points} pts</span>`:'')+(s.preview?`<span class="chip">From 25W slides</span>`:'')}
+function render(){
+  const wrap=$('stageWrap'),end=$('endPanel');
+  if(idx>=queue.length){wrap.hidden=true;end.hidden=false;
+    end.innerHTML=queue.length?`<h2>Session complete</h2><p class="note">You reviewed ${done} cards. Cards you marked red come back in 10 minutes. The rest are scheduled for later days.</p><p style="margin-top:16px"><button class="btn primary" id="again">Check for due cards</button></p>`
+    :`<h2>Nothing due here</h2><p class="note">Every card in this selection is scheduled for a later day. Pick another lecture, or come back tomorrow.</p><p style="margin-top:16px"><button class="btn primary" id="again">Refresh</button></p>`;
+    $('again').onclick=build;$('tot').textContent=queue.length;$('pos').textContent=queue.length;$('prog').style.width='100%';counts();return}
+  wrap.hidden=false;end.hidden=true;
+  const c=queue[idx];
+  $('fMeta').innerHTML=chips(c);$('bMeta').innerHTML=chips(c);
+  $('fQ').innerHTML=md(c.front);$('bQ').innerHTML=md(c.front);$('bA').innerHTML=md(c.back);
+  $('fSrc').textContent=$('bSrc').textContent=c.id;
+  flipped=false;$('card').classList.remove('flipped');$('dock').classList.add('off');
+  const s=st(c.id);[1,2,3].forEach(g=>$('iv'+g).textContent=fmt(next(s,g).ivl));
+  $('pos').textContent=idx+1;$('tot').textContent=queue.length;$('prog').style.width=(idx/queue.length*100)+'%';counts();
+  typeset([$('fQ'),$('bQ'),$('bA')])}
+function counts(){const rest=queue.slice(idx);$('cNew').textContent=rest.filter(c=>!learning.has(c.id)&&!srs[c.id]).length;$('cLearn').textContent=rest.filter(c=>learning.has(c.id)).length;$('cRev').textContent=rest.filter(c=>!learning.has(c.id)&&srs[c.id]).length}
+function flip(){if(idx>=queue.length)return;flipped=!flipped;$('card').classList.toggle('flipped',flipped);$('dock').classList.toggle('off',!flipped)}
+function rate(g){if(!flipped||idx>=queue.length)return;const c=queue[idx];srs[c.id]=next(st(c.id),g);store.set('fw.srs',srs);stats[g]++;done++;
+  $('sA').textContent=stats[1];$('sH').textContent=stats[2];$('sG').textContent=stats[3];
+  if(g===1){learning.add(c.id);queue.splice(Math.min(queue.length,idx+4),0,c)}else learning.delete(c.id);
+  idx++;render()}
+$('card').addEventListener('click',flip);
+document.querySelectorAll('.rate').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();rate(+b.dataset.g)}));
+document.addEventListener('keydown',e=>{if(['SELECT','INPUT'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();flip()}if(['1','2','3'].includes(e.key))rate(+e.key)});
+setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('sT').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},1000);
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['study','decks','stats'].forEach(v=>$('v-'+v).hidden=v!==b.dataset.v);if(b.dataset.v!=='study')renderDecks()}));
+
+function renderDecks(){
+  const rows=DECK.sections.map(s=>{const cs=DECK.cards.filter(c=>c.section===s.id);const m=cs.filter(c=>srs[c.id]&&srs[c.id].ivl>=21).length;const seen=cs.filter(c=>srs[c.id]).length;
+    return `<div class="lec-row"><span class="t">${s.id==='EXAM'?'Exam':'L'+(+s.id.slice(1))} · ${s.title}</span><span class="mini" title="${seen} studied"><i style="width:${seen/cs.length*100}%"></i></span><span class="n">${cs.length}</span></div>`}).join('');
+  $('deckGrid').innerHTML=`<div class="deck"><h3>${DECK.subject.name}</h3><p class="note">${DECK.cards.length} cards · ${DECK.sections.length} sections · bar = share of cards you've studied</p>${rows}<p style="margin:6px 0 0"><button class="btn" id="reset">Reset my progress</button> <span class="note" id="resetNote"></span></p></div>
+  <div class="deck"><h3>Analysis 1</h3><p class="note">Example of a second subject. Cards come after a Moodle sync.</p><div class="lec-row"><span class="t">Ch1 · Sets & logic</span><span class="mini"><i style="width:0"></i></span><span class="n">—</span></div></div>
+  <div class="import"><b style="color:var(--ink)">Import a deck</b><span>In the real app: drop a Flipwise .json, Anki .apkg or .csv file here</span></div>`;
+  let armed=false;$('reset').onclick=()=>{if(!armed){armed=true;$('resetNote').textContent='Click again to erase all ratings.';return}srs={};store.set('fw.srs',srs);$('resetNote').textContent='Progress cleared.';build();renderDecks()};
+  const total=Object.keys(srs).length,ok=Object.values(srs).filter(s=>s.reps>0).length;
+  $('kLearned').textContent=total;$('kRet').textContent=total?Math.round(ok/total*100)+'%':'—';
+  const fcv=Array.from({length:14},(_,i)=>Object.values(srs).filter(s=>{const d=Math.floor((s.due-Date.now())/DAY);return i===0?d<=0:d===i}).length);
+  drawForecast(fcv)}
+function drawForecast(vals){const max=Math.max(10,...vals),W=700,H=170,pl=30,pb=22,bw=(W-pl-10)/14;let svg='';
+  [0,.5,1].forEach(f=>{const t=Math.round(max*f),y=H-pb-f*(H-pb-10);svg+=`<line x1="${pl}" x2="${W-6}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${pl-6}" y="${y+3}" text-anchor="end">${t}</text>`});
+  vals.forEach((v,i)=>{const h=(v/max)*(H-pb-10),x=pl+i*bw+4;svg+=`<rect x="${x}" y="${H-pb-h}" width="${bw-8}" height="${Math.max(h,1)}" rx="3" fill="${i===0?'var(--accent)':'var(--accent-soft)'}" stroke="var(--accent)" stroke-width="${i===0?0:1}"/><text x="${x+(bw-8)/2}" y="${H-6}" text-anchor="middle">${i===0?'Today':'+'+i}</text>`});
+  $('fc').innerHTML=svg}
+let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+const heat=$('heat');for(let i=0;i<140;i++){const v=rnd();const el=document.createElement('i');if(v>.35)el.style.background=`color-mix(in srgb, var(--good) ${Math.round(25+v*75)}%, var(--line))`;heat.append(el)}
+
+['lecture','examOnly','shuffle'].forEach(id=>$(id).addEventListener('change',()=>{store.set('fw.ui',{lec:$('lecture').value,ex:$('examOnly').checked,sh:$('shuffle').checked});build()}));
+fetch('deck.json').then(r=>r.json()).then(d=>{DECK=d;d.sections.forEach(s=>SEC[s.id]=s);
+  const sel=$('lecture');sel.innerHTML='';
+  [['all','All lectures (mixed)',d.cards.length],...d.sections.map(s=>[s.id,(s.id==='EXAM'?'':'L'+(+s.id.slice(1))+' · ')+s.title+(s.preview?' (preview)':''),d.cards.filter(c=>c.section===s.id).length])]
+    .forEach(([v,t,n])=>{const o=document.createElement('option');o.value=v;o.textContent=`${t} (${n})`;sel.append(o)});
+  const ui=store.get('fw.ui',null);if(ui){sel.value=ui.lec||'all';$('examOnly').checked=!!ui.ex;$('shuffle').checked=!!ui.sh}
+  build();renderDecks()}).catch(()=>{$('stageWrap').innerHTML='<div class="panel done"><h2>Deck failed to load</h2><p class="note">Reload the page to try again.</p></div>'});
+</script>
