@@ -1091,7 +1091,7 @@ function App() {
               <Group divider={false} className="hero-surface">
                 <div className="due-row">
                   <div>
-                    <div className="due-figure">{todayCounts.total}</div>
+                    <div className="due-figure"><AnimatedNumber value={todayCounts.total} motion={effectiveMotion} /></div>
                     <div className="due-label">Cards available</div>
                     <div className="due-label">
                       {todayCounts.new} new · {todayCounts.review} review · {todayCounts.learning}{' '}

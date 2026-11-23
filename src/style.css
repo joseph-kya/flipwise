@@ -1986,3 +1986,27 @@ a.insight-card:active { transform: scale(0.99); }
   :root[data-theme="auto"] .rating-good { box-shadow: inset 0 3px 0 var(--sem-yellow-dot); }
   :root[data-theme="auto"] .rating-easy { box-shadow: inset 0 3px 0 var(--sem-green-dot); }
 }
+
+/* ---------- Micro-interactions (transform only; Off disables all :active transforms globally) ---------- */
+/* Switch: the thumb stretches toward where it's going while pressed, then springs. */
+.ios-switch-thumb { transform-origin: left center; }
+.ios-switch.is-on .ios-switch-thumb { transform-origin: right center; }
+.ios-switch:active:not(:disabled) .ios-switch-thumb { transform: scaleX(1.18); transition-duration: 120ms; }
+.ios-switch.is-on:active:not(:disabled) .ios-switch-thumb { transform: translateX(20px) scaleX(1.18); }
+
+/* Rating buttons: quick, deep press; springy release (asymmetric: fast in, soft out). */
+.rating-btn { transition: transform 280ms var(--ease-spring), opacity var(--dur-fast) var(--ease-out); }
+.rating-btn:active:not(:disabled) { transform: scale(0.94); transition-duration: 80ms; transition-timing-function: var(--ease-out); }
+
+/* Rows: a tiny chevron nudge on desktop hover says "this goes somewhere". */
+@media (hover: hover) and (pointer: fine) {
+  .group-row-interactive:hover .row-chevron:not(.subject-chevron),
+  .lesson-row:hover .row-chevron { transform: translateX(2px); }
+  .icon-tile { transition: transform var(--dur-base) var(--ease-spring); }
+  .group-row-interactive:hover .icon-tile { transform: scale(1.04); }
+}
+:root[data-motion="reduced"] .ios-switch:active .ios-switch-thumb { transform: none; }
+:root[data-motion="reduced"] .ios-switch.is-on:active .ios-switch-thumb { transform: translateX(20px); }
+:root[data-motion="reduced"] .group-row-interactive:hover .row-chevron,
+:root[data-motion="reduced"] .lesson-row:hover .row-chevron,
+:root[data-motion="reduced"] .group-row-interactive:hover .icon-tile { transform: none; }

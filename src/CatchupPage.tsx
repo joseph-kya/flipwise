@@ -155,7 +155,7 @@ export function CatchupPage({
         <Group divider={false}>
           <div className="due-row">
             <div>
-              <div className="due-figure">{planned}</div>
+              <div className="due-figure"><AnimatedNumber value={planned} motion={motion} /></div>
               <div className="due-label">{everything ? `${due} due · ${planned - due} practice` : due === 1 ? 'card due' : 'cards due'}</div>
             </div>
             <Button variant="primary" disabled={planned === 0} onClick={start}>Start</Button>
