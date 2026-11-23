@@ -33,12 +33,14 @@ const FONT_OPTIONS: ReadonlyArray<{ value: FontFamily; label: string; style: { f
   {
     value: 'rounded',
     label: 'Rounded',
-    style: { fontFamily: 'ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif' },
+    style: {
+      fontFamily: 'ui-rounded, "SF Pro Rounded", "Nunito", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+    },
   },
   {
     value: 'serif',
     label: 'Serif',
-    style: { fontFamily: 'ui-serif, "New York", Georgia, serif' },
+    style: { fontFamily: 'ui-serif, "New York", Georgia, "Times New Roman", serif' },
   },
 ];
 
@@ -73,7 +75,7 @@ export function AppearancePage({
         <h1 className="page-title">Appearance</h1>
       </div>
 
-      <section aria-label="Live preview" className="preview-stage">
+      <section aria-label="Live preview" className="group preview-group">
         <div
           className={`card-stage preview-card-stage${previewFlipped ? ' is-flipped' : ''}`}
           role="button"
@@ -94,7 +96,7 @@ export function AppearancePage({
                 <span>Preview</span>
                 <span>Tap to flip</span>
               </div>
-              <div className="card-question">What does continuity at a mean?</div>
+              <div className="card-question">What does continuity at a point mean?</div>
             </div>
             <div className="study-card card-face card-face-back preview-card">
               <div className="card-meta">
@@ -102,7 +104,7 @@ export function AppearancePage({
                 <span>Tap to flip back</span>
               </div>
               <div className="markdown">
-                <p>The limit of f(x) as x → a equals f(a).</p>
+                <p>The limit of f(x) as x approaches a equals f(a).</p>
               </div>
             </div>
           </div>
