@@ -475,6 +475,10 @@ function App() {
       const nextRoute = nextHash.split('/').slice(0, 3).join('/');
       const isCardRevealToggle = prevRoute === nextRoute && nextHash.startsWith('#/study/');
 
+      if (!isCardRevealToggle) {
+        window.scrollTo(0, 0);
+      }
+
       if (
         !isCardRevealToggle &&
         motionRef.current === 'full' &&
