@@ -2,6 +2,8 @@ import { subjects } from './demoSubjects';
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
 
 export interface ReviewEvent {
+  retention?: number;
+  fuzz?: boolean;
   id: string;          // unique
   cardId: string;
   subjectId: string;   // e.g. 'analysis-1'
