@@ -185,11 +185,13 @@ export class AccountController {
     await this.refreshPending();
   }
 
+  preload() { if (this.setup) return this.load(); return Promise.resolve(null); }
+
   async signIn() {
     if (!this.setup) return;
     this.set({ error: '', phase: 'signingIn' });
     try {
-      const client = await this.load();
+      const client = this.client ?? await this.load();
       hint.set(true); // survives a redirect so Firebase loads on return
       await client.signIn();
       if (!this.uid && !this.preparing) {

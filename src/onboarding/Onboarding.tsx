@@ -43,10 +43,12 @@ function Progress({ index }: { index: number }) {
 }
 
 export function Onboarding({ account, online, imported, onAddStarter, renderImport, renderAiGuide, onFinish }: OnboardingProps) {
-  const [step, setStep] = useState<OnboardingStep>('welcome');
+  const [step, setStep] = useState<OnboardingStep>(() => { try { const v = localStorage.getItem('flipwise.onboarding-progress.v1'); return v && STEPS.includes(JSON.parse(v).step) ? JSON.parse(v).step : 'welcome'; } catch { return 'welcome'; } });
   const [view, setView] = useState<StartView>('choose');
   const [panel, setPanel] = useState(0);
   const [dir, setDir] = useState<'forward' | 'back'>('forward');
+  useEffect(() => { try { localStorage.setItem('flipwise.onboarding-progress.v1', JSON.stringify({ step, view, panel })); } catch { /* storage unavailable */ } }, [step, view, panel]);
+  useEffect(() => { if (step === 'account') void account?.controller.preload()?.catch(() => {}); }, [step, account?.controller]);
   const realDecks = hasRealDecks(imported);
   const index = STEPS.indexOf(step);
   const headingRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
   // Signed in: skip ahead once the first sync tells us whether the cloud already has decks.
   const outcome = accountOutcome(account?.snapshot ?? null, realDecks);
   useEffect(() => {
-    if (step !== 'account') return;
+    if (step !== 'account' && step !== 'welcome') return;
     if (outcome === 'done') go('done');
     else if (outcome === 'start') go('start');
   }, [step, outcome]);

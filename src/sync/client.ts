@@ -40,7 +40,7 @@ export interface FirebaseClient {
 
 let instance: { app: FirebaseApp; auth: Auth; db: Firestore } | null = null;
 
-/** iOS home-screen apps can't open popups reliably: go straight to redirect there. */
+/** Detect installed display mode for callers that need installation-specific UI. */
 export function isStandalonePwa(): boolean {
   try {
     return (navigator as Navigator & { standalone?: boolean }).standalone === true ||
@@ -90,12 +90,11 @@ export function createFirebaseClient(setup: FirebaseSetup): FirebaseClient {
       (e) => (SILENT.has((e as { code?: string })?.code ?? '') ? null : friendlyAuthError(e)),
     ),
     async signIn() {
-      if (isStandalonePwa()) return signInWithRedirect(auth, provider);
       try {
         await signInWithPopup(auth, provider);
       } catch (e) {
         const code = (e as { code?: string })?.code ?? '';
-        if (SILENT.has(code)) return;
+        if (SILENT.has(code)) throw new Error('Sign-in was cancelled. Please try again.');
         if (NEEDS_REDIRECT.has(code)) return signInWithRedirect(auth, provider);
         throw new Error(friendlyAuthError(e));
       }
