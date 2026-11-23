@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatDuration } from '../calendar/dailyStats';
-import { subjects } from '../demoSubjects';
+import { useSubjects } from '../contentCatalog';
 import type { EffectiveMotion } from '../settings';
 import { ChevronLeft, ChevronRight, FlameIcon, SegmentedControl } from '../ui';
 import type { ChartId, InsightsData, RangeKey, SubjectFilter } from './aggregate';
@@ -89,6 +89,7 @@ export function InsightDetailPage({
   onRangeChange: (next: RangeKey) => void;
   onSubjectChange: (next: SubjectFilter) => void;
 }) {
+  const subjects = useSubjects();
   const [distTab, setDistTab] = useState<DistTab>('interval');
   const meta = CHART_META[chartId];
   const subjectLabel =

@@ -1360,3 +1360,13 @@ a.insight-card:active { transform: scale(0.99); }
     -webkit-backdrop-filter: none;
   }
 }
+.import-panel { padding: 24px; }
+.import-panel h2 { font-size: 20px; margin-bottom: 12px; }
+.import-panel h3 { font-size: 16px; margin-top: 20px; }
+.import-panel p, .import-panel li { color: var(--label-secondary); line-height: 1.6; }
+.import-drop { text-align: center; border: 1px dashed var(--separator); }
+.import-drop input { display: block; max-width: 260px; margin-top: 8px; }
+.anki-content img { max-width: 100%; height: auto; }
+.anki-content table { border-collapse: collapse; max-width: 100%; }
+.anki-content td, .anki-content th { padding: 6px; border: 1px solid var(--separator); }
+.source-link { display: block; margin-top: 20px; color: var(--label-secondary); font-size: 13px; }

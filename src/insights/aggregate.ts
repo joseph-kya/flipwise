@@ -1,5 +1,6 @@
 import { State, type Card } from 'ts-fsrs';
-import { subjects } from '../demoSubjects';
+import { subjects as demoSubjects, type Subject } from '../demoSubjects';
+import { stableCardId } from '../anki/types';
 import { mastery } from '../mastery';
 import type { Rating, ReviewEvent } from '../reviewLog';
 import { isLeech, schedule, studyDay } from '../scheduler';
@@ -312,11 +313,11 @@ function buildBuckets(todayKey: string, rangeDays: number): Array<{ keys: string
   return buckets;
 }
 
-export function buildDefaultCatalog(): CatalogItem[] {
+export function buildDefaultCatalog(subjects: Subject[] = demoSubjects): CatalogItem[] {
   return subjects.flatMap((s) =>
     s.lectures.flatMap((l) =>
       l.cards.map((c) => ({
-        cardId: `${s.id}/${l.id}/${c.id}`,
+        cardId: stableCardId(s.id,l.id,c),
         subjectId: s.id,
         lessonId: l.id,
         front: c.front,
@@ -332,6 +333,7 @@ export function computeInsights(
   allEvents: readonly ReviewEvent[],
   catalog: readonly CatalogItem[],
   filter: InsightsFilter,
+  subjects: Subject[] = demoSubjects,
 ): InsightsData {
   const today = filter.today ?? new Date();
   const todayKey = toStudyDateKey(today, filter.timeZone);
@@ -654,7 +656,7 @@ export function computeInsights(
         subjectEvents as ReviewEvent[],
         s.id,
         l.id,
-        l.cards.map((c) => `${s.id}/${l.id}/${c.id}`),
+        l.cards.map((c) => stableCardId(s.id,l.id,c)),
       );
       return {
         lessonId: l.id,

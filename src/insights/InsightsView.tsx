@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { subjects } from '../demoSubjects';
+import { useSubjects } from '../contentCatalog';
 import { formatDuration } from '../calendar/dailyStats';
 import type { EffectiveMotion } from '../settings';
 import { ChevronDown, ChevronRight, FlameIcon, SegmentedControl } from '../ui';
@@ -51,6 +51,7 @@ export function InsightsFilterBar({
   onSubjectChange: (next: SubjectFilter) => void;
   showRange?: boolean;
 }) {
+  const subjects = useSubjects();
   return (
     <div
       className={`insights-filters${showRange ? '' : ' insights-filters-subject-only'}`}

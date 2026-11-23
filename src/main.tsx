@@ -1,4 +1,11 @@
-import { queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech } from './scheduler';
+import { mediaType } from './anki/media';
+import { ContentContext, useSubjects } from './contentCatalog';
+import { stableCardId, type ImportedData } from './anki/types';
+import { CardContent } from './anki/content';
+import { ImportPage } from './anki/ImportPage';
+import { DataSettings } from './anki/DataSettings';
+import { queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
+} from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import {
   useEffect,
@@ -11,17 +18,19 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { subjects, type DemoCard, type Subject, type Lecture } from './demoSubjects';
+import { subjects as demoSubjects,
+  type DemoCard, type Subject, type Lecture,
+} from './demoSubjects';
 import './style.css';
 import {
   type ReviewEvent,
-  type Rating,
-} from './reviewLog';
+  type Rating } from './reviewLog';
 import { mastery } from './mastery';
 import { sessionStats } from './sessionStats';
 import { aggregateByDay, streak, toStudyDateKey } from './calendar/dailyStats';
 import { CalendarPage } from './calendar/CalendarPage';
-import { buildDefaultCatalog, computeInsights, type RangeKey, type SubjectFilter } from './insights/aggregate';
+import { buildDefaultCatalog, computeInsights, type RangeKey, type SubjectFilter,
+} from './insights/aggregate';
 import { InsightDetailPage, isValidChartId } from './insights/InsightDetailPage';
 import { InsightsView } from './insights/InsightsView';
 import { markDemoCleared, seedDemoHistoryIfEmpty } from './insights/seedDemoHistory';
@@ -77,7 +86,9 @@ function ExitingCardOverlay({
   exiting,
   motion,
   onDone,
+  media,
 }: {
+  media: Record<string,string>;
   exiting: ExitingCardState;
   motion: EffectiveMotion;
   onDone: () => void;
@@ -106,11 +117,11 @@ function ExitingCardOverlay({
           </span>
         </div>
         <div className="card-question">
-          <Markdown text={exiting.card.front} />
+          <CardContent card={exiting.card} side="front" media={media} />
         </div>
         <div className="card-answer">
           <p className="card-answer-label">Answer</p>
-          <Markdown text={exiting.card.back} />
+          <CardContent card={exiting.card} side="back" media={media} />
         </div>
       </section>
     </div>
@@ -127,7 +138,8 @@ function formatElapsed(ms: number): string {
 function formatTodayLabel(): string {
   const today = new Date();
   const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(today);
-  const dateLine = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long' }).format(today);
+  const dateLine = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long',
+  }).format(today);
   return `${weekday}, ${dateLine}`;
 }
 
@@ -149,7 +161,8 @@ function SessionStatsGroup({
       {showHeader && (
         <div className="group-row session-head-row">
           <div className="row-main">
-            <h2 className="section-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--label)' }}>
+            <h2 className="section-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--label)' }}
+            >
               Session
             </h2>
             <span className="row-sub tabular">
@@ -222,7 +235,10 @@ function SessionStatsGroup({
           </span>
         </span>
         <span className="row-value row-value-strong">
-          {stats.done > 0 ? <AnimatedNumber value={stats.accuracy} motion={motion} suffix="%" /> : '—'}
+          {stats.done > 0 ? (
+            <AnimatedNumber value={stats.accuracy} motion={motion} suffix="%" /> ) : (
+            '—'
+          )}
         </span>
       </div>
       <div className="group-row">
@@ -255,7 +271,7 @@ function LessonRows({
           log as ReviewEvent[],
           subject.id,
           lecture.id,
-          lecture.cards.map((c) => `${subject.id}/${lecture.id}/${c.id}`),
+          lecture.cards.map((c) => stableCardId(subject.id, lecture.id, c)),
         );
         const level = knowledge.label.toLowerCase().replace(' ', '-');
 
@@ -285,6 +301,7 @@ function LessonRows({
 }
 
 function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
+  const subjects = useSubjects();
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
   const [freshOpenId, setFreshOpenId] = useState<string | null>(null);
   const seenOpenRef = useRef<Set<string>>(new Set());
@@ -328,7 +345,7 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
               </span>
               <span className="row-main">
                 <span className="row-title">{s.name}</span>
-                <span className="row-sub">{SUBJECT_DESCRIPTIONS[s.id]}</span>
+                <span className="row-sub">{s.collectionLabel ?? SUBJECT_DESCRIPTIONS[s.id]}</span>
               </span>
               <span className="row-value">{s.total} cards</span>
               <ChevronDown size={16} className="row-chevron subject-chevron" />
@@ -348,6 +365,31 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
 }
 
 function App() {
+  const [imported, setImported] = useState<ImportedData | null>(null);
+  const [showDemo, setShowDemo] = useState(
+    () => { try { return localStorage.getItem('flipwise.showDemo') !== 'false'; } catch { return false; } },
+  );
+  const subjects = useMemo(
+    () => [...(imported?.subjects ?? []), ...(!imported || showDemo ? demoSubjects : [])],
+    [imported, showDemo],
+  );
+  const media = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(imported?.media ?? {}).map(([name, bytes]) => [
+          name,
+          URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: mediaType(name) })),
+        ]),
+      ),
+    [imported],
+  );
+  useEffect(
+    () => () => {
+      Object.values(media).forEach(URL.revokeObjectURL);
+    },
+    [media],
+  );
+
   const [hash, setHash] = useState(location.hash || '#/');
   const [settings, setSettings] = useState<AppearanceSettings>(() => loadSettings());
   const [osReducedMotion, setOsReducedMotion] = useState(() =>
@@ -369,13 +411,14 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [insightsRange, setInsightsRange] = useState<RangeKey>('90d');
   const [insightsSubject, setInsightsSubject] = useState<SubjectFilter>('all');
-  const insightsCatalog = useMemo(() => buildDefaultCatalog(), []);
+  const insightsCatalog = useMemo(() => buildDefaultCatalog(subjects), [subjects]);
 
   useEffect(() => {
     void openReviewStorage()
       .then(async ({ storage, fallback }) => {
         storageRef.current = storage;
         const loaded = await storage.read();
+        setImported(await storage.readDecks());
         const { events: initialEvents, seeded } = seedDemoHistoryIfEmpty(
           loaded,
           new Date(),
@@ -394,7 +437,8 @@ function App() {
           setStorageNotice('Using local browser storage because IndexedDB is unavailable.');
         }
       })
-      .catch(() => setStorageNotice('Study storage is unavailable. Please reload before studying.'));
+      .catch(() => setStorageNotice('Study storage is unavailable. Please reload before studying.'),
+      );
   }, []);
   const [session, setSession] = useState<ReviewEvent[]>([]);
   const [started, setStarted] = useState(Date.now());
@@ -483,19 +527,38 @@ function App() {
   }, [hash]);
 
   const parts = hash.replace(/^#\//, '').split('/');
-  const catalog = useMemo(() => subjects.flatMap(s => s.lectures.flatMap((l, li) => l.cards.map((c, ci) => ({...c, cardId: `${s.id}/${l.id}/${c.id}`, subjectId: s.id, lessonId: l.id, queuePosition: li*1000+ci})))), []);
+  const catalog = useMemo(
+    () => subjects.flatMap((s) => s.lectures.flatMap((l, li) => l.cards.map((c, ci) => ({
+            ...c,
+            cardId: stableCardId(s.id, l.id, c),
+            subjectId: s.id, lessonId: l.id, queuePosition: c.queuePosition ?? li * 1000 + ci,
+            dailyNew: s.dailyNew,
+          })),
+        ),
+      ),
+    [subjects],
+  );
+  const visibleIds = new Set(catalog.map((c) => c.cardId));
+  const studyLog = log.filter((e) => visibleIds.has(e.cardId));
   const globalStudy = parts[1] === 'global';
-  const available = queue(catalog.filter(c => globalStudy || c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), log, new Date(now));
+  const available = queue(
+    catalog.filter(
+      (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
+    studyLog,
+    new Date(now),
+  );
   const cards = storageReady ? available : [];
   const card = cards[0];
-  const subject = subjects.find(s => s.id === (globalStudy ? card?.subjectId ?? session.at(-1)?.subjectId : parts[1]));
-  const lecture = subject?.lectures.find(l => l.id === (globalStudy ? card?.lessonId : parts[2]));
+  const subject = subjects.find(
+    (s) => s.id === (globalStudy ? (card?.subjectId ?? session.at(-1)?.subjectId) : parts[1]),
+  );
+  const lecture = subject?.lectures.find((l) => l.id === (globalStudy ? card?.lessonId : parts[2]));
   const studying = parts[0] === 'study' && storageReady && (globalStudy || Boolean(subject));
   const revealed = parts[3] === 'answer';
   const studyUrl = `#/study/${parts[1]}/${parts[2]}`;
   const states = replay(log);
   const previewAt = new Date(now);
-  const todayCounts = queueCounts(queue(catalog, log, previewAt), log);
+  const todayCounts = queueCounts(queue(catalog, studyLog, previewAt), log);
 
   useEffect(() => {
     setIndex(0);
@@ -525,13 +588,11 @@ function App() {
       Math.abs(nextHeight - prevHeight) > 4 &&
       typeof stage.animate === 'function'
     ) {
-      stage.animate(
-        [{ height: `${prevHeight}px` }, { height: `${nextHeight}px` }],
+      stage.animate([{ height: `${prevHeight}px` }, { height: `${nextHeight}px` }],
         {
           duration: 340,
           easing: 'cubic-bezier(0.22, 1.08, 0.36, 1)',
-        },
-      );
+        });
     }
   }, [revealed, index, effectiveMotion]);
 
@@ -549,7 +610,10 @@ function App() {
 
   const rate = async (rating: Rating, startTransform?: string) => {
     if (!subject || !card || !revealed || pendingWrite.current || !storageRef.current) return;
-    const event = ratingEvent(card, rating, log, new Date(), Date.now() - cardStarted, settings.retention, crypto.randomUUID());
+    const event = ratingEvent(
+      card,
+      rating, log, new Date(), Date.now() - cardStarted, settings.retention, crypto.randomUUID(),
+    );
     pendingWrite.current = true;
     setSaving(true);
     const nextLog = [...log, event];
@@ -562,7 +626,12 @@ function App() {
     if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
     if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
 
-    const isLastCard = queue(catalog.filter(c => globalStudy || c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), nextLog, new Date()).length === 0;
+    const isLastCard = queue(
+        catalog.filter(
+          (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
+        nextLog.filter((e) => visibleIds.has(e.cardId)),
+        new Date(),
+      ).length === 0;
 
     // Motion Off: instant swap, zero WAAPI, zero CSS animations
     if (effectiveMotion === 'off') {
@@ -600,12 +669,14 @@ function App() {
       setExitingCard(snapshot);
       setHash(studyUrl);
       location.hash = studyUrl;
-      finishTimerRef.current = window.setTimeout(() => {
+      finishTimerRef.current = window.setTimeout(
+        () => {
         setIndex((i) => i + 1);
         setExitingCard(null);
         setCardStarted(Date.now());
         window.scrollTo(0, 0);
-      }, effectiveMotion === 'full' ? 180 : 120);
+      }, effectiveMotion === 'full' ? 180 : 120,
+      );
       return;
     }
 
@@ -761,10 +832,8 @@ function App() {
     if (shell) {
       if (effectiveMotion === 'full' && typeof shell.animate === 'function') {
         shell.animate(
-          [
-            { transform: currentTransform },
-            { transform: 'translate3d(0, 0, 0) rotate(0deg)' },
-          ],
+          [{ transform: currentTransform },
+            { transform: 'translate3d(0, 0, 0) rotate(0deg)' }],
           {
             duration: 280,
             easing: 'cubic-bezier(0.22, 1.18, 0.36, 1)',
@@ -786,10 +855,8 @@ function App() {
     [log, now],
   );
 
-  const demoReviewCount = useMemo(
-    () => log.reduce((sum, e) => sum + (e.demo ? 1 : 0), 0),
-    [log],
-  );
+  const demoReviewCount = useMemo(() => log.reduce((sum, e) => sum + (e.demo ? 1 : 0), 0),
+    [log]);
 
   const clearDemoHistory = async () => {
     markDemoCleared(true);
@@ -806,12 +873,19 @@ function App() {
 
   const insightsData = useMemo(() => {
     if (parts[0] !== 'insights') return null;
-    return computeInsights(log, insightsCatalog, {
+    return computeInsights(
+      log.filter((e) => insightsCatalog.some((c) => c.cardId === e.cardId)),
+      insightsCatalog, {
       range: insightsRange,
       subjectId: insightsSubject,
       targetRetention: settings.retention,
-    });
-  }, [parts[0], log, insightsCatalog, insightsRange, insightsSubject, settings.retention]);
+    }, subjects,
+    );
+  }, [
+    parts[0],
+    log, insightsCatalog, insightsRange, insightsSubject, settings.retention,
+    subjects,
+  ]);
 
   const calendarModeControl = (
     <div className="cal-mode-switch">
@@ -849,20 +923,33 @@ function App() {
   };
 
   const undo = async () => {
-    if (pendingWrite.current || !session.length || !storageRef.current || log.at(-1)?.id !== session.at(-1)?.id) return;
+    if (
+      pendingWrite.current || !session.length || !storageRef.current || log.at(-1)?.id !== session.at(-1)?.id
+    )
+      return;
     pendingWrite.current = true; setSaving(true);
-    try { const next=log.slice(0,-1); await storageRef.current.write(next); setLog(next); setSession(session.slice(0,-1)); setIndex(Math.max(0,index-1)); location.hash=studyUrl; setHash(studyUrl); }
+    try { const next = log.slice(0, -1);
+      await storageRef.current.write(next); setLog(next); setSession(session.slice(0, -1));
+      setIndex(Math.max(0, index - 1));
+      location.hash = studyUrl;
+      setHash(studyUrl); }
     catch { setStorageNotice('Could not undo. Please try again.'); }
     finally { setSaving(false); pendingWrite.current = false; }
   };
-  useEffect(() => { const handler=(e: KeyboardEvent)=>{ if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown',handler); return ()=>window.removeEventListener('keydown',handler); });
+  useEffect(() => { const handler = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)
+      ) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
   const activeStudy = studying && Boolean(card);
   const sessionComplete = studying && !card;
   const hasMobileRatingBar = activeStudy && revealed;
   const showTabBar = !activeStudy && !sessionComplete;
 
   return (
-    <div className="app">
+    <ContentContext.Provider value={subjects}>
+      <div className="app">
       <header className="topbar">
         <div className="topbar-inner">
           <a className="brand" href="#/">
@@ -872,9 +959,8 @@ function App() {
             <a
               className="nav-link"
               href="#/"
-              aria-current={parts[0] === '' ? 'page' : undefined}
-            >
-              Today
+              aria-current={parts[0] === '' ? 'page' : undefined}>
+                Today
             </a>
             <a
               className="nav-link"
@@ -886,8 +972,10 @@ function App() {
             <a
               className="nav-link"
               href="#/calendar"
-              aria-current={parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined}
-            >
+              aria-current={
+                  parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined
+                }
+              >
               Calendar
             </a>
             <a
@@ -902,13 +990,20 @@ function App() {
         </div>
       </header>
 
-      {storageNotice && <p role="status" className="study-hint">{storageNotice}</p>}
-      {session.length > 0 && <button className="btn btn-plain" onClick={() => void undo()}>Undo last rating</button>}
-      <main
+      {storageNotice && (
+          <p role="status" className="study-hint">
+            {storageNotice}
+          </p>
+        )}
+        {session.length > 0 && (
+          <button className="btn btn-plain" onClick={() => void undo()}>
+            Undo last rating
+          </button>
+        )}
+        <main
         id="main"
-        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}
-      >
-        {parts[0] === '' ? (
+        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}>
+          {parts[0] === '' ? (
           <div className="section-stack">
             <div className="page-head" style={{ marginBottom: 0 }}>
               <p className="page-eyebrow">{formatTodayLabel()}</p>
@@ -921,8 +1016,11 @@ function App() {
                   <div>
                     <div className="due-figure">{todayCounts.total}</div>
                     <div className="due-label">Cards available</div>
-                    <div className="due-label">{todayCounts.new} new · {todayCounts.review} review · {todayCounts.learning} learning</div>
-                  </div>
+                    <div className="due-label">
+                        {todayCounts.new} new · {todayCounts.review} review · {todayCounts.learning}{' '}
+                        learning
+                      </div>
+                    </div>
                   <a className="btn btn-primary" href="#/study/global/all">
                     Study
                   </a>
@@ -944,7 +1042,10 @@ function App() {
           <div className="section-stack">
             <div className="page-head" style={{ marginBottom: 0 }}>
               <h1 className="page-title">Subjects</h1>
-            </div>
+            <a className="btn btn-secondary" href="#/import">
+                  Import
+                </a>
+              </div>
             <SubjectGroup log={log} />
           </div>
         ) : parts[0] === 'subjects' && subject ? (
@@ -967,7 +1068,7 @@ function App() {
                 <div>
                   <div className="row-title">All lessons</div>
                   <div className="row-sub tabular">
-                    {subject.lectures.reduce((sum, l) => sum + l.cards.length, 0)} cards in queue
+                    {queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length} cards in queue
                   </div>
                 </div>
                 <a
@@ -1004,12 +1105,14 @@ function App() {
                 <div className="study-progress-mobile" aria-label="Session progress">
                   <div className="progress-meta">
                     <span>
-                      <AnimatedNumber value={stats.done} motion={effectiveMotion} /> / {session.length + cards.length} done
+                      <AnimatedNumber value={stats.done} motion={effectiveMotion} /> /{' '}
+                        {session.length + cards.length} done
                     </span>
                     <span>
                       {stats.done > 0 && (
                         <>
-                          <AnimatedNumber value={stats.accuracy} motion={effectiveMotion} suffix="%" /> ·{' '}
+                          <AnimatedNumber value={stats.accuracy} motion={effectiveMotion} suffix="%" />{' '}
+                            ·{' '}
                         </>
                       )}
                       {elapsed}
@@ -1030,6 +1133,7 @@ function App() {
                     <ExitingCardOverlay
                       key={exitingCard.key}
                       exiting={exitingCard}
+                        media={media}
                       motion={effectiveMotion}
                       onDone={() => setExitingCard(null)}
                     />
@@ -1038,8 +1142,10 @@ function App() {
                     key={index}
                     ref={cardShellRef}
                     className={`card-shell${overlapEnter ? ' card-shell-overlap' : ''}`}
-                    style={exitingCard && cards.length === 0 && !revealed ? { visibility: 'hidden' } : undefined}
-                    onPointerDown={onCardPointerDown}
+                    style={
+                        exitingCard && cards.length === 0 && !revealed ? { visibility: 'hidden' } : undefined
+                      }
+                      onPointerDown={onCardPointerDown}
                     onPointerMove={onCardPointerMove}
                     onPointerUp={endCardDrag}
                     onPointerCancel={endCardDrag}
@@ -1059,17 +1165,20 @@ function App() {
                           aria-label="Flashcard question"
                           aria-hidden={revealed}
                         >
-                          <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}>
-                            <span>Question</span>
+                          <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}
+                            >
+                              <span>Question</span>
                             <span>
                               {session.length + 1} of {session.length + cards.length}
                             </span>
                           </div>
-                          <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}>
-                            <Markdown text={card.front} />
+                          <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}
+                            >
+                              <CardContent card={card} side="front" media={media} />
                           </div>
-                          <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}>
-                            <a
+                          <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}
+                            >
+                              <a
                               className="btn btn-primary btn-full"
                               href={`${studyUrl}/answer`}
                               onClick={(e) => {
@@ -1089,8 +1198,9 @@ function App() {
                         >
                           <div ref={tintRef} className="swipe-tint" aria-hidden="true" />
                           {swipeHint && (
-                            <span className={`swipe-badge swipe-badge-${swipeHint.rating}`} aria-hidden="true">
-                              {swipeHint.label}
+                            <span className={`swipe-badge swipe-badge-${swipeHint.rating}`} aria-hidden="true"
+                              >
+                                {swipeHint.label}
                             </span>
                           )}
                           <div className="card-meta">
@@ -1100,11 +1210,11 @@ function App() {
                             </span>
                           </div>
                           <div className="card-question">
-                            <Markdown text={card.front} />
+                            <CardContent card={card} side="front" media={media} />
                           </div>
                           <div className="card-answer">
                             <p className="card-answer-label">Answer</p>
-                            <Markdown text={card.back} />
+                            <CardContent card={card} side="back" media={media} />
                           </div>
                         </section>
                       </div>
@@ -1131,15 +1241,25 @@ function App() {
                           disabled={!revealed || saving}
                           onClick={() => rate(key)}
                         >
-                          {label}<small className="rating-interval">{intervalLabel(schedule(states.get(card.cardId), key, previewAt, settings.retention), previewAt)}</small>
-                        </button>
+                          {label}
+                            <small className="rating-interval">
+                              {intervalLabel(
+                                schedule(
+                                  states.get(card.cardId),
+                                  key, previewAt, settings.retention,
+                                ),
+                                previewAt,
+                              )}
+                            </small>
+                          </button>
                       ))}
                     </div>
                   </div>
                 )}
 
                 <p className="study-hint">
-                  {states.get(card.cardId) && isLeech(states.get(card.cardId)!) ? 'leech · ' : ''}{revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
+                  {states.get(card.cardId) && isLeech(states.get(card.cardId)!) ? 'leech · ' : ''}
+                    {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
                 </p>
               </div>
 
@@ -1155,8 +1275,9 @@ function App() {
             </div>
           </>
         ) : sessionComplete ? (
-          <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title">
-            <section className="complete-sheet">
+          <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title"
+            >
+              <section className="complete-sheet">
               <ConfettiBurst active motion={effectiveMotion} />
               <div className="sheet-handle" aria-hidden="true" />
 
@@ -1168,8 +1289,9 @@ function App() {
                   strokeWidth={7}
                   motion={effectiveMotion}
                 />
-                <h1 id="complete-title" className="page-title" style={{ fontSize: 'var(--text-lg)' }}>
-                  Session complete
+                <h1 id="complete-title" className="page-title" style={{ fontSize: 'var(--text-lg)' }}
+                  >
+                    Session complete
                 </h1>
                 {subject && (
                   <p className="page-sub">
@@ -1181,8 +1303,9 @@ function App() {
               <div className="group group-divider">
                 <div className="group-row">
                   <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-                      Cards done
+                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}
+                      >
+                        Cards done
                     </span>
                   </span>
                   <span className="row-value row-value-strong">
@@ -1191,16 +1314,18 @@ function App() {
                 </div>
                 <div className="group-row">
                   <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-                      Time
+                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}
+                      >
+                        Time
                     </span>
                   </span>
                   <span className="row-value row-value-strong">{elapsed}</span>
                 </div>
                 <div className="group-row">
                   <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-                      Streak
+                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}
+                      >
+                        Streak
                     </span>
                   </span>
                   <span className="row-value row-value-strong streak-value">
@@ -1258,8 +1383,41 @@ function App() {
             onRangeChange={setInsightsRange}
             onSubjectChange={setInsightsSubject}
           />
-        ) : parts[0] === 'settings' ? (
-          <AppearancePage
+        ) : parts[0] === 'import' ? (
+            <ImportPage
+              existing={imported}
+              events={log}
+              onCommit={async (data, events) => {
+                if (!storageRef.current) throw new Error('Storage is not ready.');
+                await storageRef.current.importDecks(data, events);
+                setImported(data);
+                setLog(events);
+                if (!imported) {
+                  setShowDemo(false);
+                  try { localStorage.setItem('flipwise.showDemo', 'false'); } catch { /* preference stays in memory */ }
+                }
+              }}
+            />
+          ) : parts[0] === 'settings' ? (
+          <>
+              <DataSettings
+                data={
+                  imported ?? {
+                    subjects,
+                    media: {},
+                    packageName: 'Flipwise',
+                    notes: 0,
+                    revlog: [],
+                    warnings: [],
+                  }
+                }
+                showDemo={showDemo}
+                onShowDemo={(value) => {
+                  setShowDemo(value);
+                  try { localStorage.setItem('flipwise.showDemo', String(value)); } catch { /* preference stays in memory */ }
+                }}
+              />
+              <AppearancePage
             settings={settings}
             effectiveMotion={effectiveMotion}
             osReducedMotion={osReducedMotion}
@@ -1267,7 +1425,8 @@ function App() {
             demoReviewCount={demoReviewCount}
             onClearDemoHistory={() => void clearDemoHistory()}
           />
-        ) : (
+        </>
+          ) : (
           <div className="section-stack">
             <h1 className="page-title">Page not found</h1>
             <div>
@@ -1281,7 +1440,7 @@ function App() {
 
       {!activeStudy && !sessionComplete && (
         <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
-          Demo deck · progress saved locally
+          {imported ? 'Collection' : 'Demo deck'} · progress saved locally
         </footer>
       )}
 
@@ -1291,9 +1450,8 @@ function App() {
             <a
               className="tab-item"
               href="#/"
-              aria-current={parts[0] === '' ? 'page' : undefined}
-            >
-              <span className="tab-icon" key={parts[0] === '' ? 'today-on' : 'today-off'}>
+              aria-current={parts[0] === '' ? 'page' : undefined}>
+                <span className="tab-icon" key={parts[0] === '' ? 'today-on' : 'today-off'}>
                 <TodayTabIcon />
               </span>
               <span>Today</span>
@@ -1311,10 +1469,13 @@ function App() {
             <a
               className="tab-item"
               href="#/calendar"
-              aria-current={parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined}
-            >
-              <span className="tab-icon" key={parts[0] === 'calendar' || parts[0] === 'insights' ? 'cal-on' : 'cal-off'}>
-                <CalendarTabIcon />
+              aria-current={
+                  parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined
+                }
+              >
+              <span className="tab-icon" key={parts[0] === 'calendar' || parts[0] === 'insights' ? 'cal-on' : 'cal-off'}
+                >
+                  <CalendarTabIcon />
               </span>
               <span>Calendar</span>
             </a>
@@ -1332,6 +1493,7 @@ function App() {
         </nav>
       )}
     </div>
+  </ContentContext.Provider>
   );
 }
 
