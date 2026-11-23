@@ -120,7 +120,7 @@ export function DayDetailPanel({
         <div className="section-head">
           <h3 className="section-title">By subject</h3>
         </div>
-        <ul className="group group-list group-divider">
+        <ul className="group group-list group-divider group-icons">
           {stats.subjects.map((subject) => {
             const meta = subjectInfo(subject.subjectId);
             const content = (

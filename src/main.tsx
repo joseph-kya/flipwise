@@ -125,7 +125,7 @@ function LessonRows({ subject, log }: { subject: Subject; log: readonly ReviewEv
 
 function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
   return (
-    <div className="group group-divider">
+    <div className="group group-divider group-icons">
       {subjects.map((s) => (
         <details key={s.id} className="subject-details">
           <summary className="group-row group-row-interactive">
@@ -335,14 +335,8 @@ function App() {
           </div>
         ) : parts[0] === 'subjects' && !parts[1] ? (
           <div className="section-stack">
-            <div>
-              <a className="back-link" href="#/">
-                <ChevronLeft size={16} />
-                Today
-              </a>
-              <div className="page-head" style={{ marginBottom: 0 }}>
-                <h1 className="page-title">Subjects</h1>
-              </div>
+            <div className="page-head" style={{ marginBottom: 0 }}>
+              <h1 className="page-title">Subjects</h1>
             </div>
             <SubjectGroup log={log} />
           </div>
@@ -383,7 +377,7 @@ function App() {
               <div className="section-head">
                 <h2 className="section-title">Lessons</h2>
               </div>
-              <div className="group">
+              <div className="group group-lessons">
                 <LessonRows subject={subject} log={log} />
               </div>
             </section>

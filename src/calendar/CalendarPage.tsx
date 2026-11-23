@@ -194,14 +194,8 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
 
   return (
     <div className="section-stack">
-      <div>
-        <a className="back-link" href="#/">
-          <ChevronLeft size={16} />
-          Today
-        </a>
-        <div className="page-head" style={{ marginBottom: 0 }}>
-          <h1 className="page-title">Calendar</h1>
-        </div>
+      <div className="page-head" style={{ marginBottom: 0 }}>
+        <h1 className="page-title">Calendar</h1>
       </div>
 
       <section className="group cal-summary" aria-label="Study summary">
