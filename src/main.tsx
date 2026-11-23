@@ -1,3 +1,4 @@
+import { State } from 'ts-fsrs';
 import { AiGuidePage } from './AiGuidePage';
 import { plural } from './plural';
 import { mediaType } from './anki/media';
@@ -7,6 +8,17 @@ import { CardContent } from './anki/content';
 import { ImportPage } from './anki/ImportPage';
 import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
 } from './scheduler';
+import { secondsPerAnswer } from './forecast';
+import {
+  applyDemoStudy,
+  applyPresetToAll,
+  loadDemoStudy,
+  queueLimits,
+  saveDemoStudy,
+  type DemoStudyStore,
+  type StudyLimits,
+} from './studyOptions';
+import { StudyOptionsSheet } from './study/StudyOptionsSheet';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import { AccountController } from './sync/account';
 import { hasRealDecks, restoreProgress, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './onboarding/flow';
@@ -76,6 +88,7 @@ import {
   SectionHeader,
   Segmented,
   SettingsTabIcon,
+  SlidersIcon,
   SubjectTile,
   subjectColor,
   SubjectsTabIcon,
@@ -243,11 +256,13 @@ function LessonRows({
   log,
   animateDots = false,
   stagger = false,
+  onOpenLectureOptions,
 }: {
   subject: Subject;
   log: readonly ReviewEvent[];
   animateDots?: boolean;
   stagger?: boolean;
+  onOpenLectureOptions?: (lectureId: string) => void;
 }) {
   return (
     <>
@@ -259,11 +274,14 @@ function LessonRows({
           lecture.cards.map((c) => stableCardId(subject.id, lecture.id, c)),
         );
         const level = knowledge.label.toLowerCase().replace(' ', '-');
+        const hasOverride = Boolean(
+          lecture.study && (lecture.study.newPerDay !== undefined || lecture.study.reviewsPerDay !== undefined),
+        );
 
-        return (
+        const link = (
           <a
-            key={lecture.id}
-            className={`lesson-row${stagger ? ' stagger-item' : ''}`}
+            key={onOpenLectureOptions ? undefined : lecture.id}
+            className={`lesson-row${stagger && !onOpenLectureOptions ? ' stagger-item' : ''}`}
             style={{ '--i': Math.min(i, 7) } as CSSProperties}
             href={`#/study/${subject.id}/${lecture.id}`}
           >
@@ -274,11 +292,36 @@ function LessonRows({
             />
             <span className="lesson-title">{lecture.title}</span>
             <span className="lesson-meta">
+              {hasOverride && (
+                <span className="lesson-override-badge">
+                  {lecture.study?.newPerDay !== undefined ? `${lecture.study.newPerDay}/d` : 'Custom'}
+                </span>
+              )}
               <span>{knowledge.label}</span>
               <span>{lecture.cards.length}</span>
               <ChevronRight size={14} className="row-chevron" />
             </span>
           </a>
+        );
+
+        if (!onOpenLectureOptions) return link;
+        return (
+          <div
+            key={lecture.id}
+            className={`lesson-item${stagger ? ' stagger-item' : ''}`}
+            style={{ '--i': Math.min(i, 7) } as CSSProperties}
+          >
+            {link}
+            <button
+              type="button"
+              className={`lesson-options-btn${hasOverride ? ' has-override' : ''}`}
+              aria-label={`Study options for ${lecture.title}`}
+              title="Lecture study options"
+              onClick={() => onOpenLectureOptions(lecture.id)}
+            >
+              <SlidersIcon size={16} />
+            </button>
+          </div>
         );
       })}
     </>
@@ -362,9 +405,11 @@ function App() {
     setShowDemoPref(value);
     try { localStorage.setItem('flipwise.showDemo', String(value)); } catch { /* preference stays in memory */ }
   };
+  const [demoStudy, setDemoStudy] = useState<DemoStudyStore>(() => loadDemoStudy());
+  const [studySheet, setStudySheet] = useState<{ subjectId: string; lectureId?: string } | null>(null);
   const subjects = useMemo(
-    () => [...(imported?.subjects ?? []), ...(!realDecks || showDemo ? demoSubjects : [])],
-    [imported, realDecks, showDemo],
+    () => [...(imported?.subjects ?? []), ...(!realDecks || showDemo ? applyDemoStudy(demoSubjects, demoStudy) : [])],
+    [imported, realDecks, showDemo, demoStudy],
   );
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [catchupActive, setCatchupActive] = useState(false);
@@ -526,6 +571,95 @@ function App() {
     });
   };
 
+  const persistImportedDecks = (nextData: ImportedData) => {
+    setImported(nextData);
+    void storageRef.current?.importDecks(nextData, []).catch(() => {
+      setStorageNotice('Could not save study options. Please try again.');
+    });
+  };
+
+  const saveCourseStudy = (subjectId: string, next: StudyLimits | undefined) => {
+    const cur = importedRef.current;
+    if (cur?.subjects.some((s) => s.id === subjectId)) {
+      const updated: ImportedData = {
+        ...cur,
+        subjects: cur.subjects.map((s) => {
+          if (s.id !== subjectId) return s;
+          const { study: _old, ...rest } = s;
+          return next ? { ...rest, study: next } : rest;
+        }),
+      };
+      persistImportedDecks(updated);
+      return;
+    }
+    setDemoStudy((prev) => {
+      const courses = { ...prev.courses };
+      if (next) courses[subjectId] = next;
+      else delete courses[subjectId];
+      const updated = { ...prev, courses };
+      saveDemoStudy(updated);
+      return updated;
+    });
+  };
+
+  const saveLectureStudy = (subjectId: string, lectureId: string, next: StudyLimits | undefined) => {
+    const cur = importedRef.current;
+    if (cur?.subjects.some((s) => s.id === subjectId)) {
+      const updated: ImportedData = {
+        ...cur,
+        subjects: cur.subjects.map((s) => {
+          if (s.id !== subjectId) return s;
+          return {
+            ...s,
+            lectures: s.lectures.map((l) => {
+              if (l.id !== lectureId) return l;
+              const { study: _old, ...rest } = l;
+              return next ? { ...rest, study: next } : rest;
+            }),
+          };
+        }),
+      };
+      persistImportedDecks(updated);
+      return;
+    }
+    const key = `${subjectId}/${lectureId}`;
+    setDemoStudy((prev) => {
+      const lectures = { ...prev.lectures };
+      if (next) lectures[key] = next;
+      else delete lectures[key];
+      const updated = { ...prev, lectures };
+      saveDemoStudy(updated);
+      return updated;
+    });
+  };
+
+  const applyGlobalPace = (preset: 'slow' | 'medium' | 'aggressive') => {
+    const { globalNew, pace, bySubject } = applyPresetToAll(subjects, preset, unseenBySubject, previewAt);
+    const cur = importedRef.current;
+    const importedIds = new Set(cur?.subjects.map((s) => s.id) ?? []);
+    if (cur && cur.subjects.length > 0) {
+      const updated: ImportedData = {
+        ...cur,
+        subjects: cur.subjects.map((s) => {
+          const study = bySubject.get(s.id);
+          return study ? { ...s, study } : s;
+        }),
+      };
+      persistImportedDecks(updated);
+    }
+    const demoEntries = [...bySubject.entries()].filter(([id]) => !importedIds.has(id));
+    if (demoEntries.length > 0) {
+      setDemoStudy((prev) => {
+        const courses = { ...prev.courses };
+        for (const [id, study] of demoEntries) courses[id] = study;
+        const updated = { ...prev, courses };
+        saveDemoStudy(updated);
+        return updated;
+      });
+    }
+    updateSettings({ newPerDay: globalNew, pace });
+  };
+
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -583,15 +717,38 @@ function App() {
   // Derived scheduling state is expensive (replays the whole log). The 1 s ticker only drives
   // the session clock, so queue math is memoised on the log and a 15 s time bucket.
   const tick = Math.floor(now / 15_000);
+  const previewAt = useMemo(() => new Date(tick * 15_000 + 14_999), [tick]);
   const visibleIds = useMemo(() => new Set(catalog.map((c) => c.cardId)), [catalog]);
   const studyLog = useMemo(() => log.filter((e) => visibleIds.has(e.cardId)), [visibleIds, log]);
+  const states = useMemo(() => replay(log), [log]);
+  const unseenBySubject = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of subjects) {
+      let unseen = 0;
+      for (const l of s.lectures) {
+        for (const c of l.cards) {
+          const st = states.get(stableCardId(s.id, l.id, c));
+          if (!st || st.state === State.New) unseen++;
+        }
+      }
+      map.set(s.id, unseen);
+    }
+    return map;
+  }, [subjects, states]);
+  const limits = useMemo(
+    () => queueLimits(subjects, settings, unseenBySubject, previewAt),
+    [subjects, settings, unseenBySubject, previewAt],
+  );
+  const secPerAnswer = useMemo(() => secondsPerAnswer(log), [log]);
+  const logSignature = `${log.length}:${log.at(-1)?.id ?? ''}`;
   const globalStudy = parts[1] === 'global';
   const available = useMemo(() => queue(
     catalog.filter(
       (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
     studyLog,
-    new Date(tick * 15_000 + 14_999),
-  ), [catalog, studyLog, globalStudy, parts[1], parts[2], tick]);
+    previewAt,
+    limits,
+  ), [catalog, studyLog, globalStudy, parts[1], parts[2], previewAt, limits]);
   const cards = storageReady ? available : [];
   const card = cards[0];
   const subject = subjects.find(
@@ -601,9 +758,7 @@ function App() {
   const studying = parts[0] === 'study' && storageReady && (globalStudy || Boolean(subject));
   const revealed = parts[3] === 'answer';
   const studyUrl = `#/study/${parts[1]}/${parts[2]}`;
-  const states = useMemo(() => replay(log), [log]);
-  const previewAt = useMemo(() => new Date(tick * 15_000 + 14_999), [tick]);
-  const todayCounts = useMemo(() => queueCounts(queue(catalog, studyLog, previewAt), log), [catalog, studyLog, log, previewAt]);
+  const todayCounts = useMemo(() => queueCounts(queue(catalog, studyLog, previewAt, limits), log), [catalog, studyLog, log, previewAt, limits]);
   const backlog = useMemo(() => (parts[0] === '' ? dueCount(catalog, studyLog, previewAt) : 0), [parts[0], catalog, studyLog, previewAt]);
 
   useEffect(() => {
@@ -677,6 +832,7 @@ function App() {
           (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
         nextLog.filter((e) => visibleIds.has(e.cardId)),
         new Date(),
+        limits,
       ).length === 0;
 
     // Motion Off: instant swap, zero WAAPI, zero CSS animations
@@ -1034,6 +1190,11 @@ function App() {
     );
   }
 
+  const sheetSubject = studySheet ? subjects.find((s) => s.id === studySheet.subjectId) : undefined;
+  const sheetLecture = sheetSubject && studySheet?.lectureId
+    ? sheetSubject.lectures.find((l) => l.id === studySheet.lectureId)
+    : undefined;
+
   return (
     <ContentContext.Provider value={subjects}>
       <div className="app">
@@ -1149,6 +1310,16 @@ function App() {
               backLabel="Subjects"
               title={subject.name}
               subtitle={`${subject.collectionLabel ? `${subject.collectionLabel} · ` : ''}${plural(subject.total, 'card')} · ${plural(subject.lectures.length, 'lesson')}`}
+              trailing={
+                <Button
+                  variant="secondary"
+                  className="btn-compact"
+                  onClick={() => setStudySheet({ subjectId: subject.id })}
+                >
+                  <SlidersIcon size={16} />
+                  Study options
+                </Button>
+              }
             />
 
             <Group divider={false}>
@@ -1157,7 +1328,7 @@ function App() {
                 <div className="due-row-main">
                   <div className="row-title">All lessons</div>
                   <div className="row-sub tabular">
-                    {plural(queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length, 'card')} in queue
+                    {plural(queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt, limits).length, 'card')} in queue
                   </div>
                 </div>
                 <div className="due-row-actions">
@@ -1178,7 +1349,12 @@ function App() {
             <section aria-label="Lessons">
               <SectionHeader title="Lessons" />
               <Group inset="lessons" divider={false}>
-                <LessonRows subject={subject} log={log} stagger />
+                <LessonRows
+                  subject={subject}
+                  log={log}
+                  stagger
+                  onOpenLectureOptions={(lectureId) => setStudySheet({ subjectId: subject.id, lectureId })}
+                />
               </Group>
             </section>
           </div>
@@ -1189,7 +1365,19 @@ function App() {
               backLabel={subject.name}
               title={lecture?.title || 'All lessons'}
               subtitle={subject.collectionLabel}
-              trailing={<Button variant="plain" href={`#/catchup/${subject.id}/${parts[2] || 'all'}`}>Catch up</Button>}
+              trailing={
+                <div className="study-head-actions">
+                  <Button
+                    variant="plain"
+                    onClick={() => setStudySheet({ subjectId: subject.id, lectureId: lecture?.id })}
+                  >
+                    Study options
+                  </Button>
+                  <Button variant="plain" href={`#/catchup/${subject.id}/${parts[2] || 'all'}`}>
+                    Catch up
+                  </Button>
+                </div>
+              }
               className="study-page-head"
             />
 
@@ -1399,12 +1587,22 @@ function App() {
                 ? `Next available ${nextAvailable.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`
                 : 'There are no cards waiting in this lesson.'}
             </p>
-            <Button
-              variant="secondary"
-              href={subject ? `#/subjects/${subject.id}` : '#/subjects'}
-            >
-              Back to subjects
-            </Button>
+            <div className="caught-up-actions">
+              {subject && (
+                <Button
+                  variant="primary"
+                  onClick={() => setStudySheet({ subjectId: subject.id, lectureId: lecture?.id })}
+                >
+                  Study options
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                href={subject ? `#/subjects/${subject.id}` : '#/subjects'}
+              >
+                Back to subjects
+              </Button>
+            </div>
           </Group>
         ) : sessionComplete ? (
           <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title">
@@ -1557,6 +1755,13 @@ function App() {
             demoReviewCount={demoReviewCount}
             onClearDemoHistory={() => void clearDemoHistory()}
             account={accountRef.current && accountSnapshot ? { controller: accountRef.current, snapshot: accountSnapshot } : undefined}
+            states={states}
+            unseenBySubject={unseenBySubject}
+            logSignature={logSignature}
+            secPerAnswer={secPerAnswer}
+            today={previewAt}
+            onApplyPresetAll={applyGlobalPace}
+            onOpenCourseOptions={(subjectId) => setStudySheet({ subjectId })}
           />
           ) : (
           <div className="section-stack">
@@ -1624,9 +1829,25 @@ function App() {
           </div>
         </nav>
       )}
-    </div>
-  <UpdatePrompt />
-  </ContentContext.Provider>
+      </div>
+    {sheetSubject && (
+      <StudyOptionsSheet
+        open={Boolean(studySheet)}
+        onClose={() => setStudySheet(null)}
+        subject={sheetSubject}
+        lecture={sheetLecture}
+        global={settings}
+        retention={settings.retention}
+        states={states}
+        logSignature={logSignature}
+        secPerAnswer={secPerAnswer}
+        today={previewAt}
+        onSaveCourse={saveCourseStudy}
+        onSaveLecture={saveLectureStudy}
+      />
+    )}
+    <UpdatePrompt />
+    </ContentContext.Provider>
   );
 }
 

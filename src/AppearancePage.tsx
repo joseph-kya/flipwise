@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Card } from 'ts-fsrs';
 import { guideUrl } from 'virtual:deck-maker-assets';
 import { DataSettings } from './anki/DataSettings';
 import { AccountSection } from './sync/AccountSection';
@@ -6,7 +7,7 @@ import { InstallRow } from './pwa/InstallApp';
 import type { AccountController, AccountSnapshot } from './sync/account';
 import type { ImportedData } from './anki/types';
 import { useSubjects } from './contentCatalog';
-import { STUDY_CONFIG } from './scheduler';
+import { StudySettingsSection } from './study/StudySettingsSection';
 import {
   ACCENTS,
   type AppearanceSettings,
@@ -22,7 +23,6 @@ import {
   NavRow,
   PageHeader,
   Row,
-  SectionFooter,
   SectionHeader,
   Segmented,
   SwatchPicker,
@@ -81,12 +81,6 @@ const MOTION_OPTIONS: ReadonlyArray<{ value: MotionSetting; label: string }> = [
   { value: 'off', label: 'Off' },
 ];
 
-const RETENTION_OPTIONS = [
-  { value: '0.85', label: '85%' },
-  { value: '0.9', label: '90%' },
-  { value: '0.95', label: '95%' },
-] as const;
-
 export function AppearancePage({
   settings,
   effectiveMotion,
@@ -99,6 +93,13 @@ export function AppearancePage({
   onClearDemoHistory,
   account,
   onShowWelcome,
+  states,
+  unseenBySubject,
+  logSignature = '',
+  secPerAnswer = 8,
+  today,
+  onApplyPresetAll,
+  onOpenCourseOptions,
 }: {
   settings: AppearanceSettings;
   effectiveMotion: EffectiveMotion;
@@ -111,19 +112,16 @@ export function AppearancePage({
   onClearDemoHistory?: () => void;
   account?: { controller: AccountController; snapshot: AccountSnapshot };
   onShowWelcome?: () => void;
+  states?: ReadonlyMap<string, Card>;
+  unseenBySubject?: ReadonlyMap<string, number>;
+  logSignature?: string;
+  secPerAnswer?: number;
+  today?: Date;
+  onApplyPresetAll?: (preset: 'slow' | 'medium' | 'aggressive') => void;
+  onOpenCourseOptions?: (subjectId: string) => void;
 }) {
   const [previewFlipped, setPreviewFlipped] = useState(false);
   const subjects = useSubjects();
-
-  const roboticsName =
-    subjects.find((s) => /robot/i.test(s.name))?.name ?? 'Robotics';
-
-  const courseCaps: ReadonlyArray<{ name: string; cap: number }> = [
-    { name: 'Physics 1', cap: STUDY_CONFIG.courseNew['physics-1'] },
-    { name: roboticsName, cap: STUDY_CONFIG.courseNew.robotics },
-    { name: 'Analysis 1', cap: STUDY_CONFIG.courseNew['analysis-1'] },
-    { name: 'Programming 1', cap: STUDY_CONFIG.courseNew['programming-1'] },
-  ];
 
   return (
     <div className="section-stack">
@@ -274,41 +272,18 @@ export function AppearancePage({
       </section>
 
       {/* 2. Study */}
-      <section aria-label="Study" className="settings-section">
-        <SectionHeader title="Study" />
-        <div className="settings-group-stack">
-          <Group ariaLabel="Scheduling preferences">
-            <Row
-              title="Desired retention"
-              subtitle="FSRS recall target used for scheduling & insights"
-              stacked
-              trailing={
-                <Segmented
-                  ariaLabel="Desired retention"
-                  value={String(settings.retention)}
-                  options={RETENTION_OPTIONS}
-                  onChange={(value) => onChange({ retention: Number(value) })}
-                />
-              }
-            />
-          </Group>
-
-          <div>
-            <Group ariaLabel="New cards per day">
-              {courseCaps.map((course) => (
-                <Row
-                  key={course.name}
-                  title={course.name}
-                  value={`${course.cap} / day`}
-                />
-              ))}
-            </Group>
-            <SectionFooter>
-              New cards per day per course. All courses {STUDY_CONFIG.globalNew} / day combined.
-            </SectionFooter>
-          </div>
-        </div>
-      </section>
+      <StudySettingsSection
+        settings={settings}
+        subjects={subjects}
+        states={states ?? new Map()}
+        unseenBySubject={unseenBySubject ?? new Map()}
+        logSignature={logSignature}
+        secPerAnswer={secPerAnswer}
+        today={today ?? new Date()}
+        onChangeSettings={onChange}
+        onApplyPresetAll={onApplyPresetAll ?? (() => undefined)}
+        onOpenCourse={onOpenCourseOptions ?? (() => undefined)}
+      />
 
       {/* 3. Data */}
       {data && onShowDemo && (

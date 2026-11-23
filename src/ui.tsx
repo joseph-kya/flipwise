@@ -122,6 +122,16 @@ export function SettingsTabIcon({ size = 22, className }: IconProps) {
   );
 }
 
+export function SlidersIcon({ size = 18, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M4 7h16M4 17h16" />
+      <circle cx="9" cy="7" r="2.25" fill="var(--surface, #fff)" />
+      <circle cx="15" cy="17" r="2.25" fill="var(--surface, #fff)" />
+    </Svg>
+  );
+}
+
 export function subjectIconKey(name: string) {
   const value = name.toLowerCase();
   if (/analysis|calculus/.test(value)) return 'analysis-1';
