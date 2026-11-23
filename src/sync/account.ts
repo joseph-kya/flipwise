@@ -54,6 +54,8 @@ export class AccountController {
   private firstPendingAt = 0;
   private poll: ReturnType<typeof setInterval> | null = null;
   private cleanup: (() => void)[] = [];
+  private disposed = false;
+  private authSeq = 0;
   private readonly setup: FirebaseSetup | null;
 
   constructor(private readonly storage: LogStorage, private readonly callbacks: AccountCallbacks, setup = firebaseSetup()) {
@@ -78,21 +80,24 @@ export class AccountController {
       else void this.syncNow();
     };
     const onOnline = () => void this.syncNow();
+    const onOffline = () => this.engine && this.set({ status: { kind: 'offline' } });
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', onVisibility);
     window.addEventListener('online', onOnline);
-    window.addEventListener('offline', () => this.engine && this.set({ status: { kind: 'offline' } }));
+    window.addEventListener('offline', onOffline);
     this.cleanup.push(() => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onVisibility);
       window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
     });
     // Check persisted Firebase auth even if an earlier interrupted attempt lost the hint.
     void this.preload();
   }
 
   dispose() {
-    this.cleanup.forEach((f) => f());
+    this.disposed = true;
+    this.cleanup.splice(0).forEach((f) => f());
     this.stopEngine();
   }
 
@@ -100,24 +105,60 @@ export class AccountController {
     if (this.loading) return this.loading;
     this.set({ phase: 'loading', authSettled: false, authTimedOut: false });
     const timeout = setTimeout(() => {
+      if (this.disposed) return;
       this.set({ authSettled: true, authTimedOut: true, phase: 'signedOut', error: AUTH_TIMEOUT_MESSAGE });
     }, AUTH_SETTLE_MS);
     this.cleanup.push(() => clearTimeout(timeout));
     this.loading = import('./client').then(async ({ createFirebaseClient }) => {
       const client = createFirebaseClient(this.setup!);
+      if (this.disposed) {
+        clearTimeout(timeout);
+        return client;
+      }
       this.client = client;
       const error = await client.redirectError;
-      clearTimeout(timeout);
+      if (this.disposed) {
+        clearTimeout(timeout);
+        return client;
+      }
       if (error) this.recordFailure(error);
-      this.set({ authSettled: true, authTimedOut: false });
-      this.cleanup.push(client.onUser((user) => {
-        void this.onUser(user).catch(() => this.set({ phase: 'signedOut', error: 'Couldn’t open your account. Please try again.' }));
-      }));
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        let firstSeen = false;
+        const finish = (applyState: boolean) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          if (applyState && !this.disposed) {
+            const patch: Partial<AccountSnapshot> = { authSettled: true, authTimedOut: false };
+            if (this.snap.error === AUTH_TIMEOUT_MESSAGE) patch.error = '';
+            this.set(patch);
+          }
+          resolve();
+        };
+        const unsub = client.onUser((user) => {
+          if (this.disposed) return;
+          const isFirst = !firstSeen;
+          firstSeen = true;
+          void this.onUser(user)
+            .catch(() => {
+              if (!this.disposed) this.set({ phase: 'signedOut', error: 'Couldn’t open your account. Please try again.' });
+            })
+            .finally(() => {
+              if (isFirst) finish(true);
+            });
+        });
+        this.cleanup.push(() => {
+          unsub();
+          finish(false);
+        });
+      });
       return client;
     });
     this.loading.catch(() => {
       clearTimeout(timeout);
       this.loading = null;
+      if (this.disposed) return;
       this.set({ phase: 'signedOut', authSettled: true, authTimedOut: true, error: 'Couldn’t load sign-in. Check your connection, or continue without an account.' });
     });
     return this.loading;
@@ -130,13 +171,15 @@ export class AccountController {
   }
 
   private async onUser(user: AccountUser | null) {
+    if (user && (this.uid === user.uid || this.preparing === user.uid)) { this.set({ user }); return; }
+    const seq = ++this.authSeq;
     if (!user) {
+      this.preparing = null;
       this.stopEngine();
       hint.set(false);
       this.set({ phase: 'signedOut', user: null, status: { kind: 'idle' }, pending: 0, confirmSignOut: null });
       return;
     }
-    if (this.uid === user.uid || this.preparing === user.uid) { this.set({ user }); return; }
     hint.set(true);
     writeFailures(0);
     this.set({ failures: 0 });
@@ -147,11 +190,13 @@ export class AccountController {
     try {
       prep = await local.prepareAccount(user.uid);
     } finally {
-      this.preparing = null;
+      if (this.preparing === user.uid) this.preparing = null;
     }
+    if (this.disposed || this.authSeq !== seq) return;
     if (prep === 'switched') this.callbacks.onReplaced();
     this.uid = user.uid;
     const meta = await local.getUidMeta(user.uid);
+    if (this.disposed || this.authSeq !== seq) return;
     const engine: SyncEngine = new SyncEngine({
       local,
       cloud: this.client!.cloud,
@@ -176,6 +221,7 @@ export class AccountController {
     if (this.poll) clearInterval(this.poll);
     this.timer = null;
     this.poll = null;
+    this.firstPendingAt = 0;
     this.engine = null;
     this.uid = null;
   }

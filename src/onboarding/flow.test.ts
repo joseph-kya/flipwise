@@ -57,9 +57,15 @@ describe('resumable account gate', () => {
     expect(onboardingGate({ step: 'account', account: signedIn, realDecks: true, completed: false }).finish).toBe(true);
     expect(onboardingGate({ step: 'welcome', account: signedIn, realDecks: false, completed: true }).finish).toBe(true);
   });
-  it('shows loading before auth settles and while the first cloud check is pending', () => {
+  it('shows loading before auth settles, while phase is loading, and while the first cloud check is pending', () => {
     expect(onboardingGate({ step: 'welcome', account: { ...signedIn, authSettled: false }, realDecks: false, completed: false }).loading).toBe(true);
+    expect(onboardingGate({ step: 'welcome', account: { phase: 'loading', authSettled: true, status: { kind: 'idle' } }, realDecks: false, completed: false }).loading).toBe(true);
     expect(onboardingGate({ step: 'welcome', account: { ...signedIn, status: { kind: 'syncing' } }, realDecks: false, completed: false }).loading).toBe(true);
+  });
+  it('moves welcome to account on auth timeout so the error and escape are visible, without rewinding later steps', () => {
+    const timedOut = { phase: 'signedOut' as const, authSettled: true, authTimedOut: true, status: { kind: 'idle' as const } };
+    expect(onboardingGate({ step: 'welcome', account: timedOut, realDecks: false, completed: false })).toEqual({ loading: false, step: 'account', finish: false });
+    expect(onboardingGate({ step: 'start', account: timedOut, realDecks: false, completed: false })).toEqual({ loading: false, step: 'start', finish: false });
   });
   it('round-trips every progress field, including empty and nonempty course choices', () => {
     const s = memory();

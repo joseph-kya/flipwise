@@ -75,6 +75,28 @@ describe('onboarding screens', () => {
     expect(o.finished).toEqual(['done']);
   });
 
+  it('a signed-in user reloading from welcome never sees Welcome and advances past sign-in', () => {
+    const o = mount({ account: account(snap({ phase: 'loading', authSettled: false })), online: true });
+    expect(o.el.textContent).toContain('Restoring your account');
+    expect(o.el.textContent).not.toContain('Get started');
+    o.render({ account: account(snap({ phase: 'signedIn', authSettled: true, user: { uid: 'u', name: 'J', email: '', photoURL: null }, status: { kind: 'syncing' } })) });
+    expect(o.el.textContent).toContain('Checking your decks');
+    expect(o.el.textContent).not.toContain('Get started');
+    o.render({ account: account(snap({ phase: 'signedIn', authSettled: true, user: { uid: 'u', name: 'J', email: '', photoURL: null }, status: { kind: 'synced', at: 1 } })) });
+    expect(o.el.textContent).toContain('Choose your start');
+    expect(o.el.textContent).not.toContain('Get started');
+  });
+
+  it('moves from welcome to account on auth timeout and exposes Continue without account', () => {
+    const o = mount({ account: account(snap({ phase: 'loading', authSettled: false })), online: true });
+    expect(o.el.textContent).toContain('Restoring your account');
+    o.render({ account: account(snap({ phase: 'signedOut', authSettled: true, authTimedOut: true, error: 'Sign-in is taking longer than expected. Try again, or continue without an account.' })) });
+    expect(o.el.textContent).toContain('Sign-in is taking longer than expected');
+    expect(o.el.textContent).toContain('Continue without account');
+    o.click(/Continue without account/);
+    expect(o.el.textContent).toContain('Choose your start');
+  });
+
   it('walks the explainer and supports back', () => {
     const o = mount({ account: null });
     o.click(/Get started/);

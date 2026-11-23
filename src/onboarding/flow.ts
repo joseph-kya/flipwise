@@ -71,11 +71,11 @@ export function persistProgress(progress: OnboardingProgress, s: Store | null = 
 /** Derive the visible gate before rendering, so Welcome never flashes during auth restoration. */
 export function onboardingGate(o: {
   step: OnboardingStep;
-  account: Pick<AccountSnapshot, 'phase' | 'status' | 'authSettled'> | null;
+  account: (Pick<AccountSnapshot, 'phase' | 'status' | 'authSettled'> & Partial<Pick<AccountSnapshot, 'authTimedOut'>>) | null;
   realDecks: boolean;
   completed: boolean;
 }): { loading: boolean; step: OnboardingStep; finish: boolean } {
-  if (o.account && !o.account.authSettled) return { loading: true, step: o.step, finish: false };
+  if (o.account && (!o.account.authSettled || o.account.phase === 'loading')) return { loading: true, step: o.step, finish: false };
   if (o.account?.phase === 'signedIn') {
     if (o.completed) return { loading: false, step: 'done', finish: true };
     if (o.step === 'welcome' || o.step === 'account') {
@@ -84,5 +84,5 @@ export function onboardingGate(o: {
       return { loading: outcome === 'checking', step: 'start', finish: false };
     }
   }
-  return { loading: false, step: o.step, finish: false };
+  return { loading: false, step: o.account?.authTimedOut && o.step === 'welcome' ? 'account' : o.step, finish: false };
 }
