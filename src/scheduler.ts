@@ -61,3 +61,18 @@ export function queueCounts(cards: readonly QueueCard[], events: readonly Review
   for (const card of cards) { const state=states.get(card.cardId); if (!state) counts.new++; else if(state.state===State.Review) counts.review++; else counts.learning++; }
   return counts;
 }
+/** An empty queue is only a completed session after at least one saved rating. */
+export function sessionOutcome(studying: boolean, available: number, ratings: number) {
+  return !studying ? 'idle' : available > 0 ? 'studying' : ratings > 0 ? 'complete' : 'caught-up';
+}
+export function nextAvailableAt(cards: readonly QueueCard[], events: readonly ReviewEvent[], at: Date): Date | null {
+  const states = replay(events);
+  const candidates = cards.map(c => {
+    const state = states.get(c.cardId);
+    if (!state) { const next = new Date(at); next.setDate(next.getDate()+1); next.setHours(STUDY_CONFIG.rolloverHour,0,0,0); return next; }
+    const due = new Date(state.due);
+    if (state.state === State.Review) { if (due.getHours()<STUDY_CONFIG.rolloverHour) due.setDate(due.getDate()-1); due.setHours(STUDY_CONFIG.rolloverHour,0,0,0); }
+    return due;
+  }).filter(date => date > at).sort((a,b)=>+a- +b);
+  return candidates[0] ?? null;
+}

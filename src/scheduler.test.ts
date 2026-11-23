@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createEmptyCard, State } from 'ts-fsrs';
-import { ratingEvent, queueCounts, engine, schedule, replay, queue, studyDay, STUDY_CONFIG } from './scheduler';
+import { sessionOutcome, nextAvailableAt, ratingEvent, queueCounts, engine, schedule, replay, queue, studyDay, STUDY_CONFIG } from './scheduler';
 import type { ReviewEvent } from './reviewLog';
 const at=new Date(2026,10,23,12);
 const event=(cardId: string, rating: ReviewEvent['rating'], time=at): ReviewEvent=>({id:cardId+ +time,cardId,subjectId:'analysis-1',lessonId:'a',rating,at:time.toISOString(),durationMs:1000,isNew:true,fuzz:false});
@@ -65,4 +65,16 @@ it('rates copied queue cards from a fresh session and resumes after three rating
  expect(reloaded).toHaveLength(3);
  expect(queue(catalog,reloaded,at)[0].cardId).toBe(catalog[3].cardId);
  expect(queueCounts(queue(catalog,reloaded,at),reloaded).new).toBe(5);
+});
+
+it('does not celebrate a fresh empty queue and gives the next learning time',()=>{
+ expect(sessionOutcome(true,0,0)).toBe('caught-up');
+ expect(sessionOutcome(true,0,1)).toBe('complete');
+ expect(sessionOutcome(true,1,1)).toBe('studying');
+ const first=event('x','again');const cards=[{cardId:'x',subjectId:'analysis-1',lessonId:'a',queuePosition:0}];
+ expect(nextAvailableAt(cards,[first],at)).toEqual(new Date(+at+60000));
+});
+it('offers new cards again at the next local rollover when caps are exhausted',()=>{
+ const late=new Date(2026,10,23,23,30);
+ expect(nextAvailableAt([{cardId:'fresh',subjectId:'analysis-1',lessonId:'a',queuePosition:0}],[],late)).toEqual(new Date(2026,10,24,4));
 });

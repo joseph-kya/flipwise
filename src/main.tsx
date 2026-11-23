@@ -5,7 +5,7 @@ import { stableCardId, type ImportedData } from './anki/types';
 import { CardContent } from './anki/content';
 import { ImportPage } from './anki/ImportPage';
 import { DataSettings } from './anki/DataSettings';
-import { queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
+import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
 } from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import {
@@ -342,7 +342,7 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
               onClick={() => toggleSubject(s.id)}
             >
               <span className="subject-tile">
-                <SubjectIcon subjectId={s.id} />
+                <SubjectIcon subjectId={s.id} name={s.name} />
               </span>
               <span className="row-main">
                 <span className="row-title">{s.name}</span>
@@ -944,7 +944,10 @@ function App() {
     return () => window.removeEventListener('keydown', handler);
   });
   const activeStudy = studying && Boolean(card);
-  const sessionComplete = studying && !card;
+  const outcome = sessionOutcome(studying, cards.length, session.length);
+  const sessionComplete = outcome === 'complete';
+  const caughtUp = outcome === 'caught-up';
+  const nextAvailable = caughtUp ? nextAvailableAt(catalog.filter(c=>globalStudy || c.subjectId===parts[1] && (parts[2]==='all' || c.lessonId===parts[2])), studyLog, new Date(now)) : null;
   const hasMobileRatingBar = activeStudy && revealed;
   const showTabBar = !activeStudy && !sessionComplete;
 
@@ -996,11 +999,6 @@ function App() {
             {storageNotice}
           </p>
         )}
-        {session.length > 0 && (
-          <button className="btn btn-plain" onClick={() => void undo()}>
-            Undo last rating
-          </button>
-        )}
         <main
         id="main"
         className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}>
@@ -1041,9 +1039,9 @@ function App() {
           </div>
         ) : parts[0] === 'subjects' && !parts[1] ? (
           <div className="section-stack">
-            <div className="page-head" style={{ marginBottom: 0 }}>
+            <div className="page-head subjects-title-row" style={{ marginBottom: 0 }}>
               <h1 className="page-title">Subjects</h1>
-            <a className="btn btn-secondary" href="#/import">
+            <a className="btn btn-plain" href="#/import">
                   Import
                 </a>
               </div>
@@ -1258,6 +1256,7 @@ function App() {
                   </div>
                 )}
 
+                {session.length > 0 && <div className="study-undo"><button type="button" disabled={saving} className="btn btn-plain" onClick={()=>void undo()}>Undo last rating</button></div>}
                 <p className="study-hint">
                   {states.get(card.cardId) && isLeech(states.get(card.cardId)!) ? 'leech · ' : ''}
                     {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
@@ -1275,6 +1274,12 @@ function App() {
               </aside>
             </div>
           </>
+        ) : caughtUp ? (
+          <section className="group caught-up" aria-label="Study queue empty">
+            <h1 className="page-title">All caught up</h1>
+            <p>{nextAvailable ? `Next available ${nextAvailable.toLocaleString([], {dateStyle:'medium',timeStyle:'short'})}.` : 'There are no cards waiting in this lesson.'}</p>
+            <a className="btn btn-secondary" href={subject ? `#/subjects/${subject.id}` : '#/subjects'}>Back to subjects</a>
+          </section>
         ) : sessionComplete ? (
           <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title"
             >
@@ -1338,6 +1343,7 @@ function App() {
               </div>
 
               <div className="complete-actions">
+                <button type="button" className="btn btn-plain" disabled={saving} onClick={()=>void undo()}>Undo last rating</button>
                 <button type="button" className="btn btn-secondary" onClick={restart}>
                   Study again
                 </button>
