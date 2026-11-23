@@ -1374,3 +1374,27 @@ a.insight-card:active { transform: scale(0.99); }
 .ai-prompt-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .ai-prompt-heading h2 { margin: 0; }
 .ai-guide textarea { width: 100%; min-height: 180px; padding: 12px; color: var(--label); background: var(--bg); border: 1px solid var(--separator); border-radius: 10px; font: inherit; }
+/* Import uses the same grouped rows and label hierarchy as Subjects. */
+.import-drop input[hidden] { display: none; }
+.import-filename { overflow-wrap: anywhere; font-size: var(--text-xs); margin-top: 12px; }
+.import-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px 12px; margin: 20px 0 0; }
+.import-summary dt { color: var(--label-secondary); font-size: var(--text-xs); }
+.import-summary dd { margin: 4px 0 0; font-size: var(--text-lg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.import-course + .import-course { border-top: 1px solid var(--separator); }
+.import-course summary { cursor: pointer; list-style: none; }
+.import-course summary::-webkit-details-marker { display: none; }
+.import-chevron { color: var(--label-secondary); }
+.import-course[open] .import-chevron { transform: rotate(180deg); }
+.import-lectures { list-style: none; margin: 0; padding: 0 0 0 24px; }
+.import-history { width: 100%; text-align: left; }
+.import-switch { flex-shrink: 0; width: 46px; height: 28px; border-radius: 20px; padding: 3px; background: var(--separator); }
+.import-switch span { display: block; width: 22px; height: 22px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0003; }
+.import-switch.is-on { background: var(--accent); }
+.import-switch.is-on span { transform: translateX(18px); }
+.import-confirm { width: 100%; }
+.subjects-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.study-undo { display: flex; justify-content: flex-end; margin-top: 8px; }
+.caught-up { padding: 40px 24px; text-align: center; }
+.caught-up p { margin: 12px 0 24px; color: var(--label-secondary); }
+.card-answer > .anki-content { font-weight: 400; }
+@media (max-width: 480px) { .import-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }

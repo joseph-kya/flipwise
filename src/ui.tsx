@@ -102,8 +102,16 @@ export function SettingsTabIcon({ size = 22, className }: IconProps) {
   );
 }
 
-export function SubjectIcon({ subjectId, size = 22 }: { subjectId: string; size?: number }) {
-  switch (subjectId) {
+export function subjectIconKey(name: string) {
+  const value = name.toLowerCase();
+  if (/analysis|calculus/.test(value)) return 'analysis-1';
+  if (/robot/.test(value)) return 'robotics';
+  if (/physics|physik/.test(value)) return 'physics-1';
+  if (/programming|computer science|coding/.test(value)) return 'programming-1';
+  return name;
+}
+export function SubjectIcon({ subjectId, name, size = 22 }: { subjectId: string; name?: string; size?: number }) {
+  switch (subjectIconKey(name ?? subjectId)) {
     case 'analysis-1':
       return (
         <Svg size={size}>
