@@ -99,7 +99,18 @@ describe('performance on the 2,568-card starter set', () => {
     const runs = 5, t0 = performance.now();
     for (let i = 0; i < runs; i++) forecast(input);
     const ms = (performance.now() - t0) / runs;
-    console.log(`forecast: ${ms.toFixed(1)} ms per run (2,568 cards, 600 with history, 56 days)`);
+    // Also measure a single large course (Robotics, 904 unseen, no history) and all 2,568 with review cap binding.
+    const singleInput = base({ courses: [{ id: courses[0].id, unseen: courses[0].unseen, newPerDay: 20 }] });
+    forecast(singleInput);
+    const t1 = performance.now();
+    for (let i = 0; i < runs; i++) forecast(singleInput);
+    const singleMs = (performance.now() - t1) / runs;
+    const cappedInput = base({ states, courses, globalNew: 40, reviewsPerDay: 120 });
+    forecast(cappedInput);
+    const t2 = performance.now();
+    for (let i = 0; i < runs; i++) forecast(cappedInput);
+    const cappedMs = (performance.now() - t2) / runs;
+    console.log(`forecast: all=${ms.toFixed(1)} ms | single=${singleMs.toFixed(1)} ms | capped=${cappedMs.toFixed(1)} ms (2,568 cards, 600 with history, 56 days)`);
     expect(ms).toBeLessThan(250);
   });
 });

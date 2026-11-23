@@ -24,8 +24,25 @@ describe('scheduler',()=>{
   const b={...event('x','good',first.due),fuzz:true,retention:.85};
   expect(replay([a,b]).get('x')).toEqual(schedule(first,'good',first.due,.85,true));
  });
- const cards=Object.keys(STUDY_CONFIG.courseNew).flatMap(subjectId=>Array.from({length:60},(_,queuePosition)=>({subjectId,lessonId:'a',cardId:subjectId+queuePosition,queuePosition})));
- it('respects all course caps and global cap',()=>{const q=queue(cards,[],at);expect(q).toHaveLength(40);for(const [id,cap] of Object.entries(STUDY_CONFIG.courseNew)) expect(q.filter(c=>c.subjectId===id)).toHaveLength(cap);});
+  const cards=Object.keys(STUDY_CONFIG.courseNew).flatMap(subjectId=>Array.from({length:60},(_,queuePosition)=>({subjectId,lessonId:'a',cardId:subjectId+queuePosition,queuePosition})));
+  it('respects all course caps and global cap',()=>{const q=queue(cards,[],at);expect(q).toHaveLength(40);for(const [id,cap] of Object.entries(STUDY_CONFIG.courseNew)) expect(q.filter(c=>c.subjectId===id)).toHaveLength(cap);});
+  it('respects custom global, course and lecture new and review caps',()=>{
+   const limits = {
+    globalNew: 16,
+    globalReviews: 4,
+    course: (id: string) => id === 'physics-1' ? { newPerDay: 6, reviewsPerDay: 3 } : { newPerDay: 5, reviewsPerDay: 5 },
+    lecture: (s: string, l: string) => s === 'physics-1' && l === 'a' ? { newPerDay: 4, reviewsPerDay: 2 } : undefined,
+   };
+   const q = queue(cards, [], at, limits);
+   expect(q).toHaveLength(16);
+   expect(q.filter(c => c.subjectId === 'physics-1')).toHaveLength(4);
+   // Review caps at lecture, course and global levels
+   const past = new Date(+at - 86400000 * 15);
+   const physicsCards = cards.filter(c => c.subjectId === 'physics-1').slice(0, 8);
+   const revEvents = physicsCards.map(c => ({ ...event(c.cardId, 'easy', past), subjectId: c.subjectId, lessonId: c.lessonId }));
+   const rq = queue(physicsCards, revEvents, at, limits);
+   expect(rq).toHaveLength(2); // physics-1/a lecture review cap = 2
+  });
  it('counts first introductions only and resets at local 4am',()=>{
   const before=new Date(2026,10,23,3,59),after=new Date(2026,10,23,4);
   const events=cards.filter(c=>c.subjectId==='physics-1').slice(0,18).map(c=>event(c.cardId,'easy',before));

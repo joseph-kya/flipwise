@@ -191,6 +191,9 @@ export function secondsPerAnswer(events: readonly ReviewEvent[]): number {
 
 /** Memoised forecast keyed by every input that matters. */
 const cache = new Map<string, Forecast>();
+export function peekForecast(cacheKey: string): Forecast | undefined {
+  return cache.get(cacheKey);
+}
 export function cachedForecast(cacheKey: string, input: () => ForecastInput): Forecast {
   const hit = cache.get(cacheKey);
   if (hit) { cache.delete(cacheKey); cache.set(cacheKey, hit); return hit; }

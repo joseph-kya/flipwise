@@ -106,6 +106,40 @@ export function applyPreset(current: StudyLimits | undefined, preset: Exclude<Pr
   return { preset, ...presetLimits(preset, unseen), ...(current?.targetDate ? { targetDate: current.targetDate } : {}) };
 }
 
+/** Update a course's target exam date while staying in Exam mode and re-solving its pace. */
+export function setExamDate(current: StudyLimits | undefined, targetDate: string, unseen: number, today: Date): StudyLimits {
+  const parsed = parseDay(targetDate);
+  if (!parsed) return editLimits(current, { targetDate: undefined });
+  const sol = solveExam(unseen, today, parsed);
+  return { preset: 'exam', targetDate, newPerDay: sol.newPerDay, reviewsPerDay: Math.min(500, Math.max(10, 10 * sol.newPerDay)) };
+}
+
+/** Apply a pace preset to every course and return the matching combined global cap. */
+export function applyPresetToAll(
+  subjects: readonly Pick<Subject, 'id' | 'study'>[],
+  preset: 'slow' | 'medium' | 'aggressive',
+  unseenBySubject: ReadonlyMap<string, number>,
+  today: Date,
+): { globalNew: number; pace: 'slow' | 'medium' | 'aggressive'; bySubject: Map<string, StudyLimits> } {
+  const bySubject = new Map<string, StudyLimits>();
+  let totalNew = 0;
+  for (const s of subjects) {
+    const next = applyPreset(s.study, preset, unseenBySubject.get(s.id) ?? 0, today);
+    bySubject.set(s.id, next);
+    totalNew += next.newPerDay ?? 0;
+  }
+  const fallback = { slow: 20, medium: 40, aggressive: 80 }[preset];
+  const globalNew = Math.min(500, totalNew > 0 ? totalNew : fallback);
+  return { globalNew, pace: preset, bySubject };
+}
+
+/** Smallest active cap across levels; null if every level is uncapped. */
+export function effectiveCap(...caps: (number | null | undefined)[]): number | null {
+  let min: number | null = null;
+  for (const c of caps) if (typeof c === 'number' && Number.isFinite(c)) min = min === null ? c : Math.min(min, c);
+  return min;
+}
+
 /** A hand edit: the course becomes Custom (keeping any exam date as a reference). */
 export function editLimits(current: StudyLimits | undefined, patch: Partial<Pick<StudyLimits, 'newPerDay' | 'reviewsPerDay' | 'targetDate'>>): StudyLimits {
   const next: StudyLimits = { ...current, ...patch, preset: 'custom' };
@@ -121,6 +155,79 @@ export function resetLimits(current: StudyLimits | undefined, field?: 'newPerDay
   if (field === 'targetDate' && next.preset === 'exam') delete next.preset;
   const meaningful = next.newPerDay !== undefined || next.reviewsPerDay !== undefined || next.targetDate !== undefined;
   return meaningful ? next : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Local-only overrides for demo courses (never uploaded to sync)
+
+export const DEMO_STUDY_STORAGE_KEY = 'flipwise.demoStudy.v1';
+
+export interface DemoStudyStore {
+  courses: Record<string, StudyLimits>;
+  lectures: Record<string, StudyLimits>;
+}
+
+const EMPTY_DEMO_STUDY: DemoStudyStore = { courses: {}, lectures: {} };
+
+function sanitizeLimits(raw: unknown): StudyLimits | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const out: StudyLimits = {};
+  if (typeof r.newPerDay === 'number' && Number.isFinite(r.newPerDay) && r.newPerDay >= 0 && r.newPerDay <= 500) out.newPerDay = Math.round(r.newPerDay);
+  if (typeof r.reviewsPerDay === 'number' && Number.isFinite(r.reviewsPerDay) && r.reviewsPerDay >= 1 && r.reviewsPerDay <= 5000) out.reviewsPerDay = Math.round(r.reviewsPerDay);
+  if (typeof r.targetDate === 'string' && parseDay(r.targetDate)) out.targetDate = r.targetDate;
+  if (typeof r.preset === 'string' && (PRESETS as readonly string[]).includes(r.preset)) out.preset = r.preset as PresetId;
+  return out.newPerDay !== undefined || out.reviewsPerDay !== undefined || out.targetDate !== undefined || out.preset !== undefined ? out : undefined;
+}
+
+export function loadDemoStudy(storage?: Pick<Storage, 'getItem'> | null): DemoStudyStore {
+  const store = storage !== undefined ? storage : (typeof globalThis !== 'undefined' && 'localStorage' in globalThis ? globalThis.localStorage : null);
+  if (!store) return { courses: {}, lectures: {} };
+  try {
+    const raw = store.getItem(DEMO_STUDY_STORAGE_KEY);
+    if (!raw) return { courses: {}, lectures: {} };
+    const parsed = JSON.parse(raw) as Partial<DemoStudyStore> | null;
+    if (!parsed || typeof parsed !== 'object') return { courses: {}, lectures: {} };
+    const courses: Record<string, StudyLimits> = {};
+    const lectures: Record<string, StudyLimits> = {};
+    if (parsed.courses && typeof parsed.courses === 'object') {
+      for (const [k, v] of Object.entries(parsed.courses)) {
+        const clean = sanitizeLimits(v);
+        if (clean) courses[k] = clean;
+      }
+    }
+    if (parsed.lectures && typeof parsed.lectures === 'object') {
+      for (const [k, v] of Object.entries(parsed.lectures)) {
+        const clean = sanitizeLimits(v);
+        if (clean) lectures[k] = clean;
+      }
+    }
+    return { courses, lectures };
+  } catch {
+    return { ...EMPTY_DEMO_STUDY, courses: {}, lectures: {} };
+  }
+}
+
+export function saveDemoStudy(value: DemoStudyStore, storage?: Pick<Storage, 'setItem'> | null): void {
+  const store = storage !== undefined ? storage : (typeof globalThis !== 'undefined' && 'localStorage' in globalThis ? globalThis.localStorage : null);
+  if (!store) return;
+  try {
+    store.setItem(DEMO_STUDY_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Ignore private-mode or quota errors.
+  }
+}
+
+/** Overlay local-only demo study options onto demo subjects without mutating the source array. */
+export function applyDemoStudy(subjects: readonly Subject[], store: DemoStudyStore): Subject[] {
+  return subjects.map((s) => {
+    const courseStudy = store.courses[s.id];
+    const lectures = s.lectures.map((l) => {
+      const lectureStudy = store.lectures[`${s.id}/${l.id}`];
+      return lectureStudy ? { ...l, study: lectureStudy } : l;
+    });
+    return courseStudy ? { ...s, study: courseStudy, lectures } : { ...s, lectures };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -140,10 +247,10 @@ export interface CourseResolved {
 
 export function resolveCourse(subject: Subject, global: GlobalStudy, unseen: number, today: Date): CourseResolved {
   const s = subject.study;
-  let exam: ExamSolution | undefined;
+  const parsedTarget = s?.targetDate ? parseDay(s.targetDate) : null;
+  const exam = parsedTarget ? solveExam(unseen, today, parsedTarget) : undefined;
   let newPerDay: Resolved;
-  if (s?.preset === 'exam' && s.targetDate && parseDay(s.targetDate)) {
-    exam = solveExam(unseen, today, parseDay(s.targetDate)!);
+  if (s?.preset === 'exam' && exam) {
     newPerDay = { value: Math.min(MAX_NEW, exam.newPerDay), source: 'exam' };
   } else if (s?.newPerDay !== undefined) newPerDay = { value: s.newPerDay, source: 'course' };
   else newPerDay = { value: courseDefaultNew(subject), source: 'default' };

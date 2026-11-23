@@ -186,4 +186,15 @@ the chosen retention `r`, with no fuzz, over 56 days.
 
 ## Performance
 
-(Filled in after measurement; see the end of this document.)
+Measured on the 2,568-card AI & Robotics starter set (56-day horizon, 600 cards with two months of
+review history, warm JIT, average of 5 runs in `src/forecast.test.ts`):
+
+| Scenario | Mean time |
+| --- | --- |
+| Single course (904 unseen, 56 days) | ~5.4 ms |
+| All 4 courses combined (2,568 cards, 600 studied) | ~11.2 ms |
+| All 4 courses with review cap binding (120/day) | ~11.8 ms |
+
+All three stay under a single 16.6 ms frame, so `forecast()` runs synchronously on first mount and
+cache hits, with a 60 ms debounce during slider drags (`useForecast`) and an LRU cache of 40 recent
+input keys (`cachedForecast`). A Web Worker is therefore unnecessary at starter-set scale.
