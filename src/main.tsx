@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { subjects, type Subject, type Lecture } from './demoSubjects';
+import { subjects, type DemoCard, type Subject, type Lecture } from './demoSubjects';
 import './style.css';
 import {
   loadReviewLog,
@@ -60,6 +60,59 @@ const RATINGS: ReadonlyArray<{ key: Rating; label: string }> = [
 ];
 
 type SwipeHint = { label: string; rating: Rating } | null;
+
+interface ExitingCardState {
+  key: number;
+  card: DemoCard;
+  cardNum: number;
+  totalCards: number;
+  rating: Rating;
+  startTransform: string;
+}
+
+function ExitingCardOverlay({
+  exiting,
+  motion,
+  onDone,
+}: {
+  exiting: ExitingCardState;
+  motion: EffectiveMotion;
+  onDone: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  useLayoutEffect(() => {
+    let active = true;
+    animateCardExit(ref.current, exiting.rating, motion, exiting.startTransform).then(() => {
+      if (active) onDoneRef.current();
+    });
+    return () => {
+      active = false;
+    };
+  }, [exiting, motion]);
+
+  return (
+    <div ref={ref} className="card-exit-layer" aria-hidden="true">
+      <section className="study-card">
+        <div className="card-meta">
+          <span>Question</span>
+          <span>
+            {exiting.cardNum} of {exiting.totalCards}
+          </span>
+        </div>
+        <div className="card-question">
+          <Markdown text={exiting.card.front} />
+        </div>
+        <div className="card-answer">
+          <p className="card-answer-label">Answer</p>
+          <Markdown text={exiting.card.back} />
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function formatElapsed(ms: number): string {
   const safe = Math.max(0, ms);
@@ -316,13 +369,17 @@ function App() {
   const [started, setStarted] = useState(Date.now());
   const [cardStarted, setCardStarted] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
-  const [leaving, setLeaving] = useState(false);
+  const [exitingCard, setExitingCard] = useState<ExitingCardState | null>(null);
+  const [exitingBar, setExitingBar] = useState(false);
+  const [overlapEnter, setOverlapEnter] = useState(false);
   const [swipeHint, setSwipeHint] = useState<SwipeHint>(null);
 
   const cardShellRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const tintRef = useRef<HTMLDivElement>(null);
   const prevStageHeightRef = useRef<number | null>(null);
+  const barTimerRef = useRef<number | null>(null);
+  const finishTimerRef = useRef<number | null>(null);
   const ratingBtnRefs = useRef<Record<Rating, HTMLButtonElement | null>>({
     again: null,
     hard: null,
@@ -367,6 +424,7 @@ function App() {
   useEffect(() => {
     const onHashChange = () => {
       const nextHash = location.hash || '#/';
+      if (nextHash === hash) return;
       const prevRoute = hash.split('/').slice(0, 3).join('/');
       const nextRoute = nextHash.split('/').slice(0, 3).join('/');
       const isCardRevealToggle = prevRoute === nextRoute && nextHash.startsWith('#/study/');
@@ -407,9 +465,13 @@ function App() {
     setSession([]);
     setStarted(Date.now());
     setCardStarted(Date.now());
-    setLeaving(false);
+    setExitingCard(null);
+    setExitingBar(false);
+    setOverlapEnter(false);
     setSwipeHint(null);
     prevStageHeightRef.current = null;
+    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
+    if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
   }, [parts[1], parts[2]]);
 
   // Smooth height adaptation during 3D card flip without clipping long answers
@@ -437,15 +499,19 @@ function App() {
   }, [revealed, index, effectiveMotion]);
 
   const revealCard = () => {
-    if (!studying || !card || revealed || leaving) return;
+    if (!studying || !card || revealed) return;
+    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
+    setExitingBar(false);
     if (stageRef.current) {
       prevStageHeightRef.current = stageRef.current.getBoundingClientRect().height;
     }
-    location.hash = `${studyUrl}/answer`;
+    const nextHash = `${studyUrl}/answer`;
+    setHash(nextHash);
+    location.hash = nextHash;
   };
 
   const rate = (rating: Rating, startTransform?: string) => {
-    if (!subject || !card || !revealed || leaving) return;
+    if (!subject || !card || !revealed) return;
     const lesson = subject.lectures.find((l) => l.cards.includes(card))!;
     const cardId = `${subject.id}/${lesson.id}/${card.id}`;
     const event: ReviewEvent = {
@@ -460,19 +526,67 @@ function App() {
     };
     setLog(appendReview(event));
     setSession((events) => [...events, event]);
-    setLeaving(true);
     setSwipeHint(null);
+    prevStageHeightRef.current = null;
+
+    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
+    if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
+
+    const isLastCard = index + 1 >= cards.length;
+
+    // Motion Off: instant swap, zero WAAPI, zero CSS animations
+    if (effectiveMotion === 'off') {
+      setExitingCard(null);
+      setExitingBar(false);
+      setOverlapEnter(false);
+      setIndex((i) => i + 1);
+      setCardStarted(Date.now());
+      setHash(studyUrl);
+      location.hash = studyUrl;
+      window.scrollTo(0, 0);
+      return;
+    }
 
     animateButtonSpring(ratingBtnRefs.current[rating], effectiveMotion);
 
-    animateCardExit(cardShellRef.current, rating, effectiveMotion, startTransform).then(() => {
-      prevStageHeightRef.current = null;
-      setIndex((i) => i + 1);
-      setLeaving(false);
-      setCardStarted(Date.now());
+    // Dismiss rating bar immediately while card exits
+    setExitingBar(true);
+    barTimerRef.current = window.setTimeout(
+      () => setExitingBar(false),
+      effectiveMotion === 'full' ? 155 : 125,
+    );
+
+    const snapshot: ExitingCardState = {
+      key: Date.now(),
+      card,
+      cardNum: (index % cards.length) + 1,
+      totalCards: cards.length,
+      rating,
+      startTransform: startTransform || 'translate3d(0, 0, 0) rotate(0deg)',
+    };
+
+    if (isLastCard) {
+      // Let final card exit cleanly before celebration sheet rises
+      setExitingCard(snapshot);
+      setHash(studyUrl);
       location.hash = studyUrl;
-      window.scrollTo(0, 0);
-    });
+      finishTimerRef.current = window.setTimeout(() => {
+        setIndex((i) => i + 1);
+        setExitingCard(null);
+        setCardStarted(Date.now());
+        window.scrollTo(0, 0);
+      }, effectiveMotion === 'full' ? 180 : 120);
+      return;
+    }
+
+    // Overlap: outgoing card exits on top while next card mounts and begins entering at ~55% of exit
+    setExitingCard(snapshot);
+    setOverlapEnter(true);
+    setIndex((i) => i + 1);
+    setCardStarted(Date.now());
+    setHash(studyUrl);
+    location.hash = studyUrl;
+    window.scrollTo(0, 0);
   };
 
   useEffect(() => {
@@ -505,7 +619,7 @@ function App() {
 
   // Swipe gestures on revealed study card (left = Again, right = Good, up = Easy)
   const onCardPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!revealed || leaving || e.button > 0) return;
+    if (!revealed || e.button > 0) return;
     const target = e.target as HTMLElement;
     if (target.closest('.table-scroll, a, button, code')) return;
     dragRef.current = {
@@ -647,9 +761,14 @@ function App() {
     setSession([]);
     setStarted(Date.now());
     setCardStarted(Date.now());
-    setLeaving(false);
+    setExitingCard(null);
+    setExitingBar(false);
+    setOverlapEnter(false);
     setSwipeHint(null);
     prevStageHeightRef.current = null;
+    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
+    if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
+    setHash(studyUrl);
     location.hash = studyUrl;
   };
 
@@ -819,84 +938,100 @@ function App() {
                   </div>
                 </div>
 
-                <div
-                  key={index}
-                  ref={cardShellRef}
-                  className="card-shell"
-                  onPointerDown={onCardPointerDown}
-                  onPointerMove={onCardPointerMove}
-                  onPointerUp={endCardDrag}
-                  onPointerCancel={endCardDrag}
-                >
+                <div className="card-deck">
+                  {exitingCard && (
+                    <ExitingCardOverlay
+                      key={exitingCard.key}
+                      exiting={exitingCard}
+                      motion={effectiveMotion}
+                      onDone={() => setExitingCard(null)}
+                    />
+                  )}
                   <div
-                    ref={stageRef}
-                    className={`card-stage${revealed ? ' is-flipped' : ''}`}
-                    onClick={(e) => {
-                      if (!revealed && !(e.target as HTMLElement).closest('a, button')) {
-                        revealCard();
-                      }
-                    }}
+                    key={index}
+                    ref={cardShellRef}
+                    className={`card-shell${overlapEnter ? ' card-shell-overlap' : ''}`}
+                    style={exitingCard && index + 1 >= cards.length && !revealed ? { visibility: 'hidden' } : undefined}
+                    onPointerDown={onCardPointerDown}
+                    onPointerMove={onCardPointerMove}
+                    onPointerUp={endCardDrag}
+                    onPointerCancel={endCardDrag}
                   >
-                    <div className="card-flipper">
-                      <section
-                        className="study-card card-face card-face-front"
-                        aria-label="Flashcard question"
-                        aria-hidden={revealed}
-                      >
-                        <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}>
-                          <span>Question</span>
-                          <span>
-                            {(index % cards.length) + 1} of {cards.length}
-                          </span>
-                        </div>
-                        <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}>
-                          <Markdown text={card.front} />
-                        </div>
-                        <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}>
-                          <a
-                            className="btn btn-primary btn-full"
-                            href={`${studyUrl}/answer`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              revealCard();
-                            }}
-                          >
-                            Show answer
-                          </a>
-                        </div>
-                      </section>
+                    <div
+                      ref={stageRef}
+                      className={`card-stage${revealed ? ' is-flipped' : ''}`}
+                      onClick={(e) => {
+                        if (!revealed && !(e.target as HTMLElement).closest('a, button')) {
+                          revealCard();
+                        }
+                      }}
+                    >
+                      <div className="card-flipper">
+                        <section
+                          className="study-card card-face card-face-front"
+                          aria-label="Flashcard question"
+                          aria-hidden={revealed}
+                        >
+                          <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}>
+                            <span>Question</span>
+                            <span>
+                              {(index % cards.length) + 1} of {cards.length}
+                            </span>
+                          </div>
+                          <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}>
+                            <Markdown text={card.front} />
+                          </div>
+                          <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}>
+                            <a
+                              className="btn btn-primary btn-full"
+                              href={`${studyUrl}/answer`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                revealCard();
+                              }}
+                            >
+                              Show answer
+                            </a>
+                          </div>
+                        </section>
 
-                      <section
-                        className="study-card card-face card-face-back"
-                        aria-label="Flashcard answer"
-                        aria-hidden={!revealed}
-                      >
-                        <div ref={tintRef} className="swipe-tint" aria-hidden="true" />
-                        {swipeHint && (
-                          <span className={`swipe-badge swipe-badge-${swipeHint.rating}`} aria-hidden="true">
-                            {swipeHint.label}
-                          </span>
-                        )}
-                        <div className="card-meta">
-                          <span>Question</span>
-                          <span>
-                            {(index % cards.length) + 1} of {cards.length}
-                          </span>
-                        </div>
-                        <div className="card-question">
-                          <Markdown text={card.front} />
-                        </div>
-                        <div className="card-answer">
-                          <p className="card-answer-label">Answer</p>
-                          <Markdown text={card.back} />
-                        </div>
-                      </section>
+                        <section
+                          className="study-card card-face card-face-back"
+                          aria-label="Flashcard answer"
+                          aria-hidden={!revealed}
+                        >
+                          <div ref={tintRef} className="swipe-tint" aria-hidden="true" />
+                          {swipeHint && (
+                            <span className={`swipe-badge swipe-badge-${swipeHint.rating}`} aria-hidden="true">
+                              {swipeHint.label}
+                            </span>
+                          )}
+                          <div className="card-meta">
+                            <span>Question</span>
+                            <span>
+                              {(index % cards.length) + 1} of {cards.length}
+                            </span>
+                          </div>
+                          <div className="card-question">
+                            <Markdown text={card.front} />
+                          </div>
+                          <div className="card-answer">
+                            <p className="card-answer-label">Answer</p>
+                            <Markdown text={card.back} />
+                          </div>
+                        </section>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {revealed && (
-                  <div className="ratings-bar" role="group" aria-label="Rate your recall">
+                {(revealed || exitingBar) && (
+                  <div
+                    className={`ratings-bar${exitingBar && !revealed ? ' ratings-bar-exiting' : ''}`}
+                    role="group"
+                    aria-label="Rate your recall"
+                    aria-hidden={!revealed}
+                  >
                     <div className="ratings-grid">
                       {RATINGS.map(({ key, label }) => (
                         <button
@@ -906,7 +1041,7 @@ function App() {
                           }}
                           type="button"
                           className={`rating-btn rating-${key}`}
-                          disabled={leaving}
+                          disabled={!revealed}
                           onClick={() => rate(key)}
                         >
                           {label}
@@ -949,10 +1084,11 @@ function App() {
                 <h1 id="complete-title" className="page-title" style={{ fontSize: 'var(--text-lg)' }}>
                   Session complete
                 </h1>
-                <p className="page-sub tabular">
-                  <AnimatedNumber value={stats.done} motion={effectiveMotion} />{' '}
-                  {stats.done === 1 ? 'card' : 'cards'} reviewed
-                </p>
+                {subject && (
+                  <p className="page-sub">
+                    {subject.name} · {lecture?.title || 'All lessons'}
+                  </p>
+                )}
               </div>
 
               <div className="group group-divider">

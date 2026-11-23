@@ -139,7 +139,7 @@
 }
 
 :root[data-font="rounded"] {
-  --font-active: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-active: ui-rounded, "SF Pro Rounded", "Nunito", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 :root[data-font="serif"] {
   --font-active: ui-serif, "New York", Georgia, "Times New Roman", serif;
@@ -367,10 +367,30 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .progress-track { height: 4px; border-radius: 99px; background: var(--fill); overflow: hidden; }
 .progress-fill { height: 100%; width: 100%; border-radius: 99px; background: var(--accent); transform-origin: left center; transition: transform 320ms var(--ease-out); }
 
+.card-deck {
+  position: relative;
+  min-width: 0;
+}
+
 .card-shell {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   touch-action: pan-y;
-  animation: card-enter 240ms var(--ease-out) both;
+  animation: card-enter 230ms var(--ease-out) both;
+}
+
+.card-shell-overlap {
+  animation: card-enter 220ms var(--ease-out) 115ms both;
+}
+
+.card-exit-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .card-stage {
@@ -475,6 +495,11 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--separator);
+  animation: ratings-in 180ms var(--ease-out) both;
+}
+.ratings-bar-exiting {
+  pointer-events: none;
+  animation: ratings-out 150ms var(--ease-out) forwards;
 }
 .ratings-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--spacing-2); max-width: var(--container-max); margin: 0 auto; }
 .rating-btn {
@@ -588,12 +613,16 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .cal-detail-today { font-size: var(--text-xs); font-weight: 600; color: var(--accent); }
 
 /* Appearance customization page */
-.preview-stage { display: flex; flex-direction: column; gap: var(--spacing-3); max-width: 440px; }
+.preview-group {
+  padding: var(--spacing-4);
+  display: flex; flex-direction: column; gap: var(--spacing-3);
+  overflow: visible;
+}
 .preview-card { padding: var(--spacing-4); }
 .preview-card .card-meta { margin-bottom: var(--spacing-2); }
 .preview-card .card-question { font-size: var(--text-base); }
 .preview-ratings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--spacing-2); }
-.preview-rating { min-height: 36px; font-size: var(--text-xs); }
+.preview-rating { min-height: 40px; font-size: var(--text-xs); }
 
 .settings-row {
   display: flex; flex-direction: column; gap: var(--spacing-3);
@@ -656,6 +685,9 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 @keyframes week-enter { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 @keyframes tab-bounce { 0% { transform: scale(1); } 35% { transform: scale(0.86); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ratings-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ratings-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(8px); } }
 @keyframes sheet-up { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
 @keyframes sheet-pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes flame-pop { 0% { opacity: 0; transform: scale(0.75) translateY(3px); } 65% { opacity: 1; transform: scale(1.15) translateY(-1px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
@@ -719,7 +751,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
   .study-hint { display: block; }
 }
 
-/* Motion modes: Reduced (calm fades only) & Off (no animation at all) */
+/* Motion modes: Reduced (calm opacity fades only, zero transforms) & Off (no animation at all) */
 :root[data-motion="reduced"] .stagger-item,
 :root[data-motion="reduced"] .card-stagger,
 :root[data-motion="reduced"] .dot-pop,
@@ -727,17 +759,26 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 :root[data-motion="reduced"] .tab-item[aria-current="page"] .tab-icon,
 :root[data-motion="reduced"] .streak-flame { animation: none !important; }
 
-:root[data-motion="reduced"] .card-enter,
-:root[data-motion="reduced"] .card-shell { animation: fade-in 140ms var(--ease-out) both; }
-:root[data-motion="reduced"] .card-flipper { transition: none; }
+:root[data-motion="reduced"] .card-shell,
+:root[data-motion="reduced"] .card-shell-overlap { animation: fade-in 150ms var(--ease-out) both; }
+:root[data-motion="reduced"] .ratings-bar { animation: fade-in 130ms var(--ease-out) both; }
+:root[data-motion="reduced"] .ratings-bar-exiting { animation: fade-out 120ms var(--ease-out) forwards; }
+:root[data-motion="reduced"] .card-flipper,
+:root[data-motion="reduced"] .progress-fill,
+:root[data-motion="reduced"] .accuracy-ring-fill,
+:root[data-motion="reduced"] .row-chevron,
+:root[data-motion="reduced"] .cal-selection-indicator.is-animated,
+:root[data-motion="reduced"] .segmented-thumb { transition: none; }
+:root[data-motion="reduced"] .accordion-shell { transition: opacity 150ms var(--ease-out); }
 :root[data-motion="reduced"] .card-stage.is-flipped .card-flipper { transform: none; }
 :root[data-motion="reduced"] .card-face-back { transform: none; opacity: 0; transition: opacity 150ms var(--ease-out); }
 :root[data-motion="reduced"] .card-stage.is-flipped .card-face-front { opacity: 0; }
 :root[data-motion="reduced"] .card-stage.is-flipped .card-face-back { opacity: 1; }
 :root[data-motion="reduced"] .complete-sheet { animation: fade-in 160ms var(--ease-out); }
-:root[data-motion="reduced"] .cal-selection-indicator.is-animated,
-:root[data-motion="reduced"] .segmented-thumb { transition: none; }
-:root[data-motion="reduced"] .card-stage:hover .card-face-front { transform: none; }
+:root[data-motion="reduced"] .card-stage:hover .card-face-front,
+:root[data-motion="reduced"] :active { transform: none; }
+:root[data-motion="reduced"] button,
+:root[data-motion="reduced"] a { transition: opacity 120ms var(--ease-out); }
 
 :root[data-motion="off"] *,
 :root[data-motion="off"] *::before,
