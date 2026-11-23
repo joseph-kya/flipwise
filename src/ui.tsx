@@ -294,6 +294,36 @@ export function Button({
   );
 }
 
+/** Tinted answer button used by study ratings and catch-up (Again/Hard/Good/Easy colours). */
+export function RatingButton({
+  tone,
+  onClick,
+  disabled,
+  shortcut,
+  className,
+  children,
+}: {
+  tone: 'again' | 'hard' | 'good' | 'easy';
+  onClick: () => void;
+  disabled?: boolean;
+  shortcut?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className={`rating-btn rating-${tone}${className ? ` ${className}` : ''}`}
+      disabled={disabled}
+      aria-keyshortcuts={shortcut}
+      onClick={onClick}
+    >
+      {children}
+      {shortcut && <kbd className="rating-kbd" aria-hidden="true">{shortcut}</kbd>}
+    </button>
+  );
+}
+
 export function IconButton({
   ariaLabel,
   onClick,

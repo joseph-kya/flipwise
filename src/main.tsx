@@ -14,6 +14,8 @@ import { Onboarding, useOnline } from './onboarding/Onboarding';
 import { HOW_PANELS, HowItWorksPanel } from './onboarding/HowItWorks';
 import { starterImport } from './onboarding/starterPack';
 import { mergeImport } from './anki/types';
+import { CatchupPage } from './CatchupPage';
+import { CATCHUP_BACKLOG, dueCount } from './catchup';
 import {
   useEffect,
   useLayoutEffect,
@@ -65,6 +67,7 @@ import {
   ChevronRight,
   FlameIcon,
   Group,
+  NavRow,
   PageHeader,
   Row,
   SUBJECT_DESCRIPTIONS,
@@ -363,6 +366,7 @@ function App() {
     [imported, realDecks, showDemo],
   );
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [catchupActive, setCatchupActive] = useState(false);
   const online = useOnline();
   const media = useMemo(
     () =>
@@ -596,6 +600,7 @@ function App() {
   const states = replay(log);
   const previewAt = new Date(now);
   const todayCounts = queueCounts(queue(catalog, studyLog, previewAt), log);
+  const backlog = parts[0] === '' ? dueCount(catalog, studyLog, previewAt) : 0;
 
   useEffect(() => {
     setIndex(0);
@@ -993,7 +998,7 @@ function App() {
   const caughtUp = outcome === 'caught-up';
   const nextAvailable = caughtUp ? nextAvailableAt(catalog.filter(c=>globalStudy || c.subjectId===parts[1] && (parts[2]==='all' || c.lessonId===parts[2])), studyLog, new Date(now)) : null;
   const hasMobileRatingBar = activeStudy && revealed;
-  const showTabBar = !activeStudy && !sessionComplete;
+  const showTabBar = !activeStudy && !sessionComplete && !(catchupActive && parts[0] === 'catchup');
 
   if (onboardingOpen && storageReady) {
     const account = accountRef.current && accountSnapshot && accountSnapshot.phase !== 'unavailable'
@@ -1094,6 +1099,16 @@ function App() {
               </Group>
             </section>
 
+            {backlog > CATCHUP_BACKLOG && (
+              <Group ariaLabel="Catch up">
+                <NavRow
+                  href="#/catchup/global/all"
+                  title={`Catch up on ${plural(backlog, 'due card')}`}
+                  subtitle="A fast pass: knew it or didn’t, nothing else"
+                />
+              </Group>
+            )}
+
             <section aria-label="Subjects">
               <SectionHeader
                 title="Subjects"
@@ -1135,13 +1150,18 @@ function App() {
                     {plural(queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length, 'card')} in queue
                   </div>
                 </div>
-                <Button
-                  variant="primary"
-                  href={`#/study/${subject.id}/all`}
-                  onClick={() => setIndex(0)}
-                >
-                  Study all
-                </Button>
+                <div className="due-row-actions">
+                  <Button variant="secondary" href={`#/catchup/${subject.id}/all`}>
+                    Catch up
+                  </Button>
+                  <Button
+                    variant="primary"
+                    href={`#/study/${subject.id}/all`}
+                    onClick={() => setIndex(0)}
+                  >
+                    Study all
+                  </Button>
+                </div>
               </div>
             </Group>
 
@@ -1159,6 +1179,7 @@ function App() {
               backLabel={subject.name}
               title={lecture?.title || 'All lessons'}
               subtitle={subject.collectionLabel}
+              trailing={<Button variant="plain" href={`#/catchup/${subject.id}/${parts[2] || 'all'}`}>Catch up</Button>}
               className="study-page-head"
             />
 
@@ -1478,6 +1499,19 @@ function App() {
             onRangeChange={setInsightsRange}
             onSubjectChange={setInsightsSubject}
           />
+        ) : parts[0] === 'catchup' && storageReady ? (
+          <CatchupPage
+            scope={{ subjectId: parts[1] || 'global', lessonId: parts[2] || 'all' }}
+            subjects={subjects}
+            catalog={catalog}
+            log={studyLog}
+            retention={settings.retention}
+            media={media}
+            motion={effectiveMotion}
+            onActiveChange={setCatchupActive}
+            onAppend={async (event) => { const next = await storageRef.current!.append(event); setLog(next); return next; }}
+            onRemove={async (ids) => { const next = await storageRef.current!.remove(ids); setLog(next); return next; }}
+          />
         ) : parts[0] === 'how-it-works' ? (
           <div className="section-stack">
             <PageHeader backHref="#/settings" backLabel="Settings" title="How Flipwise works" />
@@ -1526,7 +1560,7 @@ function App() {
         )}
       </main>
 
-      {!activeStudy && !sessionComplete && (
+      {showTabBar && (
         <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
           {accountSnapshot?.phase === 'signedIn' ? 'Saved on this device and synced to your account' : 'Saved locally on this device'}
         </footer>
