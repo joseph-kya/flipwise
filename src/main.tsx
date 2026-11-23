@@ -2,122 +2,571 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { subjects, type Subject, type Lecture } from './demoSubjects';
 import './style.css';
-import { loadReviewLog, saveReviewLog, seedDemoReviewLog, appendReview, type ReviewEvent, type Rating } from './reviewLog';
+import {
+  loadReviewLog,
+  saveReviewLog,
+  seedDemoReviewLog,
+  appendReview,
+  type ReviewEvent,
+  type Rating,
+} from './reviewLog';
 import { mastery } from './mastery';
 import { sessionStats } from './sessionStats';
 import { CalendarPage } from './calendar/CalendarPage';
 import { Markdown } from './markdown';
+import {
+  CheckIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MoonIcon,
+  SUBJECT_DESCRIPTIONS,
+  SubjectIcon,
+  SunIcon,
+} from './ui';
+
+type ThemePreference = 'system' | 'light' | 'dark';
+
+const RATINGS: ReadonlyArray<{ key: Rating; label: string; shortcut: string }> = [
+  { key: 'again', label: 'Again', shortcut: '1' },
+  { key: 'hard', label: 'Hard', shortcut: '2' },
+  { key: 'good', label: 'Good', shortcut: '3' },
+  { key: 'easy', label: 'Easy', shortcut: '4' },
+];
+
+function formatElapsed(ms: number): string {
+  const safe = Math.max(0, ms);
+  const minutes = Math.floor(safe / 60000);
+  const seconds = Math.floor(safe / 1000) % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatTodayLabel(): string {
+  const today = new Date();
+  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(today);
+  const dateLine = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long' }).format(today);
+  return `${weekday}, ${dateLine}`;
+}
+
+function SessionStatsGroup({
+  stats,
+  totalCards,
+  elapsed,
+  showHeader = false,
+}: {
+  stats: ReturnType<typeof sessionStats>;
+  totalCards: number;
+  elapsed: string;
+  showHeader?: boolean;
+}) {
+  const rows: ReadonlyArray<[string, string]> = [
+    ['Done', `${stats.done} / ${totalCards}`],
+    ['Remaining', String(stats.remaining)],
+    ['Correct', String(stats.right)],
+    ['Hard', String(stats.hard)],
+    ['Again', String(stats.again)],
+    ['Accuracy', stats.done > 0 ? `${stats.accuracy}%` : '—'],
+    ['Time', elapsed],
+  ];
+
+  return (
+    <div className="group group-divider">
+      {showHeader && (
+        <div className="group-row" style={{ minHeight: '44px' }}>
+          <h2 className="section-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--label)' }}>
+            Session
+          </h2>
+        </div>
+      )}
+      {rows.map(([label, value]) => (
+        <div className="group-row" key={label}>
+          <span className="row-main">
+            <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+              {label}
+            </span>
+          </span>
+          <span className="row-value row-value-strong">{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LessonRows({ subject, log }: { subject: Subject; log: readonly ReviewEvent[] }) {
+  return (
+    <>
+      {subject.lectures.map((lecture: Lecture) => {
+        const knowledge = mastery(
+          log as ReviewEvent[],
+          subject.id,
+          lecture.id,
+          lecture.cards.map((c) => `${subject.id}/${lecture.id}/${c.id}`),
+        );
+        const level = knowledge.label.toLowerCase().replace(' ', '-');
+
+        return (
+          <a
+            key={lecture.id}
+            className="lesson-row"
+            href={`#/study/${subject.id}/${lecture.id}`}
+          >
+            <span className={`mastery-indicator mastery-${level}`} aria-hidden="true" />
+            <span className="lesson-title">{lecture.title}</span>
+            <span className="lesson-meta">
+              <span>{knowledge.label}</span>
+              <span>{lecture.cards.length}</span>
+              <ChevronRight size={14} className="row-chevron" />
+            </span>
+          </a>
+        );
+      })}
+    </>
+  );
+}
+
+function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
+  return (
+    <div className="group group-divider">
+      {subjects.map((s) => (
+        <details key={s.id} className="subject-details">
+          <summary className="group-row group-row-interactive">
+            <span className="subject-tile">
+              <SubjectIcon subjectId={s.id} />
+            </span>
+            <span className="row-main">
+              <span className="row-title">{s.name}</span>
+              <span className="row-sub">{SUBJECT_DESCRIPTIONS[s.id]}</span>
+            </span>
+            <span className="row-value">{s.total} cards</span>
+            <ChevronDown size={16} className="row-chevron subject-chevron" />
+          </summary>
+          <div className="lesson-list">
+            <LessonRows subject={s} log={log} />
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
 
 function App() {
   const [hash, setHash] = useState(location.hash || '#/');
-  const [dark, setDark] = useState(false);
+  const [theme, setTheme] = useState<ThemePreference>('system');
+  const [systemDark, setSystemDark] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false,
+  );
   const [index, setIndex] = useState(0);
-  const [log, setLog] = useState<ReviewEvent[]>(() => { const saved = loadReviewLog(); if (saved.length) return saved; const demo = seedDemoReviewLog(); saveReviewLog(demo); return demo; });
+  const [log, setLog] = useState<ReviewEvent[]>(() => {
+    const saved = loadReviewLog();
+    if (saved.length) return saved;
+    const demo = seedDemoReviewLog();
+    saveReviewLog(demo);
+    return demo;
+  });
   const [session, setSession] = useState<ReviewEvent[]>([]);
   const [started, setStarted] = useState(Date.now());
   const [cardStarted, setCardStarted] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
-  const [confirmed, setConfirmed] = useState<Rating | null>(null);
-  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const [leaving, setLeaving] = useState(false);
+
+  const isDark = theme === 'dark' || (theme === 'system' && systemDark);
+
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return;
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'system') {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = theme;
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     const navigate = () => setHash(location.hash || '#/');
     window.addEventListener('hashchange', navigate);
     return () => window.removeEventListener('hashchange', navigate);
   }, []);
+
   const parts = hash.replace(/^#\//, '').split('/');
-  const subject = subjects.find(s => s.id === parts[1]);
-  const lecture = subject?.lectures.find(l => l.id === parts[2]);
-  const studying = parts[0] === 'study' && subject && (lecture || parts[2] === 'all');
-  const cards = lecture?.cards || subject?.lectures.flatMap(l => l.cards) || [];
+  const subject = subjects.find((s) => s.id === parts[1]);
+  const lecture = subject?.lectures.find((l) => l.id === parts[2]);
+  const studying = parts[0] === 'study' && Boolean(subject) && Boolean(lecture || parts[2] === 'all');
+  const cards = lecture?.cards || subject?.lectures.flatMap((l) => l.cards) || [];
   const card = cards[index];
   const revealed = parts[3] === 'answer';
   const studyUrl = subject ? `#/study/${subject.id}/${parts[2]}` : '';
-  useEffect(() => { setIndex(0); setSession([]); setStarted(Date.now()); setCardStarted(Date.now()); }, [parts[1], parts[2]]);
-  const rate = (rating: Rating) => {
-    if (!subject || !card || !revealed || confirmed) return;
-    const lesson = subject.lectures.find(l => l.cards.includes(card))!;
-    const cardId = `${subject.id}/${lesson.id}/${card.id}`;
-    const event: ReviewEvent = { id: crypto.randomUUID(), cardId, subjectId: subject.id, lessonId: lesson.id, rating, at: new Date().toISOString(), durationMs: Date.now() - cardStarted, isNew: !log.some(e => e.cardId === cardId) };
-    setLog(appendReview(event)); setSession(events => [...events, event]); setConfirmed(rating);
-    setTimeout(() => { setIndex(i => i + 1); setConfirmed(null); setCardStarted(Date.now()); location.hash = studyUrl; window.scrollTo(0, 0); }, 180);
-  };
+
   useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (!studying || !card || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target instanceof HTMLElement && e.target.closest('input,textarea,select,[contenteditable]'))) return;
-      if (e.code === 'Space') { e.preventDefault(); if (!revealed) location.hash = `${studyUrl}/answer`; }
-      const rating = (['again','hard','good','easy'] as Rating[])[Number(e.key)-1];
-      if (rating && revealed) { e.preventDefault(); rate(rating); }
+    setIndex(0);
+    setSession([]);
+    setStarted(Date.now());
+    setCardStarted(Date.now());
+    setLeaving(false);
+  }, [parts[1], parts[2]]);
+
+  const rate = (rating: Rating) => {
+    if (!subject || !card || !revealed || leaving) return;
+    const lesson = subject.lectures.find((l) => l.cards.includes(card))!;
+    const cardId = `${subject.id}/${lesson.id}/${card.id}`;
+    const event: ReviewEvent = {
+      id: crypto.randomUUID(),
+      cardId,
+      subjectId: subject.id,
+      lessonId: lesson.id,
+      rating,
+      at: new Date().toISOString(),
+      durationMs: Date.now() - cardStarted,
+      isNew: !log.some((e) => e.cardId === cardId),
     };
-    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
+    setLog(appendReview(event));
+    setSession((events) => [...events, event]);
+    setLeaving(true);
+    setTimeout(() => {
+      setIndex((i) => i + 1);
+      setLeaving(false);
+      setCardStarted(Date.now());
+      location.hash = studyUrl;
+      window.scrollTo(0, 0);
+    }, 140);
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        !studying ||
+        !card ||
+        e.repeat ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        (e.target instanceof HTMLElement &&
+          e.target.closest('input,textarea,select,[contenteditable]'))
+      ) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!revealed) location.hash = `${studyUrl}/answer`;
+      }
+      const rating = (['again', 'hard', 'good', 'easy'] as Rating[])[Number(e.key) - 1];
+      if (rating && revealed) {
+        e.preventDefault();
+        rate(rating);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   });
-  const stats = sessionStats(log.filter(e => session.some(review => review.id === e.id)), cards.length);
-  const statsPanel = <aside className="stats" aria-label="Session stats"><strong>Session</strong><span>{stats.done} done · {stats.remaining} remaining</span><span>{stats.right} right · {stats.again} again · {stats.hard} hard</span><span>{stats.accuracy}% accuracy · {Math.floor(Math.max(0,now-started)/60000)}:{String(Math.floor(Math.max(0,now-started)/1000)%60).padStart(2,'0')}</span><div className="streak" aria-label="Recent ratings">{session.slice(-10).map(e=><span key={e.id} className={`pip ${e.rating}`} title={e.rating}>{e.rating[0].toUpperCase()}</span>)}</div></aside>;
-  const lessonRows = (s: Subject) => s.lectures.map((l: Lecture, i: number) => {
-    const knowledge = mastery(log, s.id, l.id, l.cards.map(c => `${s.id}/${l.id}/${c.id}`));
-    const level = knowledge.label.toLowerCase().replace(' ', '-');
-    const paths = ['M3 12 C6 3 10 3 12 12 S18 21 21 12', 'M12 3 21 12 12 21 3 12Z', 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8', 'M3 17 9 7 15 17 21 7'];
-    return <a className={`lecture lesson-${level}`} key={l.id} href={`#/study/${s.id}/${l.id}`}><span className="lesson-chip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={level === 'not-started' ? 'M6 6 18 18 M18 6 6 18' : paths[i%4]}/></svg></span><span className="lecture-name">{l.title}</span><span className="mastery">{knowledge.label}</span><span className="card-count">{l.cards.length}</span></a>;
-  });
-  const restart = () => { setIndex(0); setSession([]); setStarted(Date.now()); setCardStarted(Date.now()); location.hash = studyUrl; };
-  const subjectRows = (_compact = false) => subjects.map((s: Subject, i) => (
-    <details key={s.id}><summary className="subject-row"><span className="subject-icon">{['∑', '⌘', 'φ', '{}'][i]}</span><span className="subject-copy"><small className="muted">{['Limits, change and continuity','Motion, sensing and control','The laws of the physical world','Thinking in algorithms'][i]}</small><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lessons</span></span><span className="subject-chevron">⌄</span></summary><div className="lectures">{lessonRows(s)}</div></details>
-  ));
+
+  const stats = sessionStats(
+    log.filter((e) => session.some((review) => review.id === e.id)),
+    cards.length,
+  );
+  const elapsed = formatElapsed(now - started);
+
+  const restart = () => {
+    setIndex(0);
+    setSession([]);
+    setStarted(Date.now());
+    setCardStarted(Date.now());
+    setLeaving(false);
+    location.hash = studyUrl;
+  };
+
+  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
+
+  const isWidePage = (studying && Boolean(card)) || parts[0] === 'calendar';
+  const hasMobileRatingBar = studying && Boolean(card) && revealed;
+
   return (
-    <div className={dark ? 'app dark' : 'app'}>
-      <header>
-        <a className="brand" href="#/"><span className="mark">f</span>flipwise<span className="brand-dot">.</span></a>
-        <span className="header-note">A little practice. Lasting knowledge.</span>
-        <nav aria-label="Main navigation"><a className="text-link" href="#/subjects" aria-current={parts[0] === 'subjects' ? 'page' : undefined}>Subjects</a><a className="text-link" href="#/calendar" aria-current={parts[0] === 'calendar' ? 'page' : undefined}>Calendar</a></nav>
-        <button className="theme" onClick={() => setDark(!dark)} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>{dark ? '☀' : '☾'}</button>
+    <div className="app">
+      <header className="topbar">
+        <div className="topbar-inner">
+          <a className="brand" href="#/">
+            Flipwise
+          </a>
+          <nav className="nav" aria-label="Main navigation">
+            <a
+              className="nav-link"
+              href="#/"
+              aria-current={parts[0] === '' ? 'page' : undefined}
+            >
+              Today
+            </a>
+            <a
+              className="nav-link"
+              href="#/subjects"
+              aria-current={parts[0] === 'subjects' ? 'page' : undefined}
+            >
+              Subjects
+            </a>
+            <a
+              className="nav-link"
+              href="#/calendar"
+              aria-current={parts[0] === 'calendar' ? 'page' : undefined}
+            >
+              Calendar
+            </a>
+          </nav>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}
+          >
+            {isDark ? <SunIcon /> : <MoonIcon />}
+          </button>
+        </div>
       </header>
-      <main id="main">
-        {parts[0] === '' ? <>
-          <div className="heading"><div><p className="muted">Monday, 23 November</p><h1>Make room for recall.</h1></div><span className="demo">Demo workspace</span></div>
-          <div className="layout">
-            <aside className="today">
-              <div className="today-top"><span>Today’s review</span><span aria-hidden="true">✦</span></div>
-              <div className="due">24</div><h2>cards ready for you</h2>
-              <p>A small session now. <br/>A little less to relearn later.</p>
-              <a className="primary" href="#/subjects">Study now <span aria-hidden="true">↗</span></a>
-              <div className="session-info"><span>About 8 minutes</span><span>Demo review count</span></div>
-              <div className="aside-bottom"><span className="status-dot"/> Your semester. One step at a time.</div>
-            </aside>
-            <section className="subjects">
-              <div className="section-title"><h2>Your subjects</h2><a className="text-link" href="#/subjects">View all subjects</a></div>
-              {subjectRows(true)}
-              <p className="collection-note">Your semester, one lecture at a time.</p>
+
+      <main
+        id="main"
+        className={`main${isWidePage ? ' main-wide' : ''}${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}
+      >
+        {parts[0] === '' ? (
+          <div className="section-stack">
+            <div className="page-head" style={{ marginBottom: 0 }}>
+              <p className="page-eyebrow">{formatTodayLabel()}</p>
+              <h1 className="page-title">Today</h1>
+            </div>
+
+            <section aria-label="Due summary">
+              <div className="group">
+                <div className="due-row">
+                  <div>
+                    <div className="due-figure">24</div>
+                    <div className="due-label">Cards due</div>
+                  </div>
+                  <a className="btn btn-primary" href="#/subjects">
+                    Study
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            <section aria-label="Subjects">
+              <div className="section-head">
+                <h2 className="section-title">Subjects</h2>
+                <a className="btn btn-plain" style={{ minHeight: 'auto' }} href="#/subjects">
+                  See all
+                </a>
+              </div>
+              <SubjectGroup log={log} />
             </section>
           </div>
-        </> : parts[0] === 'subjects' && !parts[1] ? <>
-          <a className="back" href="#/">‹ Back to today</a>
-          <div className="heading"><div><p className="muted">Winter semester 2026</p><h1>Choose a subject.</h1></div><span className="demo">4 subjects</span></div>
-          <section className="picker">{subjectRows()}</section>
-        </> : parts[0] === 'subjects' && subject ? <>
-          <a className="back" href="#/subjects">‹ All subjects</a>
-          <div className="heading"><div><p className="muted">{subject.total} cards · {subject.lectures.length} lectures</p><h1>{subject.name}</h1></div></div>
-          <div className="layout">
-            <aside className="today lecture-summary"><h2>Find your focus.</h2><p>Pick a lecture, or work through the subject at your own pace.</p><a className="primary" href={`#/study/${subject.id}/all`} onClick={() => setIndex(0)}>Study all lectures <span aria-hidden="true">↗</span></a></aside>
-            <section><div className="section-title"><h2>Choose a lecture</h2><span>Demo cards</span></div><div className="lectures">
-              {lessonRows(subject)}
-            </div></section>
+        ) : parts[0] === 'subjects' && !parts[1] ? (
+          <div className="section-stack">
+            <div>
+              <a className="back-link" href="#/">
+                <ChevronLeft size={16} />
+                Today
+              </a>
+              <div className="page-head" style={{ marginBottom: 0 }}>
+                <h1 className="page-title">Subjects</h1>
+              </div>
+            </div>
+            <SubjectGroup log={log} />
           </div>
-        </> : studying && card ? <>
-          <a className="back" href={`#/subjects/${subject.id}`}>‹ {subject.name} lectures</a>
-          <div className="study-heading"><div><p className="muted">{subject.name}</p><h1>{lecture?.title || 'All lectures'}</h1></div><span className="demo">Demo session</span></div>
-          <div className="stats-compact" aria-label="Session progress">{stats.done}/{cards.length} · {stats.right} right · {stats.again} again · {stats.hard} hard · {stats.accuracy}%</div>{statsPanel}<section className={`study-card ${confirmed ? "leaving" : ""}`} key={index}>
-            <div className="section-title"><span>Question</span><span>{index % cards.length + 1} of {cards.length}</span></div>
-            <div className="question"><Markdown text={card.front}/></div>
-            {revealed && <div className="revealed"><p className="muted">Answer</p><Markdown text={card.back}/></div>}
-            {!revealed ? <a className="primary reveal-button" href={`${studyUrl}/answer`}>Show answer</a> : <div className="ratings">
-              {(['again','hard','good','easy'] as Rating[]).map((r,i) => <button key={r} className={`rating ${r} ${confirmed === r ? 'confirmed' : ''}`} disabled={!!confirmed} onClick={() => rate(r)}><strong>{['Again','Hard','Good','Easy'][i]}</strong><span>{['Try again','Difficult','Remembered','Aced it'][i]}</span><kbd>{i+1}</kbd></button>)}
-            </div>}
+        ) : parts[0] === 'subjects' && subject ? (
+          <div className="section-stack">
+            <div>
+              <a className="back-link" href="#/subjects">
+                <ChevronLeft size={16} />
+                Subjects
+              </a>
+              <div className="page-head" style={{ marginBottom: 0 }}>
+                <h1 className="page-title">{subject.name}</h1>
+                <p className="page-sub tabular">
+                  {subject.total} cards · {subject.lectures.length} lessons
+                </p>
+              </div>
+            </div>
+
+            <div className="group">
+              <div className="due-row">
+                <div>
+                  <div className="row-title">All lessons</div>
+                  <div className="row-sub tabular">
+                    {subject.lectures.reduce((sum, l) => sum + l.cards.length, 0)} cards in queue
+                  </div>
+                </div>
+                <a
+                  className="btn btn-primary"
+                  href={`#/study/${subject.id}/all`}
+                  onClick={() => setIndex(0)}
+                >
+                  Study all
+                </a>
+              </div>
+            </div>
+
+            <section aria-label="Lessons">
+              <div className="section-head">
+                <h2 className="section-title">Lessons</h2>
+              </div>
+              <div className="group">
+                <LessonRows subject={subject} log={log} />
+              </div>
+            </section>
+          </div>
+        ) : studying && card && subject ? (
+          <>
+            <a className="back-link" href={`#/subjects/${subject.id}`}>
+              <ChevronLeft size={16} />
+              {subject.name}
+            </a>
+            <div className="page-head">
+              <h1 className="page-title">{lecture?.title || 'All lessons'}</h1>
+            </div>
+
+            <div className="study-layout">
+              <div className="study-main">
+                <div className="study-progress-mobile" aria-label="Session progress">
+                  <div className="progress-meta">
+                    <span>
+                      {stats.done} / {cards.length} done
+                    </span>
+                    <span>
+                      {stats.done > 0 ? `${stats.accuracy}% · ` : ''}
+                      {elapsed}
+                    </span>
+                  </div>
+                  <div className="progress-track" aria-hidden="true">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        transform: `scaleX(${cards.length ? Math.min(1, stats.done / cards.length) : 0})`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <section
+                  className={`study-card${leaving ? ' study-card-leaving' : ''}`}
+                  key={index}
+                  aria-label="Flashcard"
+                >
+                  <div className="card-meta">
+                    <span>Question</span>
+                    <span>
+                      {(index % cards.length) + 1} of {cards.length}
+                    </span>
+                  </div>
+                  <div className="card-question">
+                    <Markdown text={card.front} />
+                  </div>
+                  {revealed && (
+                    <div className="card-answer">
+                      <p className="card-answer-label">Answer</p>
+                      <Markdown text={card.back} />
+                    </div>
+                  )}
+                  {!revealed && (
+                    <div className="card-reveal-wrap">
+                      <a className="btn btn-primary btn-full" href={`${studyUrl}/answer`}>
+                        Show answer
+                      </a>
+                    </div>
+                  )}
+                </section>
+
+                {revealed && (
+                  <div className="ratings-bar" role="group" aria-label="Rate your recall">
+                    <div className="ratings-grid">
+                      {RATINGS.map(({ key, label, shortcut }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`rating-btn rating-${key}`}
+                          disabled={leaving}
+                          onClick={() => rate(key)}
+                        >
+                          <span>{label}</span>
+                          <kbd className="rating-key">{shortcut}</kbd>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="study-hint">
+                  {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
+                </p>
+              </div>
+
+              <aside className="study-sidebar" aria-label="Session stats">
+                <SessionStatsGroup
+                  stats={stats}
+                  totalCards={cards.length}
+                  elapsed={elapsed}
+                  showHeader
+                />
+              </aside>
+            </div>
+          </>
+        ) : studying ? (
+          <section className="complete-wrap" aria-label="Session complete">
+            <div className="complete-head">
+              <span className="complete-icon" aria-hidden="true">
+                <CheckIcon size={24} />
+              </span>
+              <h1 className="page-title">Session complete</h1>
+              <p className="page-sub tabular">
+                {stats.done} {stats.done === 1 ? 'card' : 'cards'} reviewed
+              </p>
+            </div>
+
+            <SessionStatsGroup stats={stats} totalCards={cards.length} elapsed={elapsed} />
+
+            <div className="complete-actions">
+              <a className="btn btn-primary" href="#/subjects">
+                Back to subjects
+              </a>
+              <button type="button" className="btn btn-secondary" onClick={restart}>
+                Study again
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <a className="btn btn-plain" href="#/calendar">
+                View calendar
+              </a>
+            </div>
           </section>
-          <p className="study-note">Space to reveal · 1–4 to rate. Reviews saved on this device.</p>
-        </> : studying ? <section className="session-complete"><span className="complete-check" aria-hidden="true">✓</span><h1>Session complete.</h1><p>You reviewed {stats.done} cards. Take a breath.</p>{statsPanel}<div className="complete-actions"><a className="primary" href="#/subjects">Back to subjects</a><button className="secondary" onClick={restart}>Study again</button></div><a className="text-link" href="#/calendar">View study calendar</a></section> : parts[0] === 'calendar' ? <CalendarPage events={log}/> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
-        <footer><span>Built for what you want to remember.</span><span>Demo cards · display totals reflect your subjects</span></footer>
+        ) : parts[0] === 'calendar' ? (
+          <CalendarPage events={log} />
+        ) : (
+          <div className="section-stack">
+            <h1 className="page-title">Page not found</h1>
+            <div>
+              <a className="btn btn-secondary" href="#/subjects">
+                Browse subjects
+              </a>
+            </div>
+          </div>
+        )}
       </main>
+
+      {!hasMobileRatingBar && (
+        <footer className={`app-footer${isWidePage ? ' app-footer-wide' : ''}`}>
+          Demo data · saved locally
+        </footer>
+      )}
     </div>
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App/>);
+createRoot(document.getElementById('root')!).render(<App />);
