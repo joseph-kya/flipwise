@@ -17,11 +17,15 @@ export function studyDay(at: Date): string {
   const d = new Date(at); if (d.getHours() < STUDY_CONFIG.rolloverHour) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+/** A studied card is due when its review day has come (reviews) or its step time has passed (learning). */
+export function isDueState(s: Card | undefined, at: Date): boolean {
+  return !!s && (s.state === State.Review ? studyDay(s.due) <= studyDay(at) : s.due <= at);
+}
 export interface QueueCard { cardId: string; subjectId: string; lessonId: string; queuePosition: number; dailyNew?: number }
 export function queue<T extends QueueCard>(cards: readonly T[], events: readonly ReviewEvent[], at = new Date()): T[] {
   const states = replay(events), seen = new Set<string>(), used: Record<string, number> = {}; let total = 0;
   for (const e of events) { if (!seen.has(e.cardId) && studyDay(new Date(e.at)) === studyDay(at)) { used[e.subjectId] = (used[e.subjectId] ?? 0)+1; total++; } seen.add(e.cardId); }
-  const due = cards.filter(c => { const s = states.get(c.cardId); return s && (s.state === State.Review ? studyDay(s.due) <= studyDay(at) : s.due <= at); }).sort((a,b) => {
+  const due = cards.filter(c => isDueState(states.get(c.cardId), at)).sort((a,b) => {
     const x=states.get(a.cardId)!, y=states.get(b.cardId)!;
     return Number(x.state===State.Review)-Number(y.state===State.Review) || +x.due- +y.due || a.cardId.localeCompare(b.cardId);
   });
