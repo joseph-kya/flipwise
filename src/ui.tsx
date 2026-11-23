@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface IconProps {
   className?: string;
@@ -56,6 +56,14 @@ export function CheckIcon({ size = 24, className }: IconProps) {
   );
 }
 
+export function FlameIcon({ size = 18, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M12.5 3.5c.8 3.2-2.2 4.6-2.2 7.2 0 1.4 1 2.5 2.3 2.5 1.7 0 2.7-1.5 2.4-3.6 1.8 1.5 3 3.7 3 6.1a6 6 0 1 1-12 0c0-3.8 2.6-6.9 6.5-12.2Z" />
+    </Svg>
+  );
+}
+
 export function TodayTabIcon({ size = 22, className }: IconProps) {
   return (
     <Svg size={size} className={className}>
@@ -81,6 +89,15 @@ export function CalendarTabIcon({ size = 22, className }: IconProps) {
     <Svg size={size} className={className}>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
       <path d="M8 3v3.5M16 3v3.5M3.5 10h17" />
+    </Svg>
+  );
+}
+
+export function SettingsTabIcon({ size = 22, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
     </Svg>
   );
 }
@@ -123,6 +140,63 @@ export function SubjectIcon({ subjectId, size = 22 }: { subjectId: string; size?
         </Svg>
       );
   }
+}
+
+export interface SegmentedOption<T extends string> {
+  value: T;
+  label: string;
+  style?: CSSProperties;
+}
+
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  options: ReadonlyArray<SegmentedOption<T>>;
+  value: T;
+  onChange: (next: T) => void;
+  ariaLabel: string;
+}) {
+  const activeIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value),
+  );
+
+  return (
+    <div
+      className="segmented"
+      role="radiogroup"
+      aria-label={ariaLabel}
+      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+    >
+      <span
+        className="segmented-thumb"
+        aria-hidden="true"
+        style={{
+          width: `calc((100% - 6px) / ${options.length})`,
+          transform: `translate3d(${activeIndex * 100}%, 0, 0)`,
+        }}
+      />
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            className="segmented-btn"
+            style={option.style}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export const SUBJECT_DESCRIPTIONS: Record<string, string> = {
