@@ -51,13 +51,17 @@ import {
   animateCardExit,
 } from './motion';
 import {
+  Button,
   CalendarTabIcon,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   FlameIcon,
+  Group,
+  PageHeader,
+  Row,
   SUBJECT_DESCRIPTIONS,
-  SegmentedControl,
+  SectionHeader,
+  Segmented,
   SettingsTabIcon,
   SubjectIcon,
   SubjectsTabIcon,
@@ -157,14 +161,11 @@ function SessionStatsGroup({
   showHeader?: boolean;
 }) {
   return (
-    <div className="group group-divider">
+    <Group as="div" ariaLabel="Session statistics">
       {showHeader && (
         <div className="group-row session-head-row">
           <div className="row-main">
-            <h2 className="section-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--label)' }}
-            >
-              Session
-            </h2>
+            <h2 className="session-sidebar-title">Session</h2>
             <span className="row-sub tabular">
               <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards} cards
             </span>
@@ -178,78 +179,48 @@ function SessionStatsGroup({
           />
         </div>
       )}
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Done
-          </span>
-        </span>
-        <span className="row-value row-value-strong">
-          <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards}
-        </span>
-      </div>
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Remaining
-          </span>
-        </span>
-        <span className="row-value row-value-strong">
-          <AnimatedNumber value={stats.remaining} motion={motion} />
-        </span>
-      </div>
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Correct
-          </span>
-        </span>
-        <span className="row-value row-value-strong">
-          <AnimatedNumber value={stats.right} motion={motion} />
-        </span>
-      </div>
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Hard
-          </span>
-        </span>
-        <span className="row-value row-value-strong">
-          <AnimatedNumber value={stats.hard} motion={motion} />
-        </span>
-      </div>
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Again
-          </span>
-        </span>
-        <span className="row-value row-value-strong">
-          <AnimatedNumber value={stats.again} motion={motion} />
-        </span>
-      </div>
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Accuracy
-          </span>
-        </span>
-        <span className="row-value row-value-strong">
-          {stats.done > 0 ? (
-            <AnimatedNumber value={stats.accuracy} motion={motion} suffix="%" /> ) : (
+      <Row
+        title="Done"
+        value={
+          <>
+            <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards}
+          </>
+        }
+        valueStrong
+      />
+      <Row
+        title="Remaining"
+        value={<AnimatedNumber value={stats.remaining} motion={motion} />}
+        valueStrong
+      />
+      <Row
+        title="Correct"
+        value={<AnimatedNumber value={stats.right} motion={motion} />}
+        valueStrong
+      />
+      <Row
+        title="Hard"
+        value={<AnimatedNumber value={stats.hard} motion={motion} />}
+        valueStrong
+      />
+      <Row
+        title="Again"
+        value={<AnimatedNumber value={stats.again} motion={motion} />}
+        valueStrong
+      />
+      <Row
+        title="Accuracy"
+        value={
+          stats.done > 0 ? (
+            <AnimatedNumber value={stats.accuracy} motion={motion} suffix="%" />
+          ) : (
             '—'
-          )}
-        </span>
-      </div>
-      <div className="group-row">
-        <span className="row-main">
-          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-            Time
-          </span>
-        </span>
-        <span className="row-value row-value-strong">{elapsed}</span>
-      </div>
-    </div>
+          )
+        }
+        valueStrong
+      />
+      <Row title="Time" value={elapsed} valueStrong />
+    </Group>
   );
 }
 
@@ -889,7 +860,7 @@ function App() {
 
   const calendarModeControl = (
     <div className="cal-mode-switch">
-      <SegmentedControl
+      <Segmented
         ariaLabel="Calendar or Insights"
         options={[
           { value: 'calendar', label: 'Calendar' },
@@ -942,6 +913,10 @@ function App() {
       ) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   });
+  const canUndo =
+    session.length > 0 &&
+    Boolean(storageRef.current) &&
+    log.at(-1)?.id === session.at(-1)?.id;
   const activeStudy = studying && Boolean(card);
   const outcome = sessionOutcome(studying, cards.length, session.length);
   const sessionComplete = outcome === 'complete';
@@ -1003,65 +978,60 @@ function App() {
         className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}>
           {parts[0] === '' ? (
           <div className="section-stack">
-            <div className="page-head" style={{ marginBottom: 0 }}>
-              <p className="page-eyebrow">{formatTodayLabel()}</p>
-              <h1 className="page-title">Today</h1>
-            </div>
+            <PageHeader eyebrow={formatTodayLabel()} title="Today" />
 
             <section aria-label="Due summary">
-              <div className="group">
+              <Group divider={false}>
                 <div className="due-row">
                   <div>
                     <div className="due-figure">{todayCounts.total}</div>
                     <div className="due-label">Cards available</div>
                     <div className="due-label">
-                        {todayCounts.new} new · {todayCounts.review} review · {todayCounts.learning}{' '}
-                        learning
-                      </div>
+                      {todayCounts.new} new · {todayCounts.review} review · {todayCounts.learning}{' '}
+                      learning
                     </div>
-                  <a className="btn btn-primary" href="#/study/global/all">
+                  </div>
+                  <Button variant="primary" href="#/study/global/all">
                     Study
-                  </a>
+                  </Button>
                 </div>
-              </div>
+              </Group>
             </section>
 
             <section aria-label="Subjects">
-              <div className="section-head">
-                <h2 className="section-title">Subjects</h2>
-                <a className="btn btn-plain" style={{ minHeight: 'auto' }} href="#/subjects">
-                  See all
-                </a>
-              </div>
+              <SectionHeader
+                title="Subjects"
+                action={
+                  <Button variant="plain" className="btn-compact" href="#/subjects">
+                    See all
+                  </Button>
+                }
+              />
               <SubjectGroup log={log} />
             </section>
           </div>
         ) : parts[0] === 'subjects' && !parts[1] ? (
           <div className="section-stack">
-            <div className="page-head subjects-title-row" style={{ marginBottom: 0 }}>
-              <h1 className="page-title">Subjects</h1>
-            <a className="btn btn-plain" href="#/import">
+            <PageHeader
+              title="Subjects"
+              trailing={
+                <Button variant="plain" href="#/import">
                   Import
-                </a>
-              </div>
+                </Button>
+              }
+            />
             <SubjectGroup log={log} />
           </div>
         ) : parts[0] === 'subjects' && subject ? (
           <div className="section-stack">
-            <div>
-              <a className="back-link" href="#/subjects">
-                <ChevronLeft size={16} />
-                Subjects
-              </a>
-              <div className="page-head" style={{ marginBottom: 0 }}>
-                <h1 className="page-title">{subject.name}</h1>
-                <p className="page-sub tabular">
-                  {subject.total} cards · {subject.lectures.length} lessons
-                </p>
-              </div>
-            </div>
+            <PageHeader
+              backHref="#/subjects"
+              backLabel="Subjects"
+              title={subject.name}
+              subtitle={`${subject.collectionLabel ? `${subject.collectionLabel} · ` : ''}${subject.total} cards · ${subject.lectures.length} lessons`}
+            />
 
-            <div className="group">
+            <Group divider={false}>
               <div className="due-row">
                 <div>
                   <div className="row-title">All lessons</div>
@@ -1069,48 +1039,58 @@ function App() {
                     {queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length} cards in queue
                   </div>
                 </div>
-                <a
-                  className="btn btn-primary"
+                <Button
+                  variant="primary"
                   href={`#/study/${subject.id}/all`}
                   onClick={() => setIndex(0)}
                 >
                   Study all
-                </a>
+                </Button>
               </div>
-            </div>
+            </Group>
 
             <section aria-label="Lessons">
-              <div className="section-head">
-                <h2 className="section-title">Lessons</h2>
-              </div>
-              <div className="group group-lessons">
+              <SectionHeader title="Lessons" />
+              <Group inset="lessons" divider={false}>
                 <LessonRows subject={subject} log={log} stagger />
-              </div>
+              </Group>
             </section>
           </div>
         ) : activeStudy && subject ? (
           <>
-            <a className="back-link" href={`#/subjects/${subject.id}`}>
-              <ChevronLeft size={16} />
-              {subject.name}
-            </a>
-            <div className="page-head">
-              <h1 className="page-title">{lecture?.title || 'All lessons'}</h1>
-            </div>
+            <PageHeader
+              backHref={`#/subjects/${subject.id}`}
+              backLabel={subject.name}
+              title={lecture?.title || 'All lessons'}
+              subtitle={subject.collectionLabel}
+              className="study-page-head"
+            />
 
             <div className="study-layout">
               <div className="study-main">
                 <div className="study-progress-mobile" aria-label="Session progress">
                   <div className="progress-meta">
-                    <span>
-                      <AnimatedNumber value={stats.done} motion={effectiveMotion} /> /{' '}
+                    <span className="progress-meta-left">
+                      {canUndo && (
+                        <Button
+                          variant="plain"
+                          className="progress-undo-btn"
+                          disabled={saving}
+                          onClick={() => void undo()}
+                        >
+                          Undo
+                        </Button>
+                      )}
+                      <span>
+                        <AnimatedNumber value={stats.done} motion={effectiveMotion} /> /{' '}
                         {session.length + cards.length} done
+                      </span>
                     </span>
                     <span>
                       {stats.done > 0 && (
                         <>
                           <AnimatedNumber value={stats.accuracy} motion={effectiveMotion} suffix="%" />{' '}
-                            ·{' '}
+                          ·{' '}
                         </>
                       )}
                       {elapsed}
@@ -1174,10 +1154,10 @@ function App() {
                             >
                               <CardContent card={card} side="front" media={media} />
                           </div>
-                          <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}
-                            >
-                              <a
-                              className="btn btn-primary btn-full"
+                          <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}>
+                            <Button
+                              variant="primary"
+                              size="full"
                               href={`${studyUrl}/answer`}
                               onClick={(e) => {
                                 e.preventDefault();
@@ -1185,7 +1165,7 @@ function App() {
                               }}
                             >
                               Show answer
-                            </a>
+                            </Button>
                           </div>
                         </section>
 
@@ -1255,10 +1235,9 @@ function App() {
                   </div>
                 )}
 
-                {session.length > 0 && <div className="study-undo"><button type="button" disabled={saving} className="btn btn-plain" onClick={()=>void undo()}>Undo last rating</button></div>}
                 <p className="study-hint">
                   {states.get(card.cardId) && isLeech(states.get(card.cardId)!) ? 'leech · ' : ''}
-                    {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
+                  {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
                 </p>
               </div>
 
@@ -1270,19 +1249,39 @@ function App() {
                   motion={effectiveMotion}
                   showHeader
                 />
+                {canUndo && (
+                  <div className="sidebar-undo-wrap">
+                    <Button
+                      variant="plain"
+                      className="sidebar-undo-btn"
+                      disabled={saving}
+                      onClick={() => void undo()}
+                    >
+                      Undo last rating
+                    </Button>
+                  </div>
+                )}
               </aside>
             </div>
           </>
         ) : caughtUp ? (
-          <section className="group caught-up" aria-label="Study queue empty">
+          <Group divider={false} ariaLabel="Study queue empty" className="caught-up">
             <h1 className="page-title">All caught up</h1>
-            <p>{nextAvailable ? `Next available ${nextAvailable.toLocaleString([], {dateStyle:'medium',timeStyle:'short'})}.` : 'There are no cards waiting in this lesson.'}</p>
-            <a className="btn btn-secondary" href={subject ? `#/subjects/${subject.id}` : '#/subjects'}>Back to subjects</a>
-          </section>
-        ) : sessionComplete ? (
-          <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title"
+            <p className="caught-up-sub">
+              {nextAvailable
+                ? `Next available ${nextAvailable.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`
+                : 'There are no cards waiting in this lesson.'}
+            </p>
+            <Button
+              variant="secondary"
+              href={subject ? `#/subjects/${subject.id}` : '#/subjects'}
             >
-              <section className="complete-sheet">
+              Back to subjects
+            </Button>
+          </Group>
+        ) : sessionComplete ? (
+          <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title">
+            <section className="complete-sheet">
               <ConfettiBurst active motion={effectiveMotion} />
               <div className="sheet-handle" aria-hidden="true" />
 
@@ -1294,67 +1293,64 @@ function App() {
                   strokeWidth={7}
                   motion={effectiveMotion}
                 />
-                <h1 id="complete-title" className="page-title" style={{ fontSize: 'var(--text-lg)' }}
-                  >
-                    Session complete
+                <h1 id="complete-title" className="complete-title">
+                  Session complete
                 </h1>
                 {subject && (
                   <p className="page-sub">
-                    {subject.name} · {lecture?.title || 'All lessons'}
+                    {subject.name}
+                    {subject.collectionLabel ? ` · ${subject.collectionLabel}` : ''} ·{' '}
+                    {lecture?.title || 'All lessons'}
                   </p>
                 )}
               </div>
 
-              <div className="group group-divider">
-                <div className="group-row">
-                  <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}
-                      >
-                        Cards done
+              <Group as="div" ariaLabel="Session summary">
+                <Row
+                  title="Cards done"
+                  value={<AnimatedNumber value={stats.done} motion={effectiveMotion} />}
+                  valueStrong
+                />
+                <Row title="Time" value={elapsed} valueStrong />
+                <Row
+                  title="Streak"
+                  value={
+                    <span className="streak-value">
+                      <FlameIcon size={16} className="streak-flame" />
+                      <AnimatedNumber value={streakStats.current} motion={effectiveMotion} />{' '}
+                      {streakStats.current === 1 ? 'day' : 'days'}
                     </span>
-                  </span>
-                  <span className="row-value row-value-strong">
-                    <AnimatedNumber value={stats.done} motion={effectiveMotion} />
-                  </span>
-                </div>
-                <div className="group-row">
-                  <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}
-                      >
-                        Time
-                    </span>
-                  </span>
-                  <span className="row-value row-value-strong">{elapsed}</span>
-                </div>
-                <div className="group-row">
-                  <span className="row-main">
-                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}
-                      >
-                        Streak
-                    </span>
-                  </span>
-                  <span className="row-value row-value-strong streak-value">
-                    <FlameIcon size={16} className="streak-flame" />
-                    <AnimatedNumber value={streakStats.current} motion={effectiveMotion} />{' '}
-                    {streakStats.current === 1 ? 'day' : 'days'}
-                  </span>
-                </div>
-              </div>
+                  }
+                  valueStrong
+                />
+              </Group>
 
               <div className="complete-actions">
-                <button type="button" className="btn btn-plain" disabled={saving} onClick={()=>void undo()}>Undo last rating</button>
-                <button type="button" className="btn btn-secondary" onClick={restart}>
-                  Study again
-                </button>
-                <a className="btn btn-primary" href="#/subjects">
+                <Button variant="primary" size="full" href="#/subjects">
                   Done
-                </a>
-              </div>
-
-              <div style={{ textAlign: 'center' }}>
-                <a className="btn btn-plain" href="#/calendar">
-                  View calendar
-                </a>
+                </Button>
+                <Button variant="secondary" size="full" onClick={restart}>
+                  Study again
+                </Button>
+                <div className="complete-links">
+                  {canUndo && (
+                    <>
+                      <Button
+                        variant="plain"
+                        disabled={saving}
+                        onClick={() => void undo()}
+                      >
+                        Undo last rating
+                      </Button>
+                      <span className="complete-links-sep" aria-hidden="true">
+                        ·
+                      </span>
+                    </>
+                  )}
+                  <Button variant="plain" href="#/calendar">
+                    View calendar
+                  </Button>
+                </div>
               </div>
             </section>
           </div>
@@ -1366,10 +1362,7 @@ function App() {
           />
         ) : parts[0] === 'insights' && !parts[1] && insightsData ? (
           <div className="section-stack">
-            <div className="page-head page-head-split" style={{ marginBottom: 0 }}>
-              <h1 className="page-title">Insights</h1>
-              {calendarModeControl}
-            </div>
+            <PageHeader title="Insights" trailing={calendarModeControl} />
             <InsightsView
               data={insightsData}
               range={insightsRange}
@@ -1432,11 +1425,11 @@ function App() {
           />
           ) : (
           <div className="section-stack">
-            <h1 className="page-title">Page not found</h1>
+            <PageHeader title="Page not found" />
             <div>
-              <a className="btn btn-secondary" href="#/subjects">
+              <Button variant="secondary" href="#/subjects">
                 Browse subjects
-              </a>
+              </Button>
             </div>
           </div>
         )}
@@ -1444,7 +1437,7 @@ function App() {
 
       {!activeStudy && !sessionComplete && (
         <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
-          {imported ? 'Collection' : 'Demo deck'} · progress saved locally
+          Saved locally on this device
         </footer>
       )}
 
