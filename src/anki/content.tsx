@@ -134,3 +134,55 @@ export function CardContent({
     </>
   );
 }
+
+/**
+ * Compact inline renderer for card fronts in lists (leeches, previews, etc.).
+ * Uses the same DOMPurify + KaTeX pipeline when math or HTML tags are present
+ * and cleanly strips markdown emphasis markers so raw delimiters never appear.
+ */
+export function InlineCardText({ text }: { text: string }) {
+  const html = useMemo(() => {
+    const plainMd = text
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/__(.+?)__/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!hasMath(plainMd) && !/<[a-z][\s\S]*>/i.test(plainMd)) {
+      return null;
+    }
+
+    const holder = document.createElement('span');
+    holder.innerHTML = DOMPurify.sanitize(plainMd, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'sub', 'sup', 'code', 'span'],
+      ALLOWED_ATTR: [],
+      ALLOW_DATA_ATTR: false,
+    });
+    renderMathInElement(holder, {
+      delimiters: MATH_DELIMITERS,
+      throwOnError: false,
+      trust: false,
+      strict: 'ignore',
+    });
+    return holder.innerHTML;
+  }, [text]);
+
+  if (html !== null) {
+    return (
+      <span
+        className="inline-card-text"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
+  const cleaned = text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return <span className="inline-card-text">{cleaned}</span>;
+}
