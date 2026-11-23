@@ -1,5 +1,88 @@
-import React, {useState} from 'react';
-import {createRoot} from 'react-dom/client';
-import deck from '../decks/intro-to-robotics.flipwise.json';
+import { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { subjects, type Subject } from './demoSubjects';
 import './style.css';
-function App(){const [dark,setDark]=useState(false);const [selected,setSelected]=useState<string|null>(null);const [answer,setAnswer]=useState(false);const [study,setStudy]=useState(false);const cards=deck.cards.filter(c=>!selected||c.section===selected);const card=cards[0];return <div className={dark?'app dark':'app'}><header><a className="brand" href="#"><span className="mark">f</span>flipwise<span className="brand-dot">.</span></a><span className="header-note">A little practice. Lasting knowledge.</span><button className="theme" onClick={()=>setDark(!dark)} aria-label={dark?'Use light theme':'Use dark theme'}>{dark?'☀':'☾'}</button></header><main id="main"><div className="heading"><div><p className="muted">Monday, 23 November</p><h1>Make room for recall.</h1></div><span className="demo">Demo workspace</span></div><div className="layout"><aside className="today"><div className="today-top"><span>Today’s review</span><span aria-hidden="true">✦</span></div><div className="due">24</div><h2>cards ready for you</h2><p>A small session now. <br/>A little less to relearn later.</p><button className="primary" onClick={()=>{setSelected(null);setStudy(true);setAnswer(false)}}>Study now <span aria-hidden="true">↗</span></button><div className="session-info"><span>About 8 minutes</span><span>24 review cards</span></div><div className="aside-bottom"><span className="status-dot"/> One subject. One step at a time.</div></aside><section className="subjects"><div className="section-title"><h2>Your subjects</h2><span>Winter semester 2026</span></div><div className="subject-head"><span className="subject-icon" aria-hidden="true">⌘</span><div><p className="muted">{deck.subject.code} · AAU</p><h3>{deck.subject.name}</h3><p className="muted">{deck.sections.length} lectures · {deck.cards.length} cards</p></div></div><div className="lecture-label"><span>Lectures</span><span>Cards</span></div><div className="lectures">{deck.sections.map(s=><button className="lecture" key={s.id} onClick={()=>{setSelected(s.id);setStudy(true);setAnswer(false)}}><span className="lecture-number">{s.id === 'EXAM' ? 'E' : s.id.replace('L','')}</span><span className="lecture-name">{s.title}{s.preview&&<small>Preview</small>}</span><span className="card-count">{deck.cards.filter(c=>c.section===s.id).length}</span><span className="chevron" aria-hidden="true">›</span></button>)}</div></section></div><footer><span>Built for what you want to remember.</span><span>Review schedule shown with demo data</span></footer></main>{study&&<div className="overlay"><section className="dialog" role="dialog" aria-modal="true" aria-label="Study preview"><button className="close" onClick={()=>setStudy(false)}>Close</button><p className="muted">Study preview · {selected||'All lectures'}</p><h2>{card.front}</h2>{answer&&<p className="answer">{card.back}</p>}<button className="primary" onClick={()=>setAnswer(!answer)}>{answer?'Hide answer':'Show answer'}</button><p className="muted">Preview only · your review schedule is unchanged.</p></section></div>}</div>};createRoot(document.getElementById('root')!).render(<App/>);
+
+function App() {
+  const [hash, setHash] = useState(location.hash || '#/');
+  const [dark, setDark] = useState(false);
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const navigate = () => setHash(location.hash || '#/');
+    window.addEventListener('hashchange', navigate);
+    return () => window.removeEventListener('hashchange', navigate);
+  }, []);
+  const parts = hash.replace(/^#\//, '').split('/');
+  const subject = subjects.find(s => s.id === parts[1]);
+  const lecture = subject?.lectures.find(l => l.id === parts[2]);
+  const studying = parts[0] === 'study' && subject && (lecture || parts[2] === 'all');
+  const cards = lecture?.cards || subject?.lectures.flatMap(l => l.cards) || [];
+  const card = cards[index % Math.max(cards.length, 1)];
+  const revealed = parts[3] === 'answer';
+  const studyUrl = subject ? `#/study/${subject.id}/${parts[2]}` : '';
+  const subjectRows = (compact = false) => subjects.map((s: Subject, i) => (
+    <a className="subject-row" href={`#/subjects/${s.id}`} key={s.id}>
+      <span className="subject-icon" aria-hidden="true">{['∑', '⌘', 'φ', '{}'][i]}</span>
+      <span className="subject-copy"><strong>{s.name}</strong><span className="muted">{s.total} cards · {s.lectures.length} lectures</span></span>
+      <span aria-hidden="true">›</span>
+      {!compact && <span className="subject-action">Choose lectures</span>}
+    </a>
+  ));
+  return (
+    <div className={dark ? 'app dark' : 'app'}>
+      <header>
+        <a className="brand" href="#/"><span className="mark">f</span>flipwise<span className="brand-dot">.</span></a>
+        <span className="header-note">A little practice. Lasting knowledge.</span>
+        <button className="theme" onClick={() => setDark(!dark)} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>{dark ? '☀' : '☾'}</button>
+      </header>
+      <main id="main">
+        {parts[0] === '' ? <>
+          <div className="heading"><div><p className="muted">Monday, 23 November</p><h1>Make room for recall.</h1></div><span className="demo">Demo workspace</span></div>
+          <div className="layout">
+            <aside className="today">
+              <div className="today-top"><span>Today’s review</span><span aria-hidden="true">✦</span></div>
+              <div className="due">24</div><h2>cards ready for you</h2>
+              <p>A small session now. <br/>A little less to relearn later.</p>
+              <a className="primary" href="#/subjects">Study now <span aria-hidden="true">↗</span></a>
+              <div className="session-info"><span>About 8 minutes</span><span>Demo review count</span></div>
+              <div className="aside-bottom"><span className="status-dot"/> One subject. One step at a time.</div>
+            </aside>
+            <section className="subjects">
+              <div className="section-title"><h2>Your subjects</h2><a className="text-link" href="#/subjects">View all subjects</a></div>
+              {subjectRows(true)}
+              <p className="collection-note">Your semester, one lecture at a time.</p>
+            </section>
+          </div>
+        </> : parts[0] === 'subjects' && !parts[1] ? <>
+          <a className="back" href="#/">‹ Back to today</a>
+          <div className="heading"><div><p className="muted">Winter semester 2026</p><h1>Choose a subject.</h1></div><span className="demo">4 subjects</span></div>
+          <section className="picker">{subjectRows()}</section>
+        </> : parts[0] === 'subjects' && subject ? <>
+          <a className="back" href="#/subjects">‹ All subjects</a>
+          <div className="heading"><div><p className="muted">{subject.total} cards · {subject.lectures.length} lectures</p><h1>{subject.name}</h1></div></div>
+          <div className="layout">
+            <aside className="today lecture-summary"><h2>Find your focus.</h2><p>Pick a lecture, or work through the subject at your own pace.</p><a className="primary" href={`#/study/${subject.id}/all`} onClick={() => setIndex(0)}>Study all lectures <span aria-hidden="true">↗</span></a></aside>
+            <section><div className="section-title"><h2>Choose a lecture</h2><span>Demo cards</span></div><div className="lectures">
+              {subject.lectures.map((l, i) => <a className="lecture" key={l.id} href={`#/study/${subject.id}/${l.id}`} onClick={() => setIndex(0)}><span className="lecture-number">{String(i + 1).padStart(2, '0')}</span><span className="lecture-name">{l.title}</span><span className="card-count">{l.cards.length}</span><span aria-hidden="true">›</span></a>)}
+            </div></section>
+          </div>
+        </> : studying && card ? <>
+          <a className="back" href={`#/subjects/${subject.id}`}>‹ {subject.name} lectures</a>
+          <div className="study-heading"><div><p className="muted">{subject.name}</p><h1>{lecture?.title || 'All lectures'}</h1></div><span className="demo">Demo session</span></div>
+          <section className="study-card">
+            <div className="section-title"><span>Question</span><span>{index % cards.length + 1} of {cards.length}</span></div>
+            <h2>{card.front}</h2>
+            {revealed && <div className="revealed"><p className="muted">Answer</p><p className="answer">{card.back}</p></div>}
+            {!revealed ? <a className="primary reveal-button" href={`${studyUrl}/answer`}>Show answer</a> : <div className="ratings">
+              {['Again', 'Hard', 'Good'].map((label, i) => <button key={label} className={`rating rating-${i}`} onClick={() => { setIndex(index + 1); location.hash = studyUrl; }}><strong>{label}</strong><span>{['<1 min', '6 min', '1 day'][i]}</span></button>)}
+            </div>}
+          </section>
+          <p className="study-note">Demo only. Ratings advance the card; no reviews are scheduled.</p>
+        </> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
+        <footer><span>Built for what you want to remember.</span><span>Demo cards · display totals reflect your subjects</span></footer>
+      </main>
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<App/>);
