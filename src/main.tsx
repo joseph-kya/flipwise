@@ -1,4 +1,13 @@
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
+import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { subjects, type Subject, type Lecture } from './demoSubjects';
 import './style.css';
@@ -12,15 +21,32 @@ import {
 } from './reviewLog';
 import { mastery } from './mastery';
 import { sessionStats } from './sessionStats';
+import { aggregateByDay, streak, toLocalDateKey } from './calendar/dailyStats';
 import { CalendarPage } from './calendar/CalendarPage';
 import { Markdown } from './markdown';
+import { AppearancePage } from './AppearancePage';
+import {
+  applyAppearance,
+  loadSettings,
+  saveSettings,
+  type AppearanceSettings,
+  type EffectiveMotion,
+} from './settings';
+import {
+  AccuracyRing,
+  AnimatedNumber,
+  ConfettiBurst,
+  animateButtonSpring,
+  animateCardExit,
+} from './motion';
 import {
   CalendarTabIcon,
-  CheckIcon,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FlameIcon,
   SUBJECT_DESCRIPTIONS,
+  SettingsTabIcon,
   SubjectIcon,
   SubjectsTabIcon,
   TodayTabIcon,
@@ -32,6 +58,8 @@ const RATINGS: ReadonlyArray<{ key: Rating; label: string }> = [
   { key: 'good', label: 'Good' },
   { key: 'easy', label: 'Easy' },
 ];
+
+type SwipeHint = { label: string; rating: Rating } | null;
 
 function formatElapsed(ms: number): string {
   const safe = Math.max(0, ms);
@@ -51,50 +79,122 @@ function SessionStatsGroup({
   stats,
   totalCards,
   elapsed,
+  motion,
   showHeader = false,
 }: {
   stats: ReturnType<typeof sessionStats>;
   totalCards: number;
   elapsed: string;
+  motion: EffectiveMotion;
   showHeader?: boolean;
 }) {
-  const rows: ReadonlyArray<[string, string]> = [
-    ['Done', `${stats.done} / ${totalCards}`],
-    ['Remaining', String(stats.remaining)],
-    ['Correct', String(stats.right)],
-    ['Hard', String(stats.hard)],
-    ['Again', String(stats.again)],
-    ['Accuracy', stats.done > 0 ? `${stats.accuracy}%` : '—'],
-    ['Time', elapsed],
-  ];
-
   return (
     <div className="group group-divider">
       {showHeader && (
-        <div className="group-row" style={{ minHeight: '44px' }}>
-          <h2 className="section-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--label)' }}>
-            Session
-          </h2>
+        <div className="group-row session-head-row">
+          <div className="row-main">
+            <h2 className="section-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--label)' }}>
+              Session
+            </h2>
+            <span className="row-sub tabular">
+              <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards} cards
+            </span>
+          </div>
+          <AccuracyRing
+            percent={stats.accuracy}
+            hasData={stats.done > 0}
+            size={44}
+            strokeWidth={4}
+            motion={motion}
+          />
         </div>
       )}
-      {rows.map(([label, value]) => (
-        <div className="group-row" key={label}>
-          <span className="row-main">
-            <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
-              {label}
-            </span>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Done
           </span>
-          <span className="row-value row-value-strong">{value}</span>
-        </div>
-      ))}
+        </span>
+        <span className="row-value row-value-strong">
+          <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards}
+        </span>
+      </div>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Remaining
+          </span>
+        </span>
+        <span className="row-value row-value-strong">
+          <AnimatedNumber value={stats.remaining} motion={motion} />
+        </span>
+      </div>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Correct
+          </span>
+        </span>
+        <span className="row-value row-value-strong">
+          <AnimatedNumber value={stats.right} motion={motion} />
+        </span>
+      </div>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Hard
+          </span>
+        </span>
+        <span className="row-value row-value-strong">
+          <AnimatedNumber value={stats.hard} motion={motion} />
+        </span>
+      </div>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Again
+          </span>
+        </span>
+        <span className="row-value row-value-strong">
+          <AnimatedNumber value={stats.again} motion={motion} />
+        </span>
+      </div>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Accuracy
+          </span>
+        </span>
+        <span className="row-value row-value-strong">
+          {stats.done > 0 ? <AnimatedNumber value={stats.accuracy} motion={motion} suffix="%" /> : '—'}
+        </span>
+      </div>
+      <div className="group-row">
+        <span className="row-main">
+          <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+            Time
+          </span>
+        </span>
+        <span className="row-value row-value-strong">{elapsed}</span>
+      </div>
     </div>
   );
 }
 
-function LessonRows({ subject, log }: { subject: Subject; log: readonly ReviewEvent[] }) {
+function LessonRows({
+  subject,
+  log,
+  animateDots = false,
+  stagger = false,
+}: {
+  subject: Subject;
+  log: readonly ReviewEvent[];
+  animateDots?: boolean;
+  stagger?: boolean;
+}) {
   return (
     <>
-      {subject.lectures.map((lecture: Lecture) => {
+      {subject.lectures.map((lecture: Lecture, i: number) => {
         const knowledge = mastery(
           log as ReviewEvent[],
           subject.id,
@@ -106,10 +206,15 @@ function LessonRows({ subject, log }: { subject: Subject; log: readonly ReviewEv
         return (
           <a
             key={lecture.id}
-            className="lesson-row"
+            className={`lesson-row${stagger ? ' stagger-item' : ''}`}
+            style={{ '--i': Math.min(i, 7) } as CSSProperties}
             href={`#/study/${subject.id}/${lecture.id}`}
           >
-            <span className={`mastery-indicator mastery-${level}`} aria-hidden="true" />
+            <span
+              className={`mastery-indicator mastery-${level}${animateDots ? ' dot-pop' : ''}`}
+              style={{ '--i': Math.min(i, 7) } as CSSProperties}
+              aria-hidden="true"
+            />
             <span className="lesson-title">{lecture.title}</span>
             <span className="lesson-meta">
               <span>{knowledge.label}</span>
@@ -124,32 +229,81 @@ function LessonRows({ subject, log }: { subject: Subject; log: readonly ReviewEv
 }
 
 function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
+  const [freshOpenId, setFreshOpenId] = useState<string | null>(null);
+  const seenOpenRef = useRef<Set<string>>(new Set());
+
+  const toggleSubject = (id: string) => {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        if (!seenOpenRef.current.has(id)) {
+          seenOpenRef.current.add(id);
+          setFreshOpenId(id);
+        }
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="group group-divider group-icons">
-      {subjects.map((s) => (
-        <details key={s.id} className="subject-details">
-          <summary className="group-row group-row-interactive">
-            <span className="subject-tile">
-              <SubjectIcon subjectId={s.id} />
-            </span>
-            <span className="row-main">
-              <span className="row-title">{s.name}</span>
-              <span className="row-sub">{SUBJECT_DESCRIPTIONS[s.id]}</span>
-            </span>
-            <span className="row-value">{s.total} cards</span>
-            <ChevronDown size={16} className="row-chevron subject-chevron" />
-          </summary>
-          <div className="lesson-list">
-            <LessonRows subject={s} log={log} />
+      {subjects.map((s, i) => {
+        const isOpen = openIds.has(s.id);
+        const panelId = `lessons-${s.id}`;
+        return (
+          <div
+            key={s.id}
+            className={`subject-details stagger-item${isOpen ? ' is-open' : ''}`}
+            style={{ '--i': Math.min(i, 7) } as CSSProperties}
+          >
+            <button
+              type="button"
+              className="group-row group-row-interactive subject-trigger"
+              aria-expanded={isOpen}
+              aria-controls={panelId}
+              onClick={() => toggleSubject(s.id)}
+            >
+              <span className="subject-tile">
+                <SubjectIcon subjectId={s.id} />
+              </span>
+              <span className="row-main">
+                <span className="row-title">{s.name}</span>
+                <span className="row-sub">{SUBJECT_DESCRIPTIONS[s.id]}</span>
+              </span>
+              <span className="row-value">{s.total} cards</span>
+              <ChevronDown size={16} className="row-chevron subject-chevron" />
+            </button>
+            <div id={panelId} className="accordion-shell" aria-hidden={!isOpen}>
+              <div className="accordion-inner">
+                <div className="lesson-list">
+                  <LessonRows subject={s} log={log} animateDots={freshOpenId === s.id && isOpen} />
+                </div>
+              </div>
+            </div>
           </div>
-        </details>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
 function App() {
   const [hash, setHash] = useState(location.hash || '#/');
+  const [settings, setSettings] = useState<AppearanceSettings>(() => loadSettings());
+  const [osReducedMotion, setOsReducedMotion] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false,
+  );
+  const effectiveMotion: EffectiveMotion = useMemo(
+    () => applyAppearance(settings, osReducedMotion),
+    [settings, osReducedMotion],
+  );
+
   const [index, setIndex] = useState(0);
   const [log, setLog] = useState<ReviewEvent[]>(() => {
     const saved = loadReviewLog();
@@ -163,17 +317,81 @@ function App() {
   const [cardStarted, setCardStarted] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
   const [leaving, setLeaving] = useState(false);
+  const [swipeHint, setSwipeHint] = useState<SwipeHint>(null);
+
+  const cardShellRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const tintRef = useRef<HTMLDivElement>(null);
+  const prevStageHeightRef = useRef<number | null>(null);
+  const ratingBtnRefs = useRef<Record<Rating, HTMLButtonElement | null>>({
+    again: null,
+    hard: null,
+    good: null,
+    easy: null,
+  });
+
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    dx: number;
+    dy: number;
+    startTime: number;
+    locked: 'none' | 'gesture' | 'scroll';
+  } | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq) return;
+    const onChange = (e: MediaQueryListEvent) => setOsReducedMotion(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const updateSettings = (patch: Partial<AppearanceSettings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      saveSettings(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const motionRef = useRef(effectiveMotion);
+  motionRef.current = effectiveMotion;
+
   useEffect(() => {
-    const navigate = () => setHash(location.hash || '#/');
-    window.addEventListener('hashchange', navigate);
-    return () => window.removeEventListener('hashchange', navigate);
-  }, []);
+    const onHashChange = () => {
+      const nextHash = location.hash || '#/';
+      const prevRoute = hash.split('/').slice(0, 3).join('/');
+      const nextRoute = nextHash.split('/').slice(0, 3).join('/');
+      const isCardRevealToggle = prevRoute === nextRoute && nextHash.startsWith('#/study/');
+
+      if (
+        !isCardRevealToggle &&
+        motionRef.current === 'full' &&
+        typeof document !== 'undefined' &&
+        'startViewTransition' in document &&
+        typeof document.startViewTransition === 'function'
+      ) {
+        try {
+          document.startViewTransition(() => {
+            flushSync(() => setHash(nextHash));
+          });
+          return;
+        } catch {
+          // Fallback to plain state update.
+        }
+      }
+      setHash(nextHash);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [hash]);
 
   const parts = hash.replace(/^#\//, '').split('/');
   const subject = subjects.find((s) => s.id === parts[1]);
@@ -190,9 +408,43 @@ function App() {
     setStarted(Date.now());
     setCardStarted(Date.now());
     setLeaving(false);
+    setSwipeHint(null);
+    prevStageHeightRef.current = null;
   }, [parts[1], parts[2]]);
 
-  const rate = (rating: Rating) => {
+  // Smooth height adaptation during 3D card flip without clipping long answers
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const prevHeight = prevStageHeightRef.current;
+    const nextHeight = stage.getBoundingClientRect().height;
+    prevStageHeightRef.current = nextHeight;
+
+    if (
+      prevHeight !== null &&
+      effectiveMotion === 'full' &&
+      Math.abs(nextHeight - prevHeight) > 4 &&
+      typeof stage.animate === 'function'
+    ) {
+      stage.animate(
+        [{ height: `${prevHeight}px` }, { height: `${nextHeight}px` }],
+        {
+          duration: 340,
+          easing: 'cubic-bezier(0.22, 1.08, 0.36, 1)',
+        },
+      );
+    }
+  }, [revealed, index, effectiveMotion]);
+
+  const revealCard = () => {
+    if (!studying || !card || revealed || leaving) return;
+    if (stageRef.current) {
+      prevStageHeightRef.current = stageRef.current.getBoundingClientRect().height;
+    }
+    location.hash = `${studyUrl}/answer`;
+  };
+
+  const rate = (rating: Rating, startTransform?: string) => {
     if (!subject || !card || !revealed || leaving) return;
     const lesson = subject.lectures.find((l) => l.cards.includes(card))!;
     const cardId = `${subject.id}/${lesson.id}/${card.id}`;
@@ -209,13 +461,18 @@ function App() {
     setLog(appendReview(event));
     setSession((events) => [...events, event]);
     setLeaving(true);
-    setTimeout(() => {
+    setSwipeHint(null);
+
+    animateButtonSpring(ratingBtnRefs.current[rating], effectiveMotion);
+
+    animateCardExit(cardShellRef.current, rating, effectiveMotion, startTransform).then(() => {
+      prevStageHeightRef.current = null;
       setIndex((i) => i + 1);
       setLeaving(false);
       setCardStarted(Date.now());
       location.hash = studyUrl;
       window.scrollTo(0, 0);
-    }, 140);
+    });
   };
 
   useEffect(() => {
@@ -234,7 +491,7 @@ function App() {
       }
       if (e.code === 'Space') {
         e.preventDefault();
-        if (!revealed) location.hash = `${studyUrl}/answer`;
+        if (!revealed) revealCard();
       }
       const rating = (['again', 'hard', 'good', 'easy'] as Rating[])[Number(e.key) - 1];
       if (rating && revealed) {
@@ -246,11 +503,144 @@ function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
+  // Swipe gestures on revealed study card (left = Again, right = Good, up = Easy)
+  const onCardPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!revealed || leaving || e.button > 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.table-scroll, a, button, code')) return;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      dx: 0,
+      dy: 0,
+      startTime: performance.now(),
+      locked: 'none',
+    };
+  };
+
+  const onCardPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId || drag.locked === 'scroll') return;
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (drag.locked === 'none') {
+      if (absX < 12 && absY < 12) return;
+      // Preserve normal vertical scrolling (downward drag or downward-biased vertical move)
+      if (dy > 0 && absY >= absX) {
+        drag.locked = 'scroll';
+        return;
+      }
+      // Only lock upward swipe if user is already at top of scroll and dragging steeply up
+      if (dy < 0 && absY > absX && window.scrollY > 4) {
+        drag.locked = 'scroll';
+        return;
+      }
+      drag.locked = 'gesture';
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore capture failure.
+      }
+    }
+
+    drag.dx = dx;
+    drag.dy = dy;
+
+    const shell = cardShellRef.current;
+    const tint = tintRef.current;
+    if (shell) {
+      const rot = effectiveMotion === 'full' ? dx * 0.045 : 0;
+      shell.style.transform = `translate3d(${dx}px, ${Math.min(24, dy)}px, 0) rotate(${rot}deg)`;
+    }
+
+    const isUp = dy < -28 && Math.abs(dy) > absX * 1.15;
+    const rating: Rating | null = isUp ? 'easy' : dx < -22 ? 'again' : dx > 22 ? 'good' : null;
+    const progress = isUp
+      ? Math.min(1, Math.abs(dy) / 110)
+      : Math.min(1, absX / 110);
+
+    if (tint) {
+      if (rating) {
+        const bgVar =
+          rating === 'again'
+            ? 'var(--sem-red-bg)'
+            : rating === 'good'
+              ? 'var(--sem-yellow-bg)'
+              : 'var(--sem-green-bg)';
+        tint.style.background = bgVar;
+        tint.style.opacity = String(progress * 0.9);
+      } else {
+        tint.style.opacity = '0';
+      }
+    }
+
+    if (rating && progress > 0.28) {
+      const label = rating === 'again' ? 'Again' : rating === 'good' ? 'Good' : 'Easy';
+      setSwipeHint((prev) => (prev?.rating === rating ? prev : { label, rating }));
+    } else {
+      setSwipeHint((prev) => (prev ? null : prev));
+    }
+  };
+
+  const endCardDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+
+    if (drag.locked !== 'gesture') return;
+
+    const elapsedMs = Math.max(16, performance.now() - drag.startTime);
+    const vx = drag.dx / elapsedMs;
+    const vy = drag.dy / elapsedMs;
+    const shell = cardShellRef.current;
+    const tint = tintRef.current;
+
+    const commitEasy = drag.dy < -96 || (drag.dy < -42 && vy < -0.45 && Math.abs(drag.dy) > Math.abs(drag.dx));
+    const commitAgain = !commitEasy && (drag.dx < -96 || (drag.dx < -40 && vx < -0.45));
+    const commitGood = !commitEasy && (drag.dx > 96 || (drag.dx > 40 && vx > 0.45));
+
+    const currentTransform = shell?.style.transform || 'translate3d(0, 0, 0) rotate(0deg)';
+    if (tint) tint.style.opacity = '0';
+
+    if (commitEasy || commitAgain || commitGood) {
+      const nextRating: Rating = commitEasy ? 'easy' : commitAgain ? 'again' : 'good';
+      rate(nextRating, currentTransform);
+      return;
+    }
+
+    setSwipeHint(null);
+    if (shell) {
+      if (effectiveMotion === 'full' && typeof shell.animate === 'function') {
+        shell.animate(
+          [
+            { transform: currentTransform },
+            { transform: 'translate3d(0, 0, 0) rotate(0deg)' },
+          ],
+          {
+            duration: 280,
+            easing: 'cubic-bezier(0.22, 1.18, 0.36, 1)',
+          },
+        );
+      }
+      shell.style.transform = '';
+    }
+  };
+
   const stats = sessionStats(
     log.filter((e) => session.some((review) => review.id === e.id)),
     cards.length,
   );
   const elapsed = formatElapsed(now - started);
+
+  const streakStats = useMemo(
+    () => streak(aggregateByDay(log), toLocalDateKey(new Date())),
+    [log],
+  );
 
   const restart = () => {
     setIndex(0);
@@ -258,12 +648,15 @@ function App() {
     setStarted(Date.now());
     setCardStarted(Date.now());
     setLeaving(false);
+    setSwipeHint(null);
+    prevStageHeightRef.current = null;
     location.hash = studyUrl;
   };
 
   const activeStudy = studying && Boolean(card);
+  const sessionComplete = studying && !card;
   const hasMobileRatingBar = activeStudy && revealed;
-  const showTabBar = !activeStudy;
+  const showTabBar = !activeStudy && !sessionComplete;
 
   return (
     <div className="app">
@@ -293,6 +686,14 @@ function App() {
               aria-current={parts[0] === 'calendar' ? 'page' : undefined}
             >
               Calendar
+            </a>
+            <a
+              className="icon-btn nav-settings-btn"
+              href="#/settings"
+              aria-label="Appearance settings"
+              aria-current={parts[0] === 'settings' ? 'page' : undefined}
+            >
+              <SettingsTabIcon size={20} />
             </a>
           </nav>
         </div>
@@ -378,7 +779,7 @@ function App() {
                 <h2 className="section-title">Lessons</h2>
               </div>
               <div className="group group-lessons">
-                <LessonRows subject={subject} log={log} />
+                <LessonRows subject={subject} log={log} stagger />
               </div>
             </section>
           </div>
@@ -397,10 +798,14 @@ function App() {
                 <div className="study-progress-mobile" aria-label="Session progress">
                   <div className="progress-meta">
                     <span>
-                      {stats.done} / {cards.length} done
+                      <AnimatedNumber value={stats.done} motion={effectiveMotion} /> / {cards.length} done
                     </span>
                     <span>
-                      {stats.done > 0 ? `${stats.accuracy}% · ` : ''}
+                      {stats.done > 0 && (
+                        <>
+                          <AnimatedNumber value={stats.accuracy} motion={effectiveMotion} suffix="%" /> ·{' '}
+                        </>
+                      )}
                       {elapsed}
                     </span>
                   </div>
@@ -414,34 +819,81 @@ function App() {
                   </div>
                 </div>
 
-                <section
-                  className={`study-card${leaving ? ' study-card-leaving' : ''}`}
+                <div
                   key={index}
-                  aria-label="Flashcard"
+                  ref={cardShellRef}
+                  className="card-shell"
+                  onPointerDown={onCardPointerDown}
+                  onPointerMove={onCardPointerMove}
+                  onPointerUp={endCardDrag}
+                  onPointerCancel={endCardDrag}
                 >
-                  <div className="card-meta">
-                    <span>Question</span>
-                    <span>
-                      {(index % cards.length) + 1} of {cards.length}
-                    </span>
-                  </div>
-                  <div className="card-question">
-                    <Markdown text={card.front} />
-                  </div>
-                  {revealed && (
-                    <div className="card-answer">
-                      <p className="card-answer-label">Answer</p>
-                      <Markdown text={card.back} />
+                  <div
+                    ref={stageRef}
+                    className={`card-stage${revealed ? ' is-flipped' : ''}`}
+                    onClick={(e) => {
+                      if (!revealed && !(e.target as HTMLElement).closest('a, button')) {
+                        revealCard();
+                      }
+                    }}
+                  >
+                    <div className="card-flipper">
+                      <section
+                        className="study-card card-face card-face-front"
+                        aria-label="Flashcard question"
+                        aria-hidden={revealed}
+                      >
+                        <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}>
+                          <span>Question</span>
+                          <span>
+                            {(index % cards.length) + 1} of {cards.length}
+                          </span>
+                        </div>
+                        <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}>
+                          <Markdown text={card.front} />
+                        </div>
+                        <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}>
+                          <a
+                            className="btn btn-primary btn-full"
+                            href={`${studyUrl}/answer`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              revealCard();
+                            }}
+                          >
+                            Show answer
+                          </a>
+                        </div>
+                      </section>
+
+                      <section
+                        className="study-card card-face card-face-back"
+                        aria-label="Flashcard answer"
+                        aria-hidden={!revealed}
+                      >
+                        <div ref={tintRef} className="swipe-tint" aria-hidden="true" />
+                        {swipeHint && (
+                          <span className={`swipe-badge swipe-badge-${swipeHint.rating}`} aria-hidden="true">
+                            {swipeHint.label}
+                          </span>
+                        )}
+                        <div className="card-meta">
+                          <span>Question</span>
+                          <span>
+                            {(index % cards.length) + 1} of {cards.length}
+                          </span>
+                        </div>
+                        <div className="card-question">
+                          <Markdown text={card.front} />
+                        </div>
+                        <div className="card-answer">
+                          <p className="card-answer-label">Answer</p>
+                          <Markdown text={card.back} />
+                        </div>
+                      </section>
                     </div>
-                  )}
-                  {!revealed && (
-                    <div className="card-reveal-wrap">
-                      <a className="btn btn-primary btn-full" href={`${studyUrl}/answer`}>
-                        Show answer
-                      </a>
-                    </div>
-                  )}
-                </section>
+                  </div>
+                </div>
 
                 {revealed && (
                   <div className="ratings-bar" role="group" aria-label="Rate your recall">
@@ -449,6 +901,9 @@ function App() {
                       {RATINGS.map(({ key, label }) => (
                         <button
                           key={key}
+                          ref={(el) => {
+                            ratingBtnRefs.current[key] = el;
+                          }}
                           type="button"
                           className={`rating-btn rating-${key}`}
                           disabled={leaving}
@@ -471,42 +926,93 @@ function App() {
                   stats={stats}
                   totalCards={cards.length}
                   elapsed={elapsed}
+                  motion={effectiveMotion}
                   showHeader
                 />
               </aside>
             </div>
           </>
-        ) : studying ? (
-          <section className="complete-wrap" aria-label="Session complete">
-            <div className="complete-head">
-              <span className="complete-icon" aria-hidden="true">
-                <CheckIcon size={24} />
-              </span>
-              <h1 className="page-title">Session complete</h1>
-              <p className="page-sub tabular">
-                {stats.done} {stats.done === 1 ? 'card' : 'cards'} reviewed
-              </p>
-            </div>
+        ) : sessionComplete ? (
+          <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title">
+            <section className="complete-sheet">
+              <ConfettiBurst active motion={effectiveMotion} />
+              <div className="sheet-handle" aria-hidden="true" />
 
-            <SessionStatsGroup stats={stats} totalCards={cards.length} elapsed={elapsed} />
+              <div className="complete-head">
+                <AccuracyRing
+                  percent={stats.accuracy}
+                  hasData={stats.done > 0}
+                  size={88}
+                  strokeWidth={7}
+                  motion={effectiveMotion}
+                />
+                <h1 id="complete-title" className="page-title" style={{ fontSize: 'var(--text-lg)' }}>
+                  Session complete
+                </h1>
+                <p className="page-sub tabular">
+                  <AnimatedNumber value={stats.done} motion={effectiveMotion} />{' '}
+                  {stats.done === 1 ? 'card' : 'cards'} reviewed
+                </p>
+              </div>
 
-            <div className="complete-actions">
-              <a className="btn btn-primary" href="#/subjects">
-                Back to subjects
-              </a>
-              <button type="button" className="btn btn-secondary" onClick={restart}>
-                Study again
-              </button>
-            </div>
+              <div className="group group-divider">
+                <div className="group-row">
+                  <span className="row-main">
+                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+                      Cards done
+                    </span>
+                  </span>
+                  <span className="row-value row-value-strong">
+                    <AnimatedNumber value={stats.done} motion={effectiveMotion} />
+                  </span>
+                </div>
+                <div className="group-row">
+                  <span className="row-main">
+                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+                      Time
+                    </span>
+                  </span>
+                  <span className="row-value row-value-strong">{elapsed}</span>
+                </div>
+                <div className="group-row">
+                  <span className="row-main">
+                    <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+                      Streak
+                    </span>
+                  </span>
+                  <span className="row-value row-value-strong streak-value">
+                    <FlameIcon size={16} className="streak-flame" />
+                    <AnimatedNumber value={streakStats.current} motion={effectiveMotion} />{' '}
+                    {streakStats.current === 1 ? 'day' : 'days'}
+                  </span>
+                </div>
+              </div>
 
-            <div>
-              <a className="btn btn-plain" style={{ paddingLeft: 0 }} href="#/calendar">
-                View calendar
-              </a>
-            </div>
-          </section>
+              <div className="complete-actions">
+                <button type="button" className="btn btn-secondary" onClick={restart}>
+                  Study again
+                </button>
+                <a className="btn btn-primary" href="#/subjects">
+                  Done
+                </a>
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
+                <a className="btn btn-plain" href="#/calendar">
+                  View calendar
+                </a>
+              </div>
+            </section>
+          </div>
         ) : parts[0] === 'calendar' ? (
-          <CalendarPage events={log} />
+          <CalendarPage events={log} motion={effectiveMotion} />
+        ) : parts[0] === 'settings' ? (
+          <AppearancePage
+            settings={settings}
+            effectiveMotion={effectiveMotion}
+            osReducedMotion={osReducedMotion}
+            onChange={updateSettings}
+          />
         ) : (
           <div className="section-stack">
             <h1 className="page-title">Page not found</h1>
@@ -519,7 +1025,7 @@ function App() {
         )}
       </main>
 
-      {!activeStudy && (
+      {!activeStudy && !sessionComplete && (
         <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
           Demo data · saved locally
         </footer>
@@ -533,7 +1039,9 @@ function App() {
               href="#/"
               aria-current={parts[0] === '' ? 'page' : undefined}
             >
-              <TodayTabIcon />
+              <span className="tab-icon" key={parts[0] === '' ? 'today-on' : 'today-off'}>
+                <TodayTabIcon />
+              </span>
               <span>Today</span>
             </a>
             <a
@@ -541,7 +1049,9 @@ function App() {
               href="#/subjects"
               aria-current={parts[0] === 'subjects' ? 'page' : undefined}
             >
-              <SubjectsTabIcon />
+              <span className="tab-icon" key={parts[0] === 'subjects' ? 'subj-on' : 'subj-off'}>
+                <SubjectsTabIcon />
+              </span>
               <span>Subjects</span>
             </a>
             <a
@@ -549,8 +1059,20 @@ function App() {
               href="#/calendar"
               aria-current={parts[0] === 'calendar' ? 'page' : undefined}
             >
-              <CalendarTabIcon />
+              <span className="tab-icon" key={parts[0] === 'calendar' ? 'cal-on' : 'cal-off'}>
+                <CalendarTabIcon />
+              </span>
               <span>Calendar</span>
+            </a>
+            <a
+              className="tab-item"
+              href="#/settings"
+              aria-current={parts[0] === 'settings' ? 'page' : undefined}
+            >
+              <span className="tab-icon" key={parts[0] === 'settings' ? 'set-on' : 'set-off'}>
+                <SettingsTabIcon />
+              </span>
+              <span>Settings</span>
             </a>
           </div>
         </nav>

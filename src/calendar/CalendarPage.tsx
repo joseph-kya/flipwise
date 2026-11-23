@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { ReviewEvent } from '../reviewLog';
+import type { EffectiveMotion } from '../settings';
 import {
   aggregateByDay,
   daysInMonth,
@@ -32,6 +33,7 @@ export interface CalendarPageProps {
   events: readonly ReviewEvent[];
   today?: Date;
   timeZone?: string;
+  motion?: EffectiveMotion;
 }
 
 function formatMonthTitle(year: number, monthIndex: number): string {
@@ -67,7 +69,7 @@ function buildDayAriaLabel(
   return `${prefix}, ${stats.cardsStudied} ${stats.cardsStudied === 1 ? 'card' : 'cards'} studied, ${formatDuration(stats.durationMs)}, ${formatPercent(stats.accuracy)} accuracy`;
 }
 
-export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
+export function CalendarPage({ events, today, timeZone, motion = 'full' }: CalendarPageProps) {
   const todayKey = useMemo(
     () => toLocalDateKey(today ?? new Date(), timeZone),
     [today, timeZone],
@@ -77,8 +79,15 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
   const [viewYear, setViewYear] = useState(todayParts.year);
   const [viewMonth, setViewMonth] = useState(todayParts.monthIndex);
   const [selectedKey, setSelectedKey] = useState(todayKey);
+  const [ringPos, setRingPos] = useState<{ x: number; y: number; visible: boolean; isToday: boolean }>({
+    x: 0,
+    y: 0,
+    visible: false,
+    isToday: true,
+  });
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const ringReadyRef = useRef(false);
 
   const byDay = useMemo(() => aggregateByDay(events, timeZone), [events, timeZone]);
   const visibleMonthSummary = useMemo(
@@ -101,12 +110,49 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
   const monthName = formatMonthShort(viewYear, viewMonth);
 
   const monthDays = useMemo(() => {
-    const items: Array<{ day: number; dateKey: string }> = [];
+    const items: Array<{ day: number; dateKey: string; week: number }> = [];
     for (let d = 1; d <= totalDays; d++) {
-      items.push({ day: d, dateKey: formatDateKey(viewYear, viewMonth, d) });
+      items.push({
+        day: d,
+        dateKey: formatDateKey(viewYear, viewMonth, d),
+        week: Math.floor((leadingBlanks + d - 1) / 7),
+      });
     }
     return items;
-  }, [viewYear, viewMonth, totalDays]);
+  }, [viewYear, viewMonth, totalDays, leadingBlanks]);
+
+  const syncSelectionRing = () => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const target = grid.querySelector<HTMLButtonElement>(`button[data-date="${selectedKey}"]`);
+    if (!target) {
+      setRingPos((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+    setRingPos({
+      x: target.offsetLeft,
+      y: target.offsetTop,
+      visible: true,
+      isToday: selectedKey === todayKey,
+    });
+  };
+
+  useLayoutEffect(() => {
+    syncSelectionRing();
+    if (!ringReadyRef.current) {
+      requestAnimationFrame(() => {
+        ringReadyRef.current = true;
+      });
+    }
+  }, [selectedKey, viewYear, viewMonth, todayKey]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => syncSelectionRing());
+    ro.observe(grid);
+    return () => ro.disconnect();
+  }, [selectedKey, viewYear, viewMonth, todayKey]);
 
   const focusDateButton = (dateKey: string) => {
     requestAnimationFrame(() => {
@@ -280,12 +326,26 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
               ))}
             </div>
 
-            <div className="cal-grid" ref={gridRef} role="group" aria-label={`${monthTitle} days`}>
+            <div
+              className="cal-grid"
+              ref={gridRef}
+              key={`${viewYear}-${viewMonth}`}
+              role="group"
+              aria-label={`${monthTitle} days`}
+            >
+              {ringPos.visible && (
+                <span
+                  aria-hidden="true"
+                  className={`cal-selection-indicator${ringPos.isToday ? ' is-today' : ''}${ringReadyRef.current && motion === 'full' ? ' is-animated' : ''}`}
+                  style={{ transform: `translate3d(${ringPos.x}px, ${ringPos.y}px, 0)` }}
+                />
+              )}
+
               {Array.from({ length: leadingBlanks }).map((_, index) => (
                 <span key={`blank-${index}`} aria-hidden="true" />
               ))}
 
-              {monthDays.map(({ day, dateKey }) => {
+              {monthDays.map(({ day, dateKey, week }) => {
                 const stats = byDay.get(dateKey);
                 const count = stats?.cardsStudied ?? 0;
                 const level = heatmapLevel(count);
@@ -297,6 +357,7 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
                     key={dateKey}
                     type="button"
                     className="cal-day"
+                    style={{ '--week': week } as CSSProperties}
                     data-date={dateKey}
                     data-level={level}
                     data-today={isToday ? 'true' : undefined}
