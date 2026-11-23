@@ -1,6 +1,6 @@
 import { createEmptyCard, fsrs, Rating as Grade, State, type Card } from 'ts-fsrs';
 import type { ReviewEvent, Rating } from './reviewLog';
-export const STUDY_CONFIG = { globalNew: 40, defaultNew: 20, rolloverHour: 4, courseNew: { 'analysis-1': 18, 'robotics': 11, 'physics-1': 6, 'programming-1': 5 } };
+export const STUDY_CONFIG = { globalNew: 40, defaultNew: 20, rolloverHour: 4, courseNew: { 'analysis-1': 6, 'robotics': 11, 'physics-1': 18, 'programming-1': 5 } };
 export const grades = { again: Grade.Again, hard: Grade.Hard, good: Grade.Good, easy: Grade.Easy };
 export function engine(retention = .9, fuzz = true) {
   return fsrs({ request_retention: retention, maximum_interval: 36500, enable_fuzz: fuzz, learning_steps: ['1m', '10m'], relearning_steps: ['10m'] });

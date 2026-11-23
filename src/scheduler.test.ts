@@ -3,7 +3,7 @@ import { createEmptyCard, State } from 'ts-fsrs';
 import { sessionOutcome, nextAvailableAt, ratingEvent, queueCounts, engine, schedule, replay, queue, studyDay, STUDY_CONFIG } from './scheduler';
 import type { ReviewEvent } from './reviewLog';
 const at=new Date(2026,10,23,12);
-const event=(cardId: string, rating: ReviewEvent['rating'], time=at): ReviewEvent=>({id:cardId+ +time,cardId,subjectId:'analysis-1',lessonId:'a',rating,at:time.toISOString(),durationMs:1000,isNew:true,fuzz:false});
+const event=(cardId: string, rating: ReviewEvent['rating'], time=at): ReviewEvent=>({id:cardId+ +time,cardId,subjectId:'physics-1',lessonId:'a',rating,at:time.toISOString(),durationMs:1000,isNew:true,fuzz:false});
 describe('scheduler',()=>{
  it('advances 1m then 10m then graduates',()=>{
   const a=schedule(undefined,'again',at,.9,false); expect(+a.due- +at).toBe(60000);
@@ -28,9 +28,9 @@ describe('scheduler',()=>{
  it('respects all course caps and global cap',()=>{const q=queue(cards,[],at);expect(q).toHaveLength(40);for(const [id,cap] of Object.entries(STUDY_CONFIG.courseNew)) expect(q.filter(c=>c.subjectId===id)).toHaveLength(cap);});
  it('counts first introductions only and resets at local 4am',()=>{
   const before=new Date(2026,10,23,3,59),after=new Date(2026,10,23,4);
-  const events=cards.filter(c=>c.subjectId==='analysis-1').slice(0,18).map(c=>event(c.cardId,'easy',before));
-  expect(queue(cards.filter(c=>c.subjectId==='analysis-1'),events,before)).toHaveLength(0);
-  expect(queue(cards.filter(c=>c.subjectId==='analysis-1'),events,after)).toHaveLength(18);
+  const events=cards.filter(c=>c.subjectId==='physics-1').slice(0,18).map(c=>event(c.cardId,'easy',before));
+  expect(queue(cards.filter(c=>c.subjectId==='physics-1'),events,before)).toHaveLength(0);
+  expect(queue(cards.filter(c=>c.subjectId==='physics-1'),events,after)).toHaveLength(18);
   expect(studyDay(before)).not.toBe(studyDay(after));
  });
  it('orders learning then due reviews then positions with stable ties',()=>{
@@ -46,13 +46,13 @@ it('matches the direct reference on a mature card for all four grades',()=>{
  }
 });
 it('counts repeated ratings as one new introduction',()=>{
- const cs=Array.from({length:30},(_,i)=>({cardId:String(i),subjectId:'analysis-1',lessonId:'a',queuePosition:i}));
+ const cs=Array.from({length:30},(_,i)=>({cardId:String(i),subjectId:'physics-1',lessonId:'a',queuePosition:i}));
  const first=event('0','again');const second={...event('0','good'),isNew:false};
  expect(queue(cs,[first,second],at).filter(c=>c.cardId!=='0')).toHaveLength(17);
 });
 
 it('rates copied queue cards from a fresh session and resumes after three ratings',()=>{
- const catalog=Array.from({length:8},(_,i)=>({cardId:`analysis-1/lecture-1/${i}`,subjectId:'analysis-1',lessonId:'lecture-1',queuePosition:i}));
+ const catalog=Array.from({length:8},(_,i)=>({cardId:`physics-1/lecture-1/${i}`,subjectId:'physics-1',lessonId:'lecture-1',queuePosition:i}));
  let log: ReviewEvent[]=[];
  expect(queueCounts(queue(catalog,log,at),log)).toEqual({total:8,new:8,review:0,learning:0});
  for(let i=0;i<3;i++) {
@@ -71,10 +71,10 @@ it('does not celebrate a fresh empty queue and gives the next learning time',()=
  expect(sessionOutcome(true,0,0)).toBe('caught-up');
  expect(sessionOutcome(true,0,1)).toBe('complete');
  expect(sessionOutcome(true,1,1)).toBe('studying');
- const first=event('x','again');const cards=[{cardId:'x',subjectId:'analysis-1',lessonId:'a',queuePosition:0}];
+ const first=event('x','again');const cards=[{cardId:'x',subjectId:'physics-1',lessonId:'a',queuePosition:0}];
  expect(nextAvailableAt(cards,[first],at)).toEqual(new Date(+at+60000));
 });
 it('offers new cards again at the next local rollover when caps are exhausted',()=>{
  const late=new Date(2026,10,23,23,30);
- expect(nextAvailableAt([{cardId:'fresh',subjectId:'analysis-1',lessonId:'a',queuePosition:0}],[],late)).toEqual(new Date(2026,10,24,4));
+ expect(nextAvailableAt([{cardId:'fresh',subjectId:'physics-1',lessonId:'a',queuePosition:0}],[],late)).toEqual(new Date(2026,10,24,4));
 });
