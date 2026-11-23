@@ -83,19 +83,19 @@ describe('StudyOptionsSheet & StudySettingsSection', () => {
     expect(dialog.textContent).toContain('You’ll have seen all 904 Robotics cards by');
 
     // Click Aggressive preset
-    const aggBtn = [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Aggressive')!;
+    const aggBtn = Array.from(dialog.querySelectorAll('button')).find((b) => b.textContent === 'Aggressive')!;
     act(() => aggBtn.click());
     expect(dialog.textContent).toContain('40 / day');
     expect(dialog.textContent).toContain('500 / day');
 
     // Click Exam date preset -> opens calendar and solves
-    const examBtn = [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Exam date')!;
+    const examBtn = Array.from(dialog.querySelectorAll('button')).find((b) => b.textContent === 'Exam date')!;
     act(() => examBtn.click());
     expect(dialog.querySelector('.ui-datepicker')).toBeTruthy();
     expect(dialog.textContent).toContain('From exam date');
 
     // Reset all to inherited
-    const resetAll = [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Reset all to inherited')!;
+    const resetAll = Array.from(dialog.querySelectorAll('button')).find((b) => b.textContent === 'Reset all to inherited')!;
     act(() => resetAll.click());
     expect(dialog.textContent).toContain('Inherited · Course default');
     expect(dialog.textContent).toContain('11 / day');
@@ -129,7 +129,7 @@ describe('StudyOptionsSheet & StudySettingsSection', () => {
     expect(dialog.textContent).toContain('Set for this lecture');
     expect(dialog.textContent).toContain('4 / day');
 
-    const resetBtn = [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Reset to inherited')!;
+    const resetBtn = Array.from(dialog.querySelectorAll('button')).find((b) => b.textContent === 'Reset to inherited')!;
     act(() => resetBtn.click());
     expect(dialog.textContent).toContain('Inherited · Set for this course');
     expect(dialog.textContent).toContain('20 / day');
@@ -159,11 +159,11 @@ describe('StudyOptionsSheet & StudySettingsSection', () => {
     expect(host.textContent).toContain('Forecast');
     expect(host.textContent).toContain('Robotics');
 
-    const slowBtn = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Slow')!;
+    const slowBtn = Array.from(host.querySelectorAll('button')).find((b) => b.textContent === 'Slow')!;
     act(() => slowBtn.click());
     expect(onApplyPresetAll).toHaveBeenCalledWith('slow');
 
-    const courseRow = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Robotics'))!;
+    const courseRow = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Robotics'))!;
     act(() => courseRow.click());
     expect(onOpenCourse).toHaveBeenCalledWith('robotics');
   });
