@@ -20,10 +20,13 @@ export function ImportPage({
   existing,
   events,
   onCommit,
+  onDone,
 }: {
   existing: ImportedData | null;
   events: ReviewEvent[];
   onCommit: (data: ImportedData, events: ReviewEvent[]) => Promise<void>;
+  /** Embedded use (onboarding): replaces "Go to subjects" with a continue action. */
+  onDone?: () => void;
 }) {
   const [preview, setPreview] = useState<ImportedData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -134,9 +137,15 @@ export function ImportPage({
             </Group>
           </section>
 
-          <Button variant="primary" size="full" href="#/subjects">
-            Go to subjects
-          </Button>
+          {onDone ? (
+            <Button variant="primary" size="full" onClick={onDone}>
+              Continue
+            </Button>
+          ) : (
+            <Button variant="primary" size="full" href="#/subjects">
+              Go to subjects
+            </Button>
+          )}
         </div>
       ) : (
         <>

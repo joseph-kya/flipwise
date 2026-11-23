@@ -97,6 +97,7 @@ export function AppearancePage({
   demoReviewCount = 0,
   onClearDemoHistory,
   account,
+  onShowWelcome,
 }: {
   settings: AppearanceSettings;
   effectiveMotion: EffectiveMotion;
@@ -108,6 +109,7 @@ export function AppearancePage({
   demoReviewCount?: number;
   onClearDemoHistory?: () => void;
   account?: { controller: AccountController; snapshot: AccountSnapshot };
+  onShowWelcome?: () => void;
 }) {
   const [previewFlipped, setPreviewFlipped] = useState(false);
   const subjects = useSubjects();
@@ -322,6 +324,8 @@ export function AppearancePage({
       <section aria-label="About" className="settings-section">
         <SectionHeader title="About" />
         <Group ariaLabel="App information">
+          <NavRow href="#/how-it-works" title="How Flipwise works" subtitle="Spaced repetition, ratings and the daily habit" />
+          {onShowWelcome && <Row title="Show welcome again" tone="accent" onClick={onShowWelcome} />}
           <Row title="Version" value="0.1.0" />
           <Row title="Storage" value={account?.snapshot.phase === 'signedIn' ? 'On this device + synced' : 'Saved on this device'} />
           <NavRow

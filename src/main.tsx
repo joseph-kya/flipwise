@@ -9,6 +9,11 @@ import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, repla
 } from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import { AccountController } from './sync/account';
+import { hasRealDecks, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './onboarding/flow';
+import { Onboarding, useOnline } from './onboarding/Onboarding';
+import { HOW_PANELS, HowItWorksPanel } from './onboarding/HowItWorks';
+import { starterImport } from './onboarding/starterPack';
+import { mergeImport } from './anki/types';
 import {
   useEffect,
   useLayoutEffect,
@@ -343,13 +348,22 @@ const noSnapshot = () => null;
 
 function App() {
   const [imported, setImported] = useState<ImportedData | null>(null);
-  const [showDemo, setShowDemo] = useState(
-    () => { try { return localStorage.getItem('flipwise.showDemo') !== 'false'; } catch { return false; } },
-  );
+  // Demo decks: an explicit choice wins; otherwise they show only until real decks exist.
+  const [showDemoPref, setShowDemoPref] = useState<boolean | null>(() => {
+    try { const v = localStorage.getItem('flipwise.showDemo'); return v === 'true' ? true : v === 'false' ? false : null; } catch { return null; }
+  });
+  const realDecks = hasRealDecks(imported);
+  const showDemo = showDemoPref ?? !realDecks;
+  const setShowDemo = (value: boolean) => {
+    setShowDemoPref(value);
+    try { localStorage.setItem('flipwise.showDemo', String(value)); } catch { /* preference stays in memory */ }
+  };
   const subjects = useMemo(
-    () => [...(imported?.subjects ?? []), ...(!imported || showDemo ? demoSubjects : [])],
-    [imported, showDemo],
+    () => [...(imported?.subjects ?? []), ...(!realDecks || showDemo ? demoSubjects : [])],
+    [imported, realDecks, showDemo],
   );
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const online = useOnline();
   const media = useMemo(
     () =>
       Object.fromEntries(
@@ -392,17 +406,29 @@ function App() {
 
   const accountRef = useRef<AccountController | null>(null);
   const [accountVersion, setAccountVersion] = useState(0);
+  /** First real decks (import, starter set or sync): the generated demo history has served its purpose. */
+  const retireDemoHistory = async (events: ReviewEvent[]) => {
+    const demoIds = events.filter((e) => e.demo).map((e) => e.id);
+    if (!demoIds.length || !storageRef.current) return events;
+    markDemoCleared(true);
+    return storageRef.current.remove(demoIds);
+  };
   const applySynced = (next: { data: ImportedData | null; events: ReviewEvent[] }) => {
-    setImported((prev) => {
-      if (!prev && next.data) {
-        // Synced decks arrived on a device that only had demo decks: behave like a first import.
-        setShowDemo(false);
-        try { localStorage.setItem('flipwise.showDemo', 'false'); } catch { /* preference stays in memory */ }
-      }
-      return next.data;
-    });
+    const firstRealDecks = !hasRealDecks(importedRef.current) && hasRealDecks(next.data);
+    setImported(next.data);
     setLog(next.events);
     setSettings(loadSettings());
+    if (firstRealDecks) void retireDemoHistory(next.events).then(setLog).catch(() => undefined);
+  };
+  const importedRef = useRef(imported);
+  importedRef.current = imported;
+  const commitImport = async (data: ImportedData, events: ReviewEvent[]) => {
+    if (!storageRef.current) throw new Error('Storage is not ready.');
+    const firstRealDecks = !hasRealDecks(importedRef.current) && hasRealDecks(data);
+    let stored = await storageRef.current.importDecks(data, events);
+    if (firstRealDecks) stored = await retireDemoHistory(stored);
+    setImported(data);
+    setLog(stored);
   };
   const reloadFromStorage = async () => {
     const storage = storageRef.current;
@@ -415,7 +441,9 @@ function App() {
       .then(async ({ storage, fallback }) => {
         storageRef.current = storage;
         const loaded = await storage.read();
-        setImported(await storage.readDecks());
+        const decks = await storage.readDecks();
+        setImported(decks);
+        setOnboardingOpen(shouldShowOnboarding({ completed: isOnboardingComplete(), realDecks: hasRealDecks(decks) }));
         const { events: initialEvents, seeded } = seedDemoHistoryIfEmpty(
           loaded,
           new Date(),
@@ -967,6 +995,32 @@ function App() {
   const hasMobileRatingBar = activeStudy && revealed;
   const showTabBar = !activeStudy && !sessionComplete;
 
+  if (onboardingOpen && storageReady) {
+    const account = accountRef.current && accountSnapshot && accountSnapshot.phase !== 'unavailable'
+      ? { controller: accountRef.current, snapshot: accountSnapshot } : null;
+    return (
+      <ContentContext.Provider value={subjects}>
+        <Onboarding
+          account={account}
+          online={online}
+          imported={imported}
+          onAddStarter={async (pack, ids) => {
+            const { data } = mergeImport(importedRef.current, starterImport(pack, ids), log);
+            await commitImport(data, log);
+          }}
+          renderImport={(onDone) => <ImportPage existing={imported} events={log} onCommit={commitImport} onDone={onDone} />}
+          renderAiGuide={(onImport) => <AiGuidePage onImport={onImport} />}
+          onFinish={() => {
+            markOnboardingComplete();
+            setOnboardingOpen(false);
+            if (location.hash !== '#/') location.hash = '#/';
+            window.scrollTo(0, 0);
+          }}
+        />
+      </ContentContext.Provider>
+    );
+  }
+
   return (
     <ContentContext.Provider value={subjects}>
       <div className="app">
@@ -1424,22 +1478,18 @@ function App() {
             onRangeChange={setInsightsRange}
             onSubjectChange={setInsightsSubject}
           />
+        ) : parts[0] === 'how-it-works' ? (
+          <div className="section-stack">
+            <PageHeader backHref="#/settings" backLabel="Settings" title="How Flipwise works" />
+            {Array.from({ length: HOW_PANELS }, (_, i) => <HowItWorksPanel key={i} panel={i} />)}
+          </div>
         ) : parts[0] === 'ai-guide' ? (
           <AiGuidePage />
         ) : parts[0] === 'import' ? (
             <ImportPage
               existing={imported}
               events={log}
-              onCommit={async (data, events) => {
-                if (!storageRef.current) throw new Error('Storage is not ready.');
-                const stored = await storageRef.current.importDecks(data, events);
-                setImported(data);
-                setLog(stored);
-                if (!imported) {
-                  setShowDemo(false);
-                  try { localStorage.setItem('flipwise.showDemo', 'false'); } catch { /* preference stays in memory */ }
-                }
-              }}
+              onCommit={commitImport}
             />
           ) : parts[0] === 'settings' ? (
           <AppearancePage
@@ -1458,10 +1508,8 @@ function App() {
               }
             }
             showDemo={showDemo}
-            onShowDemo={(value) => {
-              setShowDemo(value);
-              try { localStorage.setItem('flipwise.showDemo', String(value)); } catch { /* preference stays in memory */ }
-            }}
+            onShowDemo={setShowDemo}
+            onShowWelcome={() => setOnboardingOpen(true)}
             demoReviewCount={demoReviewCount}
             onClearDemoHistory={() => void clearDemoHistory()}
             account={accountRef.current && accountSnapshot ? { controller: accountRef.current, snapshot: accountSnapshot } : undefined}

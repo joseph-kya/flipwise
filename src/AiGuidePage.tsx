@@ -29,7 +29,7 @@ const prompts = [
   },
 ];
 
-export function AiGuidePage() {
+export function AiGuidePage({ onImport }: { onImport?: () => void } = {}) {
   const [copied, setCopied] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [manual, setManual] = useState('');
@@ -144,7 +144,8 @@ export function AiGuidePage() {
         <SectionHeader title="Next step" />
         <Group ariaLabel="Import deck">
           <NavRow
-            href="#/import"
+            href={onImport ? '#/welcome' : '#/import'}
+            onClick={onImport}
             title="Import Anki package"
             subtitle="Preview notes, courses and review history before saving"
           />
