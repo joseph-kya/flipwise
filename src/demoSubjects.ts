@@ -1,8 +1,8 @@
 import robotics from '../decks/intro-to-robotics.flipwise.json';
 
-export interface DemoCard { id: string; front: string; back: string }
+export interface DemoCard { stableId?: string; format?: 'anki'; source?: string; queuePosition?: number; id: string; front: string; back: string }
 export interface Lecture { id: string; title: string; cards: DemoCard[] }
-export interface Subject { id: string; name: string; total: number; lectures: Lecture[] }
+export interface Subject { collectionLabel?: string; dailyNew?: number; id: string; name: string; total: number; lectures: Lecture[] }
 
 const makeLectures = (entries: [string, [string, string][]][]): Lecture[] =>
   entries.map(([title, cards], index) => ({

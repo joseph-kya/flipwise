@@ -2,6 +2,7 @@ import { subjects } from './demoSubjects';
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
 
 export interface ReviewEvent {
+  source?: 'anki';
   retention?: number;
   fuzz?: boolean;
   demo?: boolean;

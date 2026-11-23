@@ -13,3 +13,12 @@ it('does not resurrect legacy history after undoing to an empty log',async()=>{
  const a=await openReviewStorage();await a.storage.write([]);
  const b=await openReviewStorage();expect(await b.storage.read()).toEqual([]);
 });
+it('commits imported decks and review history in the same transaction',async()=>{
+ const {storage}=await openReviewStorage();
+ const data={subjects:[],media:{'pic.png':new Uint8Array([1,2,3])},packageName:'test.apkg',notes:0,revlog:[],warnings:[]};
+ const events=[{id:'imported',cardId:'anki:guid:0',subjectId:'s',lessonId:'l',rating:'good' as const,at:new Date().toISOString(),durationMs:1,isNew:true,source:'anki' as const}];
+ await storage.importDecks(data,events);
+ const reloaded=await openReviewStorage();
+ expect(await reloaded.storage.readDecks()).toEqual(data);
+ expect(await reloaded.storage.read()).toEqual(events);
+});

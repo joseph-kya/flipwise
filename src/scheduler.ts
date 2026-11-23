@@ -1,6 +1,6 @@
 import { createEmptyCard, fsrs, Rating as Grade, State, type Card } from 'ts-fsrs';
 import type { ReviewEvent, Rating } from './reviewLog';
-export const STUDY_CONFIG = { globalNew: 40, rolloverHour: 4, courseNew: { 'analysis-1': 18, 'robotics': 11, 'physics-1': 6, 'programming-1': 5 } };
+export const STUDY_CONFIG = { globalNew: 40, defaultNew: 20, rolloverHour: 4, courseNew: { 'analysis-1': 18, 'robotics': 11, 'physics-1': 6, 'programming-1': 5 } };
 export const grades = { again: Grade.Again, hard: Grade.Hard, good: Grade.Good, easy: Grade.Easy };
 export function engine(retention = .9, fuzz = true) {
   return fsrs({ request_retention: retention, maximum_interval: 36500, enable_fuzz: fuzz, learning_steps: ['1m', '10m'], relearning_steps: ['10m'] });
@@ -17,7 +17,7 @@ export function studyDay(at: Date): string {
   const d = new Date(at); if (d.getHours() < STUDY_CONFIG.rolloverHour) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-export interface QueueCard { cardId: string; subjectId: string; lessonId: string; queuePosition: number }
+export interface QueueCard { cardId: string; subjectId: string; lessonId: string; queuePosition: number; dailyNew?: number }
 export function queue<T extends QueueCard>(cards: readonly T[], events: readonly ReviewEvent[], at = new Date()): T[] {
   const states = replay(events), seen = new Set<string>(), used: Record<string, number> = {}; let total = 0;
   for (const e of events) { if (!seen.has(e.cardId) && studyDay(new Date(e.at)) === studyDay(at)) { used[e.subjectId] = (used[e.subjectId] ?? 0)+1; total++; } seen.add(e.cardId); }
@@ -26,7 +26,7 @@ export function queue<T extends QueueCard>(cards: readonly T[], events: readonly
     return Number(x.state===State.Review)-Number(y.state===State.Review) || +x.due- +y.due || a.cardId.localeCompare(b.cardId);
   });
   const fresh = [...cards].filter(c=>!states.has(c.cardId)).sort((a,b)=>a.queuePosition-b.queuePosition || a.cardId.localeCompare(b.cardId)).filter(c=>{
-    const cap=STUDY_CONFIG.courseNew[c.subjectId as keyof typeof STUDY_CONFIG.courseNew] ?? 0;
+    const cap=c.dailyNew ?? STUDY_CONFIG.courseNew[c.subjectId as keyof typeof STUDY_CONFIG.courseNew] ?? STUDY_CONFIG.defaultNew;
     if(total>=STUDY_CONFIG.globalNew || (used[c.subjectId]??0)>=cap) return false;
     total++; used[c.subjectId]=(used[c.subjectId]??0)+1; return true;
   });
