@@ -1,2 +1,6 @@
+node_modules/
+dist/
+artifacts/
+
 # Verification run evidence (kept across cleanup, never committed)
 .verify-artifacts/
