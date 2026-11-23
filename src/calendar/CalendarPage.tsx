@@ -314,7 +314,9 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
                     onKeyDown={(e) => handleDayKeyDown(e, dateKey)}
                   >
                     <span>{day}</span>
-                    {isToday && <span className="cal-today-dot" aria-hidden="true" />}
+                    {isToday && !isSelected && (
+                      <span className="cal-today-dot" aria-hidden="true" />
+                    )}
                   </button>
                 );
               })}

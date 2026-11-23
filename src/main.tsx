@@ -15,23 +15,22 @@ import { sessionStats } from './sessionStats';
 import { CalendarPage } from './calendar/CalendarPage';
 import { Markdown } from './markdown';
 import {
+  CalendarTabIcon,
   CheckIcon,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  MoonIcon,
   SUBJECT_DESCRIPTIONS,
   SubjectIcon,
-  SunIcon,
+  SubjectsTabIcon,
+  TodayTabIcon,
 } from './ui';
 
-type ThemePreference = 'system' | 'light' | 'dark';
-
-const RATINGS: ReadonlyArray<{ key: Rating; label: string; shortcut: string }> = [
-  { key: 'again', label: 'Again', shortcut: '1' },
-  { key: 'hard', label: 'Hard', shortcut: '2' },
-  { key: 'good', label: 'Good', shortcut: '3' },
-  { key: 'easy', label: 'Easy', shortcut: '4' },
+const RATINGS: ReadonlyArray<{ key: Rating; label: string }> = [
+  { key: 'again', label: 'Again' },
+  { key: 'hard', label: 'Hard' },
+  { key: 'good', label: 'Good' },
+  { key: 'easy', label: 'Easy' },
 ];
 
 function formatElapsed(ms: number): string {
@@ -151,12 +150,6 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
 
 function App() {
   const [hash, setHash] = useState(location.hash || '#/');
-  const [theme, setTheme] = useState<ThemePreference>('system');
-  const [systemDark, setSystemDark] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      : false,
-  );
   const [index, setIndex] = useState(0);
   const [log, setLog] = useState<ReviewEvent[]>(() => {
     const saved = loadReviewLog();
@@ -170,24 +163,6 @@ function App() {
   const [cardStarted, setCardStarted] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
   const [leaving, setLeaving] = useState(false);
-
-  const isDark = theme === 'dark' || (theme === 'system' && systemDark);
-
-  useEffect(() => {
-    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-    if (!mq) return;
-    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
-  useEffect(() => {
-    if (theme === 'system') {
-      delete document.documentElement.dataset.theme;
-    } else {
-      document.documentElement.dataset.theme = theme;
-    }
-  }, [theme]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -286,10 +261,9 @@ function App() {
     location.hash = studyUrl;
   };
 
-  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
-
-  const isWidePage = (studying && Boolean(card)) || parts[0] === 'calendar';
-  const hasMobileRatingBar = studying && Boolean(card) && revealed;
+  const activeStudy = studying && Boolean(card);
+  const hasMobileRatingBar = activeStudy && revealed;
+  const showTabBar = !activeStudy;
 
   return (
     <div className="app">
@@ -321,20 +295,12 @@ function App() {
               Calendar
             </a>
           </nav>
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={toggleTheme}
-            aria-label={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}
-          >
-            {isDark ? <SunIcon /> : <MoonIcon />}
-          </button>
         </div>
       </header>
 
       <main
         id="main"
-        className={`main${isWidePage ? ' main-wide' : ''}${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}
+        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}
       >
         {parts[0] === '' ? (
           <div className="section-stack">
@@ -422,7 +388,7 @@ function App() {
               </div>
             </section>
           </div>
-        ) : studying && card && subject ? (
+        ) : activeStudy && subject ? (
           <>
             <a className="back-link" href={`#/subjects/${subject.id}`}>
               <ChevronLeft size={16} />
@@ -486,7 +452,7 @@ function App() {
                 {revealed && (
                   <div className="ratings-bar" role="group" aria-label="Rate your recall">
                     <div className="ratings-grid">
-                      {RATINGS.map(({ key, label, shortcut }) => (
+                      {RATINGS.map(({ key, label }) => (
                         <button
                           key={key}
                           type="button"
@@ -494,8 +460,7 @@ function App() {
                           disabled={leaving}
                           onClick={() => rate(key)}
                         >
-                          <span>{label}</span>
-                          <kbd className="rating-key">{shortcut}</kbd>
+                          {label}
                         </button>
                       ))}
                     </div>
@@ -540,8 +505,8 @@ function App() {
               </button>
             </div>
 
-            <div style={{ textAlign: 'center' }}>
-              <a className="btn btn-plain" href="#/calendar">
+            <div>
+              <a className="btn btn-plain" style={{ paddingLeft: 0 }} href="#/calendar">
                 View calendar
               </a>
             </div>
@@ -560,10 +525,41 @@ function App() {
         )}
       </main>
 
-      {!hasMobileRatingBar && (
-        <footer className={`app-footer${isWidePage ? ' app-footer-wide' : ''}`}>
+      {!activeStudy && (
+        <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
           Demo data · saved locally
         </footer>
+      )}
+
+      {showTabBar && (
+        <nav className="tabbar" aria-label="Tab navigation">
+          <div className="tabbar-inner">
+            <a
+              className="tab-item"
+              href="#/"
+              aria-current={parts[0] === '' ? 'page' : undefined}
+            >
+              <TodayTabIcon />
+              <span>Today</span>
+            </a>
+            <a
+              className="tab-item"
+              href="#/subjects"
+              aria-current={parts[0] === 'subjects' ? 'page' : undefined}
+            >
+              <SubjectsTabIcon />
+              <span>Subjects</span>
+            </a>
+            <a
+              className="tab-item"
+              href="#/calendar"
+              aria-current={parts[0] === 'calendar' ? 'page' : undefined}
+            >
+              <CalendarTabIcon />
+              <span>Calendar</span>
+            </a>
+          </div>
+        </nav>
       )}
     </div>
   );
