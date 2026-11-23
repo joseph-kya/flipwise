@@ -4,3 +4,17 @@ artifacts/
 
 # Verification run evidence (kept across cleanup, never committed)
 .verify-artifacts/
+
+# Local env (Firebase web config)
+.env.local
+.env.*.local
+
+# Firebase emulator / CLI output
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log
+.firebase/
+emulator-data/
