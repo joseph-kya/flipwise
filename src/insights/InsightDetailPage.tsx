@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { plural } from '../plural';
 import { InlineCardText } from '../anki/content';
 import { formatDuration } from '../calendar/dailyStats';
 import { useSubjects } from '../contentCatalog';
@@ -117,7 +118,7 @@ export function InsightDetailPage({
         <>
           <section className="group insight-detail-card">
             <div className="insight-detail-metric tabular">
-              {data.heatmap.totalYearReviews.toLocaleString()} reviews
+              {plural(data.heatmap.totalYearReviews, 'review')}
             </div>
             <YearHeatmap
               cells={data.heatmap.cells}
@@ -134,19 +135,19 @@ export function InsightDetailPage({
             </div>
             <div className="group group-divider">
               <BreakdownRow label="Total reviews (past year)" value={data.heatmap.totalYearReviews.toLocaleString()} />
-              <BreakdownRow label="Active study days" value={`${data.heatmap.activeYearDays} days`} />
+              <BreakdownRow label="Active study days" value={`${plural(data.heatmap.activeYearDays, 'day')}`} />
               <BreakdownRow
                 label="Average per active day"
                 value={
                   data.heatmap.activeYearDays > 0
-                    ? `${Math.round(data.heatmap.totalYearReviews / data.heatmap.activeYearDays)} reviews`
+                    ? `${plural(Math.round(data.heatmap.totalYearReviews / data.heatmap.activeYearDays), 'review')}`
                     : '—'
                 }
               />
               {(() => {
                 const peak = [...data.heatmap.cells].sort((a, b) => b.count - a.count)[0];
                 return peak && peak.count > 0 ? (
-                  <BreakdownRow label="Busiest day" sub={peak.dateKey} value={`${peak.count} reviews`} />
+                  <BreakdownRow label="Busiest day" sub={peak.dateKey} value={`${plural(peak.count, 'review')}`} />
                 ) : null;
               })()}
             </div>
@@ -158,7 +159,7 @@ export function InsightDetailPage({
         <>
           <section className="group insight-detail-card">
             <div className="insight-detail-metric tabular">
-              {data.reviews.total.toLocaleString()} reviews
+              {plural(data.reviews.total, 'review')}
             </div>
             <StackedBars
               buckets={data.reviews.buckets}
@@ -417,9 +418,9 @@ export function InsightDetailPage({
               <h2 className="section-title">FSRS parameters</h2>
             </div>
             <div className="group group-divider">
-              <BreakdownRow label="Median scheduled interval" value={`${data.distributions.medianIntervalDays} days`} />
+              <BreakdownRow label="Median scheduled interval" value={`${plural(data.distributions.medianIntervalDays, 'day')}`} />
               <BreakdownRow label="Average card difficulty" value={`${data.distributions.avgDifficulty} / 10`} />
-              <BreakdownRow label="Median memory stability" value={`${data.distributions.medianStabilityDays} days`} />
+              <BreakdownRow label="Median memory stability" value={`${plural(data.distributions.medianStabilityDays, 'day')}`} />
             </div>
           </section>
         </>
@@ -444,7 +445,7 @@ export function InsightDetailPage({
               height={230}
               interactive
               xLabels
-              formatValue={(v) => `${v} reviews`}
+              formatValue={(v) => `${plural(v, 'review')}`}
               motion={motion}
               ariaLabel="Interactive 24-hour breakdown chart"
             />
@@ -529,8 +530,8 @@ export function InsightDetailPage({
               <h2 className="section-title">Consistency</h2>
             </div>
             <div className="group group-divider">
-              <BreakdownRow label="Current streak" value={`${data.streaks.current} days`} />
-              <BreakdownRow label="Longest streak" value={`${data.streaks.longest} days`} />
+              <BreakdownRow label="Current streak" value={`${plural(data.streaks.current, 'day')}`} />
+              <BreakdownRow label="Longest streak" value={`${plural(data.streaks.longest, 'day')}`} />
               <BreakdownRow
                 label="Days studied in range"
                 value={`${data.streaks.daysInRange} / ${data.streaks.rangeDays}`}
@@ -548,7 +549,7 @@ export function InsightDetailPage({
         <section aria-label="Hardest cards">
           <SectionHeader
             title="Top 10 hardest cards"
-            action={<span className="row-sub tabular">{data.leeches.leechCount} leeches</span>}
+            action={<span className="row-sub tabular">{plural(data.leeches.leechCount, 'leech', 'leeches')}</span>}
           />
           <Group ariaLabel="Hardest cards list">
             {data.leeches.items.length === 0 ? (
@@ -613,7 +614,7 @@ export function InsightDetailPage({
               />
               <BreakdownRow label="Samples in range" value={`${data.answerTime.sampleCount}`} />
               {data.answerTime.bins.map((b) => (
-                <BreakdownRow key={b.label} label={b.label} value={`${b.count} reviews`} />
+                <BreakdownRow key={b.label} label={b.label} value={`${plural(b.count, 'review')}`} />
               ))}
             </div>
           </section>

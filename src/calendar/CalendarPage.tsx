@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { plural } from '../plural';
 import type { ReviewEvent } from '../reviewLog';
 import type { EffectiveMotion } from '../settings';
 import {
@@ -260,7 +261,7 @@ export function CalendarPage({ events, today, timeZone, motion = 'full', headerA
             {formatDuration(visibleMonthSummary.durationMs)}
           </strong>
           <span className="cal-summary-sub">
-            {visibleMonthSummary.cardsStudied} cards · {visibleMonthSummary.activeDays}d
+            {plural(visibleMonthSummary.cardsStudied, 'card')} · {visibleMonthSummary.activeDays}d
           </span>
         </div>
 
@@ -268,7 +269,7 @@ export function CalendarPage({ events, today, timeZone, motion = 'full', headerA
           <span className="cal-summary-label">
             {isCurrentMonth ? 'This week' : 'Selected week'}
           </span>
-          <strong className="cal-summary-value">{activeWeekSummary.cardsStudied} cards</strong>
+          <strong className="cal-summary-value">{plural(activeWeekSummary.cardsStudied, 'card')}</strong>
           <span className="cal-summary-sub">
             {formatDuration(activeWeekSummary.durationMs)} · {activeWeekSummary.newCardsLearned} new
           </span>

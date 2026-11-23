@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { plural } from '../plural';
 import { InlineCardText } from '../anki/content';
 import { useSubjects } from '../contentCatalog';
 import { formatDuration } from '../calendar/dailyStats';
@@ -149,7 +150,7 @@ export function InsightsView({
             <ChevronRight size={15} className="row-chevron" />
           </div>
           <div className="insight-metric tabular">
-            {data.heatmap.totalYearReviews.toLocaleString()} reviews
+            {plural(data.heatmap.totalYearReviews, 'review')}
           </div>
           <div className="insight-chart-body">
             <YearHeatmap
@@ -157,7 +158,7 @@ export function InsightsView({
               weeks={data.heatmap.weeks}
               monthLabels={data.heatmap.monthLabels}
               motion={motion}
-              ariaLabel={`Full-year review heatmap with ${data.heatmap.totalYearReviews} reviews`}
+              ariaLabel={`Full-year review heatmap with ${plural(data.heatmap.totalYearReviews, 'review')}`}
             />
           </div>
           <div className="insight-card-foot">
@@ -218,7 +219,7 @@ export function InsightsView({
             <ChevronRight size={15} className="row-chevron" />
           </div>
           <div className="insight-metric tabular">
-            {data.reviews.total.toLocaleString()} reviews
+            {plural(data.reviews.total, 'review')}
           </div>
           <div className="insight-chart-body">
             <StackedBars
@@ -254,7 +255,7 @@ export function InsightsView({
                 highlight: d.dayOffset === 0,
               }))}
               motion={motion}
-              ariaLabel={`30-day forecast with ${data.forecast.dueNext30} cards due`}
+              ariaLabel={`30-day forecast with ${plural(data.forecast.dueNext30, 'card')} due`}
             />
           </div>
           <p className="insight-caption tabular">
@@ -304,7 +305,7 @@ export function InsightsView({
             />
           </div>
           <p className="insight-caption tabular">
-            {data.states.matureCount} mature (21d+) out of {data.states.total} cards
+            {data.states.matureCount} mature (21d+) out of {plural(data.states.total, 'card')}
           </p>
         </a>
 
@@ -327,7 +328,7 @@ export function InsightsView({
                   key={d.dateKey}
                   className="streak-pill-day"
                   data-level={d.level}
-                  title={`${d.dateKey}: ${d.count} cards`}
+                  title={`${d.dateKey}: ${plural(d.count, 'card')}`}
                 />
               ))}
             </div>
@@ -373,7 +374,7 @@ export function InsightsView({
           </div>
           <p className="insight-caption">
             {data.hourly.bestHour
-              ? `Highest recall at ${data.hourly.bestHour.label} (${data.hourly.bestHour.reviews} reviews)`
+              ? `Highest recall at ${data.hourly.bestHour.label} (${plural(data.hourly.bestHour.reviews, 'review')})`
               : 'Review across different times of day to find your peak'}
           </p>
         </a>
@@ -396,7 +397,7 @@ export function InsightsView({
           </div>
           <p className="insight-caption tabular">
             {data.answerTime.avgSec !== null
-              ? `${data.answerTime.avgSec}s average across ${data.answerTime.sampleCount} reviews`
+              ? `${data.answerTime.avgSec}s average across ${plural(data.answerTime.sampleCount, 'review')}`
               : 'Time spent per card is recorded automatically'}
           </p>
         </a>

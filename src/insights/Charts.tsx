@@ -8,6 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
+import { plural } from '../plural';
 import type { EffectiveMotion } from '../settings';
 import type { HeatmapCell, HistogramBin, StackedBucket } from './aggregate';
 
@@ -353,7 +354,7 @@ export function StackedBars({
           {active ? (
             <>
               <span className="chart-scrub-label">{active.label}</span>
-              <strong className="chart-scrub-value tabular">{active.total} reviews</strong>
+              <strong className="chart-scrub-value tabular">{plural(active.total, 'review')}</strong>
               <span className="chart-scrub-sub tabular">
                 {active.easy} easy · {active.good} good · {active.hard} hard · {active.again} again
               </span>

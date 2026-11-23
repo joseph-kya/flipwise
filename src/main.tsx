@@ -1,4 +1,5 @@
 import { AiGuidePage } from './AiGuidePage';
+import { plural } from './plural';
 import { mediaType } from './anki/media';
 import { ContentContext, useSubjects } from './contentCatalog';
 import { stableCardId, type ImportedData } from './anki/types';
@@ -169,7 +170,7 @@ function SessionStatsGroup({
           <div className="row-main">
             <h2 className="session-sidebar-title">Session</h2>
             <span className="row-sub tabular">
-              <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards} cards
+              <AnimatedNumber value={stats.done} motion={motion} /> / {plural(totalCards, 'card')}
             </span>
           </div>
           <AccuracyRing
@@ -320,7 +321,7 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
                 <span className="row-title">{s.name}</span>
                 <span className="row-sub">{s.collectionLabel ?? SUBJECT_DESCRIPTIONS[s.id]}</span>
               </span>
-              <span className="row-value">{s.total} cards</span>
+              <span className="row-value">{plural(s.total, 'card')}</span>
               <ChevronDown size={16} className="row-chevron subject-chevron" />
             </button>
             <div id={panelId} className="accordion-shell" aria-hidden={!isOpen}>
@@ -1069,7 +1070,7 @@ function App() {
               backHref="#/subjects"
               backLabel="Subjects"
               title={subject.name}
-              subtitle={`${subject.collectionLabel ? `${subject.collectionLabel} · ` : ''}${subject.total} cards · ${subject.lectures.length} lessons`}
+              subtitle={`${subject.collectionLabel ? `${subject.collectionLabel} · ` : ''}${plural(subject.total, 'card')} · ${plural(subject.lectures.length, 'lesson')}`}
             />
 
             <Group divider={false}>
@@ -1077,7 +1078,7 @@ function App() {
                 <div>
                   <div className="row-title">All lessons</div>
                   <div className="row-sub tabular">
-                    {queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length} cards in queue
+                    {plural(queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length, 'card')} in queue
                   </div>
                 </div>
                 <Button

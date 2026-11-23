@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react';
+import { plural } from '../plural';
 import type { ReviewEvent } from '../reviewLog';
 import {
   Button,
@@ -108,7 +109,7 @@ export function ImportPage({
               title="Import complete"
               action={
                 <span className="row-sub tabular">
-                  {preview.notes.toLocaleString()} notes · {cards.toLocaleString()} cards
+                  {plural(preview.notes, 'note')} · {plural(cards, 'card')}
                 </span>
               }
             />
@@ -124,10 +125,10 @@ export function ImportPage({
                   title={s.name}
                   subtitle={
                     s.collectionLabel
-                      ? `${s.collectionLabel} · ${s.lectures.length} lectures`
-                      : `${s.lectures.length} lectures`
+                      ? `${s.collectionLabel} · ${plural(s.lectures.length, 'lecture')}`
+                      : `${plural(s.lectures.length, 'lecture')}`
                   }
-                  value={`${s.total.toLocaleString()} cards`}
+                  value={`${plural(s.total, 'card')}`}
                 />
               ))}
             </Group>
@@ -218,11 +219,11 @@ export function ImportPage({
                           <span className="row-title">{s.name}</span>
                           <span className="row-sub">
                             {s.collectionLabel ? `${s.collectionLabel} · ` : ''}
-                            {s.lectures.length} lectures
+                            {plural(s.lectures.length, 'lecture')}
                           </span>
                         </span>
                         <span className="row-value">
-                          {s.total.toLocaleString()} cards
+                          {plural(s.total, 'card')}
                         </span>
                         <ChevronDown size={16} className="row-chevron import-course-chevron" />
                       </summary>
