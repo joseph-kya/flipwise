@@ -60,22 +60,22 @@
   --sem-red: light-dark(#b42318, #ff7b72);
   --sem-red-dot: light-dark(#ff3b30, #ff453a);
   --sem-red-bg: light-dark(rgba(255, 59, 48, 0.15), rgba(255, 69, 58, 0.22));
-  --sem-red-line: light-dark(rgba(255, 59, 48, 0.18), rgba(255, 69, 58, 0.26));
+  --sem-red-bg-active: light-dark(rgba(255, 59, 48, 0.24), rgba(255, 69, 58, 0.34));
 
   --sem-orange: light-dark(#9a4200, #ffb84d);
   --sem-orange-dot: light-dark(#ff9500, #ff9f0a);
   --sem-orange-bg: light-dark(rgba(255, 149, 0, 0.16), rgba(255, 159, 10, 0.22));
-  --sem-orange-line: light-dark(rgba(255, 149, 0, 0.2), rgba(255, 159, 10, 0.26));
+  --sem-orange-bg-active: light-dark(rgba(255, 149, 0, 0.26), rgba(255, 159, 10, 0.34));
 
   --sem-yellow: light-dark(#734d00, #ffd84d);
   --sem-yellow-dot: light-dark(#d9a000, #ffd60a);
   --sem-yellow-bg: light-dark(rgba(234, 179, 8, 0.2), rgba(255, 214, 10, 0.22));
-  --sem-yellow-line: light-dark(rgba(202, 138, 4, 0.22), rgba(255, 214, 10, 0.26));
+  --sem-yellow-bg-active: light-dark(rgba(234, 179, 8, 0.3), rgba(255, 214, 10, 0.34));
 
   --sem-green: light-dark(#15682b, #4ade80);
   --sem-green-dot: light-dark(#34c759, #30d158);
   --sem-green-bg: light-dark(rgba(52, 199, 89, 0.16), rgba(48, 209, 88, 0.22));
-  --sem-green-line: light-dark(rgba(52, 199, 89, 0.2), rgba(48, 209, 88, 0.26));
+  --sem-green-bg-active: light-dark(rgba(52, 199, 89, 0.26), rgba(48, 209, 88, 0.34));
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --dur-press: 120ms;
@@ -85,7 +85,11 @@
 
 /* Base */
 *, *::before, *::after { box-sizing: border-box; }
-html, body {
+html {
+  margin: 0;
+  background: var(--bg);
+}
+body {
   margin: 0;
   background: var(--bg);
   color: var(--label);
@@ -197,7 +201,19 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .group { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--separator); overflow: hidden; }
 .group-pad { padding: var(--spacing-4); }
 .group-list { list-style: none; margin: 0; padding: 0; }
-.group-divider > * + * { border-top: 1px solid var(--separator); }
+.group-divider > * { position: relative; }
+.group-divider > * + *::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--sep-inset, 16px);
+  right: 0;
+  height: 1px;
+  background: var(--separator);
+  pointer-events: none;
+}
+.group-icons { --sep-inset: 68px; }
+.group-lessons { --sep-inset: 38px; }
 
 .group-row {
   position: relative; display: flex; align-items: center; gap: var(--spacing-3);
@@ -226,13 +242,28 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .subject-details summary::-webkit-details-marker { display: none; }
 .subject-details[open] .subject-chevron { transform: rotate(180deg); }
 
-.lesson-list { border-top: 1px solid var(--separator); background: var(--surface-subtle); animation: panel-enter var(--dur-fast) var(--ease-out); }
+.lesson-list {
+  --sep-inset: 38px;
+  background: var(--surface);
+  animation: panel-enter var(--dur-fast) var(--ease-out);
+}
 .lesson-row {
+  position: relative;
   display: flex; align-items: center; gap: var(--spacing-3);
   min-height: 48px; padding: var(--spacing-3) var(--spacing-4);
   transition: transform var(--dur-press) var(--ease-out);
 }
-.lesson-row + .lesson-row { border-top: 1px solid var(--separator); }
+.lesson-list .lesson-row::before,
+.group-lessons .lesson-row + .lesson-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--sep-inset, 38px);
+  right: 0;
+  height: 1px;
+  background: var(--separator);
+  pointer-events: none;
+}
 .lesson-title { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 500; color: var(--label); }
 .lesson-meta { display: inline-flex; align-items: center; gap: var(--spacing-3); flex-shrink: 0; font-size: var(--text-xs); color: var(--label-secondary); font-variant-numeric: tabular-nums; }
 
@@ -306,15 +337,18 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .rating-btn {
   display: flex; align-items: center; justify-content: center;
   min-height: 48px; padding: 0 var(--spacing-2); border-radius: var(--radius-sm);
-  border: 1px solid transparent;
   font-size: var(--text-sm); font-weight: 600; letter-spacing: -0.01em;
   transition: transform var(--dur-press) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
 }
 .rating-btn:disabled { opacity: 0.55; cursor: default; }
-.rating-again { background: var(--sem-red-bg); color: var(--sem-red); border-color: var(--sem-red-line); }
-.rating-hard { background: var(--sem-orange-bg); color: var(--sem-orange); border-color: var(--sem-orange-line); }
-.rating-good { background: var(--sem-yellow-bg); color: var(--sem-yellow); border-color: var(--sem-yellow-line); }
-.rating-easy { background: var(--sem-green-bg); color: var(--sem-green); border-color: var(--sem-green-line); }
+.rating-again { background: var(--sem-red-bg); color: var(--sem-red); }
+.rating-again:active:not(:disabled) { background: var(--sem-red-bg-active); }
+.rating-hard { background: var(--sem-orange-bg); color: var(--sem-orange); }
+.rating-hard:active:not(:disabled) { background: var(--sem-orange-bg-active); }
+.rating-good { background: var(--sem-yellow-bg); color: var(--sem-yellow); }
+.rating-good:active:not(:disabled) { background: var(--sem-yellow-bg-active); }
+.rating-easy { background: var(--sem-green-bg); color: var(--sem-green); }
+.rating-easy:active:not(:disabled) { background: var(--sem-green-bg-active); }
 .study-hint { display: none; margin: 0; text-align: center; font-size: var(--text-xs); color: var(--label-secondary); }
 
 /* Session complete */
@@ -406,6 +440,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 
 /* Responsive desktop */
 @media (min-width: 640px) {
+  .lesson-list { --sep-inset: 68px; }
   .lesson-list .lesson-row { padding-left: 31px; gap: 27px; }
 }
 
