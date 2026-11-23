@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { subjects, type Subject } from './demoSubjects';
 import './style.css';
 import { Markdown } from './markdown';
+import { CalendarPage } from './calendar/CalendarPage';
+import { loadReviewLog, seedDemoReviewLog } from './reviewLog';
 
 function App() {
   const [hash, setHash] = useState(location.hash || '#/');
   const [dark, setDark] = useState(false);
   const [index, setIndex] = useState(0);
+  const reviewEvents = useMemo(() => {
+    const saved = loadReviewLog();
+    return saved.length > 0 ? saved : seedDemoReviewLog();
+  }, []);
   useEffect(() => {
     const navigate = () => setHash(location.hash || '#/');
     window.addEventListener('hashchange', navigate);
@@ -34,6 +40,7 @@ function App() {
       <header>
         <a className="brand" href="#/"><span className="mark">f</span>flipwise<span className="brand-dot">.</span></a>
         <span className="header-note">A little practice. Lasting knowledge.</span>
+        <a className="text-link" href="#/calendar" aria-current={parts[0] === 'calendar' ? 'page' : undefined}>Calendar</a>
         <button className="theme" onClick={() => setDark(!dark)} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>{dark ? '☀' : '☾'}</button>
       </header>
       <main id="main">
@@ -79,7 +86,7 @@ function App() {
             </div>}
           </section>
           <p className="study-note">Demo only. Ratings advance the card; no reviews are scheduled.</p>
-        </> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
+        </> : parts[0] === 'calendar' ? <CalendarPage events={reviewEvents} /> : <><h1>Page not found.</h1><a className="back" href="#/subjects">Choose a subject</a></>}
         <footer><span>Built for what you want to remember.</span><span>Demo cards · display totals reflect your subjects</span></footer>
       </main>
     </div>
