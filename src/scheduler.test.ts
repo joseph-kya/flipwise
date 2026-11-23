@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createEmptyCard, State } from 'ts-fsrs';
-import { engine, schedule, replay, queue, studyDay, STUDY_CONFIG } from './scheduler';
+import { ratingEvent, queueCounts, engine, schedule, replay, queue, studyDay, STUDY_CONFIG } from './scheduler';
 import type { ReviewEvent } from './reviewLog';
 const at=new Date(2026,10,23,12);
 const event=(cardId: string, rating: ReviewEvent['rating'], time=at): ReviewEvent=>({id:cardId+ +time,cardId,subjectId:'analysis-1',lessonId:'a',rating,at:time.toISOString(),durationMs:1000,isNew:true,fuzz:false});
@@ -49,4 +49,20 @@ it('counts repeated ratings as one new introduction',()=>{
  const cs=Array.from({length:30},(_,i)=>({cardId:String(i),subjectId:'analysis-1',lessonId:'a',queuePosition:i}));
  const first=event('0','again');const second={...event('0','good'),isNew:false};
  expect(queue(cs,[first,second],at).filter(c=>c.cardId!=='0')).toHaveLength(17);
+});
+
+it('rates copied queue cards from a fresh session and resumes after three ratings',()=>{
+ const catalog=Array.from({length:8},(_,i)=>({cardId:`analysis-1/lecture-1/${i}`,subjectId:'analysis-1',lessonId:'lecture-1',queuePosition:i}));
+ let log: ReviewEvent[]=[];
+ expect(queueCounts(queue(catalog,log,at),log)).toEqual({total:8,new:8,review:0,learning:0});
+ for(let i=0;i<3;i++) {
+  const card={...queue(catalog,log,at)[0]};
+  const e=ratingEvent(card,'good',log,at,1000,.9,String(i));
+  expect(e.lessonId).toBe('lecture-1');expect(e.cardId).toBe(catalog[i].cardId);
+  log=[...log,e];
+ }
+ const reloaded=JSON.parse(JSON.stringify(log));
+ expect(reloaded).toHaveLength(3);
+ expect(queue(catalog,reloaded,at)[0].cardId).toBe(catalog[3].cardId);
+ expect(queueCounts(queue(catalog,reloaded,at),reloaded).new).toBe(5);
 });

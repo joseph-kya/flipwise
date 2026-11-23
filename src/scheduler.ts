@@ -51,3 +51,13 @@ export function schedulingState(card: Card | undefined, queuePosition: number): 
   if (card.state !== State.Review) return {kind:card.state===State.Learning?'learning':'relearning',stepIndex:card.learning_steps,dueAtMs:+card.due,memory:card};
   return {kind:'review',dueDay:studyDay(card.due),stability:card.stability,difficulty:card.difficulty,reps:card.reps,lapses:card.lapses,lastReviewAtMs:+card.last_review!,memory:card};
 }
+/** Queue cards carry stable ownership; never recover it through object identity. */
+export function ratingEvent(card: QueueCard, rating: Rating, events: readonly ReviewEvent[], at: Date, durationMs: number, retention: number, id: string): ReviewEvent {
+  return { id, cardId: card.cardId, subjectId: card.subjectId, lessonId: card.lessonId, rating, at: at.toISOString(), durationMs, retention, fuzz: true, isNew: !events.some(e => e.cardId === card.cardId) };
+}
+export function queueCounts(cards: readonly QueueCard[], events: readonly ReviewEvent[]) {
+  const states = replay(events);
+  const counts = { total: cards.length, new: 0, review: 0, learning: 0 };
+  for (const card of cards) { const state=states.get(card.cardId); if (!state) counts.new++; else if(state.state===State.Review) counts.review++; else counts.learning++; }
+  return counts;
+}

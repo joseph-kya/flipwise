@@ -1,4 +1,4 @@
-import { queue, replay, schedule, intervalLabel, isLeech } from './scheduler';
+import { queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech } from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import {
   useEffect,
@@ -466,6 +466,7 @@ function App() {
   const studyUrl = `#/study/${parts[1]}/${parts[2]}`;
   const states = replay(log);
   const previewAt = new Date(now);
+  const todayCounts = queueCounts(queue(catalog, log, previewAt), log);
 
   useEffect(() => {
     setIndex(0);
@@ -519,20 +520,7 @@ function App() {
 
   const rate = async (rating: Rating, startTransform?: string) => {
     if (!subject || !card || !revealed || pendingWrite.current || !storageRef.current) return;
-    const lesson = subject.lectures.find((l) => l.cards.includes(card))!;
-    const cardId = `${subject.id}/${lesson.id}/${card.id}`;
-    const event: ReviewEvent = {
-      retention: settings.retention,
-      fuzz: true,
-      id: crypto.randomUUID(),
-      cardId,
-      subjectId: subject.id,
-      lessonId: lesson.id,
-      rating,
-      at: new Date().toISOString(),
-      durationMs: Date.now() - cardStarted,
-      isNew: !log.some((e) => e.cardId === cardId),
-    };
+    const event = ratingEvent(card, rating, log, new Date(), Date.now() - cardStarted, settings.retention, crypto.randomUUID());
     pendingWrite.current = true;
     setSaving(true);
     const nextLog = [...log, event];
@@ -545,7 +533,7 @@ function App() {
     if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
     if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
 
-    const isLastCard = index + 1 >= cards.length;
+    const isLastCard = queue(catalog.filter(c => globalStudy || c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), nextLog, new Date()).length === 0;
 
     // Motion Off: instant swap, zero WAAPI, zero CSS animations
     if (effectiveMotion === 'off') {
@@ -572,8 +560,8 @@ function App() {
     const snapshot: ExitingCardState = {
       key: Date.now(),
       card,
-      cardNum: (index % cards.length) + 1,
-      totalCards: cards.length,
+      cardNum: session.length + 1,
+      totalCards: session.length + cards.length,
       rating,
       startTransform: startTransform || 'translate3d(0, 0, 0) rotate(0deg)',
     };
@@ -856,8 +844,9 @@ function App() {
               <div className="group">
                 <div className="due-row">
                   <div>
-                    <div className="due-figure">{queue(catalog, log, new Date(now)).filter(c => states.has(c.cardId)).length}</div>
-                    <div className="due-label">Cards due</div>
+                    <div className="due-figure">{todayCounts.total}</div>
+                    <div className="due-label">Cards available</div>
+                    <div className="due-label">{todayCounts.new} new · {todayCounts.review} review · {todayCounts.learning} learning</div>
                   </div>
                   <a className="btn btn-primary" href="#/study/global/all">
                     Study
@@ -940,7 +929,7 @@ function App() {
                 <div className="study-progress-mobile" aria-label="Session progress">
                   <div className="progress-meta">
                     <span>
-                      <AnimatedNumber value={stats.done} motion={effectiveMotion} /> / {cards.length} done
+                      <AnimatedNumber value={stats.done} motion={effectiveMotion} /> / {session.length + cards.length} done
                     </span>
                     <span>
                       {stats.done > 0 && (
@@ -955,7 +944,7 @@ function App() {
                     <div
                       className="progress-fill"
                       style={{
-                        transform: `scaleX(${cards.length ? Math.min(1, stats.done / cards.length) : 0})`,
+                        transform: `scaleX(${cards.length ? Math.min(1, stats.done / (session.length + cards.length)) : 0})`,
                       }}
                     />
                   </div>
@@ -974,7 +963,7 @@ function App() {
                     key={index}
                     ref={cardShellRef}
                     className={`card-shell${overlapEnter ? ' card-shell-overlap' : ''}`}
-                    style={exitingCard && index + 1 >= cards.length && !revealed ? { visibility: 'hidden' } : undefined}
+                    style={exitingCard && cards.length === 0 && !revealed ? { visibility: 'hidden' } : undefined}
                     onPointerDown={onCardPointerDown}
                     onPointerMove={onCardPointerMove}
                     onPointerUp={endCardDrag}
@@ -998,7 +987,7 @@ function App() {
                           <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}>
                             <span>Question</span>
                             <span>
-                              {(index % cards.length) + 1} of {cards.length}
+                              {session.length + 1} of {session.length + cards.length}
                             </span>
                           </div>
                           <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}>
@@ -1032,7 +1021,7 @@ function App() {
                           <div className="card-meta">
                             <span>Question</span>
                             <span>
-                              {(index % cards.length) + 1} of {cards.length}
+                              {session.length + 1} of {session.length + cards.length}
                             </span>
                           </div>
                           <div className="card-question">
@@ -1082,7 +1071,7 @@ function App() {
               <aside className="study-sidebar" aria-label="Session stats">
                 <SessionStatsGroup
                   stats={stats}
-                  totalCards={cards.length}
+                  totalCards={session.length + cards.length}
                   elapsed={elapsed}
                   motion={effectiveMotion}
                   showHeader
