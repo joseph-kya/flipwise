@@ -1,3 +1,4 @@
+import { AiGuidePage } from './AiGuidePage';
 import { mediaType } from './anki/media';
 import { ContentContext, useSubjects } from './contentCatalog';
 import { stableCardId, type ImportedData } from './anki/types';
@@ -1383,6 +1384,8 @@ function App() {
             onRangeChange={setInsightsRange}
             onSubjectChange={setInsightsSubject}
           />
+        ) : parts[0] === 'ai-guide' ? (
+          <AiGuidePage />
         ) : parts[0] === 'import' ? (
             <ImportPage
               existing={imported}

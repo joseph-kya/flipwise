@@ -59,6 +59,7 @@ export function ImportPage({
     <div className="section-stack">
       <div className="page-head">
         <h1 className="page-title">Import Anki package</h1>
+        <a className="btn btn-plain" href="#/ai-guide">Make decks with AI</a>
       </div>
       {error && <p role="alert">{error}</p>}
       {busy && (

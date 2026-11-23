@@ -45,6 +45,7 @@ export function DataSettings({
   return (
     <section className="group import-panel" aria-label="Data">
       <h2>Data</h2>
+      <p><a className="btn btn-secondary" href="#/ai-guide">Make decks with AI</a></p>
       <div className="list-row">
         <label>
           <input

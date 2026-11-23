@@ -1370,3 +1370,7 @@ a.insight-card:active { transform: scale(0.99); }
 .anki-content table { border-collapse: collapse; max-width: 100%; }
 .anki-content td, .anki-content th { padding: 6px; border: 1px solid var(--separator); }
 .source-link { display: block; margin-top: 20px; color: var(--label-secondary); font-size: 13px; }
+
+.ai-prompt-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ai-prompt-heading h2 { margin: 0; }
+.ai-guide textarea { width: 100%; min-height: 180px; padding: 12px; color: var(--label); background: var(--bg); border: 1px solid var(--separator); border-radius: 10px; font: inherit; }
