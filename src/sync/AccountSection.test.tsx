@@ -18,7 +18,7 @@ function render(snapshot: AccountSnapshot) {
   return el;
 }
 
-const base: AccountSnapshot = { phase: 'signedOut', user: null, status: { kind: 'idle' }, pending: 0, error: '', confirmSignOut: null };
+const base: AccountSnapshot = { phase: 'signedOut', authSettled: true, authTimedOut: false, failures: 0, user: null, status: { kind: 'idle' }, pending: 0, error: '', confirmSignOut: null };
 
 describe('account section', () => {
   it('hides itself entirely when Firebase is not configured', async () => {

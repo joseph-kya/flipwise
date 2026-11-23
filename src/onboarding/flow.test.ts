@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountOutcome, canContinueOffline, hasRealDecks, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './flow';
+import { defaultProgress, onboardingGate, persistProgress, PROGRESS_KEY, restoreProgress, accountOutcome, canContinueOffline, hasRealDecks, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './flow';
 import { card, deck } from '../sync/testkit';
 
 const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) }; };
@@ -9,6 +9,8 @@ describe('onboarding gating', () => {
     expect(shouldShowOnboarding({ completed: false, realDecks: false })).toBe(true);
     expect(shouldShowOnboarding({ completed: true, realDecks: false })).toBe(false);
     expect(shouldShowOnboarding({ completed: false, realDecks: true })).toBe(false);
+    expect(shouldShowOnboarding({ completed: false, realDecks: true, progress: 'learn' })).toBe(true);
+    expect(shouldShowOnboarding({ completed: true, realDecks: true, progress: 'learn' })).toBe(false);
   });
 
   it('counts imported, synced or starter cards as real decks, never demo or empty data', () => {
@@ -38,5 +40,49 @@ describe('onboarding gating', () => {
     expect(accountOutcome({ phase: 'signedIn', status: { kind: 'synced', at: 1 } }, false)).toBe('start');
     expect(accountOutcome({ phase: 'signedIn', status: { kind: 'offline' } }, false)).toBe('start');
     expect(accountOutcome({ phase: 'signedIn', status: { kind: 'syncing' } }, true)).toBe('done');
+  });
+});
+
+describe('resumable account gate', () => {
+  const signedIn = { phase: 'signedIn' as const, authSettled: true, status: { kind: 'synced' as const, at: 1 } };
+  it('skips welcome/account after popup or redirect success and preserves later steps', () => {
+    for (const step of ['welcome', 'account'] as const) {
+      expect(onboardingGate({ step, account: signedIn, realDecks: false, completed: false })).toEqual({ loading: false, step: 'start', finish: false });
+    }
+    for (const step of ['start', 'learn', 'done'] as const) {
+      expect(onboardingGate({ step, account: signedIn, realDecks: false, completed: false }).step).toBe(step);
+    }
+  });
+  it('finishes for existing cloud decks or completed onboarding', () => {
+    expect(onboardingGate({ step: 'account', account: signedIn, realDecks: true, completed: false }).finish).toBe(true);
+    expect(onboardingGate({ step: 'welcome', account: signedIn, realDecks: false, completed: true }).finish).toBe(true);
+  });
+  it('shows loading before auth settles, while phase is loading, and while the first cloud check is pending', () => {
+    expect(onboardingGate({ step: 'welcome', account: { ...signedIn, authSettled: false }, realDecks: false, completed: false }).loading).toBe(true);
+    expect(onboardingGate({ step: 'welcome', account: { phase: 'loading', authSettled: true, status: { kind: 'idle' } }, realDecks: false, completed: false }).loading).toBe(true);
+    expect(onboardingGate({ step: 'welcome', account: { ...signedIn, status: { kind: 'syncing' } }, realDecks: false, completed: false }).loading).toBe(true);
+  });
+  it('moves welcome to account on auth timeout so the error and escape are visible, without rewinding later steps', () => {
+    const timedOut = { phase: 'signedOut' as const, authSettled: true, authTimedOut: true, status: { kind: 'idle' as const } };
+    expect(onboardingGate({ step: 'welcome', account: timedOut, realDecks: false, completed: false })).toEqual({ loading: false, step: 'account', finish: false });
+    expect(onboardingGate({ step: 'start', account: timedOut, realDecks: false, completed: false })).toEqual({ loading: false, step: 'start', finish: false });
+  });
+  it('round-trips every progress field, including empty and nonempty course choices', () => {
+    const s = memory();
+    for (const choices of [null, [], ['robotics', 'analysis-1']]) {
+      const progress = { step: 'learn' as const, view: 'starter' as const, panel: 2, choices };
+      persistProgress(progress, s);
+      expect(restoreProgress(s)).toEqual(progress);
+    }
+    markOnboardingComplete(s);
+    expect(restoreProgress(s).step).toBe('welcome');
+  });
+  it('recovers safely from corrupt/unavailable storage and validates individual fields', () => {
+    const s = memory();
+    s.setItem(PROGRESS_KEY, '{');
+    expect(restoreProgress(s)).toEqual(defaultProgress());
+    s.setItem(PROGRESS_KEY, JSON.stringify({ step: 'learn', view: 'bad', panel: 99, choices: [7] }));
+    expect(restoreProgress(s)).toEqual({ step: 'learn', view: 'choose', panel: 2, choices: null });
+    expect(restoreProgress(null)).toEqual(defaultProgress());
   });
 });
