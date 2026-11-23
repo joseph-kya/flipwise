@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type Ref,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react';
@@ -278,7 +279,9 @@ export function Button({
   ariaLabel,
   onClick,
   children,
+  ref,
 }: {
+  ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   size?: ButtonSize;
   href?: string;
@@ -317,6 +320,7 @@ export function Button({
 
   return (
     <button
+      ref={ref}
       type="button"
       className={cls}
       disabled={disabled}
@@ -1001,5 +1005,33 @@ export function SwatchPicker<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+/** Bottom sheet on phones, centred dialog on desktop. Escape or the backdrop closes it. */
+export function Sheet({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); previous?.focus?.(); };
+  }, [open]);
+  if (!open || typeof document === 'undefined') return null;
+  // Portal to <body>: a transformed ancestor (e.g. an animating onboarding step) would otherwise
+  // become the containing block for position: fixed and clip the backdrop.
+  return createPortal(
+    <div className="ui-sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <section className="ui-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <div className="sheet-handle" aria-hidden="true" />
+        <h2 id={titleId} className="ui-sheet-title">{title}</h2>
+        {children}
+        <Button ref={closeRef} variant="secondary" size="full" onClick={onClose}>Done</Button>
+      </section>
+    </div>,
+    document.body,
   );
 }

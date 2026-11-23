@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import { deckMakerAssets } from './build/deckMakerAssets';
+import { serviceWorker } from './build/serviceWorker';
 
 /** BASE_PATH lets the same build run at a sub-path (GitHub Pages: /flipwise/). Dev stays at /. */
 const base = (() => {
@@ -9,4 +10,4 @@ const base = (() => {
   return `/${raw.replace(/^\/+|\/+$/g, '')}/`.replace(/^\/\/$/, '/');
 })();
 
-export default defineConfig({ base, plugins: [tailwindcss(), deckMakerAssets()] });
+export default defineConfig({ base, plugins: [tailwindcss(), deckMakerAssets(), serviceWorker()] });

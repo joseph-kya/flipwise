@@ -32,6 +32,8 @@ import { subjects as demoSubjects,
   type DemoCard, type Subject, type Lecture,
 } from './demoSubjects';
 import './style.css';
+import './pwa/runtime';
+import { UpdatePrompt } from './pwa/InstallApp';
 import {
   type ReviewEvent,
   type Rating } from './reviewLog';
@@ -1027,6 +1029,7 @@ function App() {
             window.scrollTo(0, 0);
           }}
         />
+        <UpdatePrompt />
       </ContentContext.Provider>
     );
   }
@@ -1622,6 +1625,7 @@ function App() {
         </nav>
       )}
     </div>
+  <UpdatePrompt />
   </ContentContext.Provider>
   );
 }

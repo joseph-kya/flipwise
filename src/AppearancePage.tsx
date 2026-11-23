@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { guideUrl } from 'virtual:deck-maker-assets';
 import { DataSettings } from './anki/DataSettings';
 import { AccountSection } from './sync/AccountSection';
+import { InstallRow } from './pwa/InstallApp';
 import type { AccountController, AccountSnapshot } from './sync/account';
 import type { ImportedData } from './anki/types';
 import { useSubjects } from './contentCatalog';
@@ -324,6 +325,7 @@ export function AppearancePage({
       <section aria-label="About" className="settings-section">
         <SectionHeader title="About" />
         <Group ariaLabel="App information">
+          <InstallRow />
           <NavRow href="#/how-it-works" title="How Flipwise works" subtitle="Spaced repetition, ratings and the daily habit" />
           {onShowWelcome && <Row title="Show welcome again" tone="accent" onClick={onShowWelcome} />}
           <Row title="Version" value="0.1.0" />

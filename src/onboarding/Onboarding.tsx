@@ -6,6 +6,7 @@ import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, SubjectIcon, Subje
 import { accountOutcome, canContinueOffline, hasRealDecks, STEPS, type OnboardingStep } from './flow';
 import { EXPLAINER_PANELS as HOW_PANELS, Explainer } from './Explainer';
 import { loadStarterPack, type StarterPack } from './starterPack';
+import { InstallButton } from '../pwa/InstallApp';
 
 type StartView = 'choose' | 'starter' | 'own' | 'anki' | 'ai';
 
@@ -83,9 +84,9 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
     body = (
       <>
         <WelcomeHero />
-        {/* Later: an unobtrusive "Install app" row lives under the lead (PWA install phase). */}
         <h1 className="ob-title ob-title-hero">Flipwise</h1>
         <p className="ob-lead">Flashcards that come back right before you’d forget them, so a few minutes a day is enough to keep every course in your head.</p>
+        <div><InstallButton /></div>
       </>
     );
     actions = <Button variant="primary" size="full" onClick={() => go('account')}>Get started</Button>;
