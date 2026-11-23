@@ -1,12 +1,14 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import type { Subject } from './demoSubjects';
 
 interface IconProps {
@@ -375,18 +377,77 @@ export function Select<T extends string>({
 }) {
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [placement, setPlacement] = useState<{
+    sheet: boolean;
+    flipUp: boolean;
+    maxHeight: number;
+  }>({ sheet: false, flipUp: false, maxHeight: 300 });
   const rootRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = useId();
 
   const selectedIndex = options.findIndex((o) => o.value === value);
   const current = selectedIndex >= 0 ? options[selectedIndex] : null;
+  const displayLabel = current?.label ?? placeholder;
+  const accessibleName = `${ariaLabel}: ${displayLabel}`;
+
+  // Measure viewport space so the menu never clips under the phone tab bar or off-screen
+  useLayoutEffect(() => {
+    if (!open || typeof window === 'undefined') return;
+    const measure = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      if (vw <= 600) {
+        setPlacement({
+          sheet: true,
+          flipUp: false,
+          maxHeight: Math.max(180, Math.round(vh * 0.62)),
+        });
+        return;
+      }
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) {
+        setPlacement({ sheet: false, flipUp: false, maxHeight: 300 });
+        return;
+      }
+      const tabbar = document.querySelector<HTMLElement>('.tabbar');
+      const tabbarRect = tabbar ? tabbar.getBoundingClientRect() : null;
+      const bottomEdge =
+        tabbarRect && tabbarRect.height > 0 && tabbarRect.top < vh
+          ? tabbarRect.top
+          : vh;
+      const topEdge = 60; // clear sticky topbar on desktop
+      const spaceBelow = Math.max(0, bottomEdge - rect.bottom - 14);
+      const spaceAbove = Math.max(0, rect.top - topEdge - 14);
+      const estimatedMenu = Math.min(300, options.length * 44 + 16);
+      const flipUp = spaceBelow < estimatedMenu && spaceAbove > spaceBelow;
+      const available = flipUp ? spaceAbove : spaceBelow;
+      setPlacement({
+        sheet: false,
+        flipUp,
+        maxHeight: Math.min(300, Math.max(132, Math.floor(available))),
+      });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [open, options.length]);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: MouseEvent | TouchEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        rootRef.current &&
+        !rootRef.current.contains(target) &&
+        (!sheetRef.current || !sheetRef.current.contains(target))
+      ) {
         setOpen(false);
       }
     };
@@ -457,6 +518,33 @@ export function Select<T extends string>({
     }
   };
 
+  const optionItems = options.map((opt, idx) => {
+    const selected = opt.value === value;
+    return (
+      <button
+        key={opt.value}
+        ref={(el) => {
+          optionRefs.current[idx] = el;
+        }}
+        type="button"
+        role="option"
+        aria-selected={selected}
+        className={`ui-select-option${selected ? ' is-selected' : ''}`}
+        onClick={() => choose(opt)}
+      >
+        <span className="ui-select-check" aria-hidden="true">
+          {selected && <CheckIcon size={15} />}
+        </span>
+        <span className="ui-select-option-text">
+          <span className="ui-select-option-label">{opt.label}</span>
+          {opt.subtitle && (
+            <span className="ui-select-option-sub">{opt.subtitle}</span>
+          )}
+        </span>
+      </button>
+    );
+  });
+
   return (
     <div
       ref={rootRef}
@@ -465,8 +553,9 @@ export function Select<T extends string>({
       <button
         ref={triggerRef}
         type="button"
+        role="combobox"
         className={`ui-select-trigger ui-select-trigger-${variant}`}
-        aria-label={ariaLabel}
+        aria-label={accessibleName}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
@@ -474,46 +563,64 @@ export function Select<T extends string>({
         onClick={() => setOpen((prev) => !prev)}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span className="ui-select-value">{current?.label ?? placeholder}</span>
+        <span className="ui-select-value">{displayLabel}</span>
         <ChevronUpDown size={15} className="ui-select-chevron" />
       </button>
 
-      {open && (
-        <div
-          id={listId}
-          role="listbox"
-          aria-label={ariaLabel}
-          className="ui-select-menu"
-          onKeyDown={handleListKeyDown}
-        >
-          {options.map((opt, idx) => {
-            const selected = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                ref={(el) => {
-                  optionRefs.current[idx] = el;
+      {open &&
+        (placement.sheet && typeof document !== 'undefined'
+          ? createPortal(
+              <div
+                ref={sheetRef}
+                className="ui-select-sheet-backdrop"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setOpen(false);
+                    triggerRef.current?.focus();
+                  }
                 }}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                className={`ui-select-option${selected ? ' is-selected' : ''}`}
-                onClick={() => choose(opt)}
               >
-                <span className="ui-select-check" aria-hidden="true">
-                  {selected && <CheckIcon size={15} />}
-                </span>
-                <span className="ui-select-option-text">
-                  <span className="ui-select-option-label">{opt.label}</span>
-                  {opt.subtitle && (
-                    <span className="ui-select-option-sub">{opt.subtitle}</span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+                <div className="ui-select-sheet">
+                  <div className="sheet-handle" aria-hidden="true" />
+                  <div className="ui-select-sheet-head">
+                    <span className="ui-select-sheet-title">{ariaLabel}</span>
+                    <button
+                      type="button"
+                      className="btn btn-plain ui-select-sheet-done"
+                      onClick={() => {
+                        setOpen(false);
+                        triggerRef.current?.focus();
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                  <div
+                    id={listId}
+                    role="listbox"
+                    aria-label={ariaLabel}
+                    className="ui-select-sheet-list"
+                    style={{ maxHeight: placement.maxHeight }}
+                    onKeyDown={handleListKeyDown}
+                  >
+                    {optionItems}
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )
+          : (
+          <div
+            id={listId}
+            role="listbox"
+            aria-label={ariaLabel}
+            className={`ui-select-menu${placement.flipUp ? ' ui-select-menu-up' : ''}`}
+            style={{ maxHeight: placement.maxHeight }}
+            onKeyDown={handleListKeyDown}
+          >
+            {optionItems}
+          </div>
+        ))}
     </div>
   );
 }

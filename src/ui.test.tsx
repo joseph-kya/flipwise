@@ -71,8 +71,11 @@ describe('shared UI controls (Switch, Select, formatSubjectDisplay)', () => {
     }
 
     const host = render(<Harness />);
-    const trigger = host.querySelector<HTMLButtonElement>('[aria-haspopup="listbox"]')!;
+    const trigger = host.querySelector<HTMLButtonElement>('[role="combobox"]')!;
+    expect(trigger).toBeTruthy();
+    expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(trigger.getAttribute('aria-label')).toBe('Subject: All subjects');
     expect(trigger.textContent).toContain('All subjects');
 
     // Open with ArrowDown
@@ -92,6 +95,7 @@ describe('shared UI controls (Switch, Select, formatSubjectDisplay)', () => {
       opts[1].click();
     });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(trigger.getAttribute('aria-label')).toBe('Subject: Analysis 1');
     expect(trigger.textContent).toContain('Analysis 1');
 
     // Reopen and close with Escape
