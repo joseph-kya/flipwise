@@ -6,6 +6,34 @@
     <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <title>Flipwise</title>
+    <script>
+      (function () {
+        var r = document.documentElement;
+        var d = { accent: 'blue', theme: 'auto', cardStyle: 'classic', font: 'system', textSize: 'md', motion: 'full' };
+        try {
+          var raw = localStorage.getItem('flipwise.appearance.v1');
+          if (raw) {
+            var p = JSON.parse(raw);
+            if (p && typeof p === 'object') {
+              if (/^(blue|indigo|purple|pink|orange|teal)$/.test(p.accent)) d.accent = p.accent;
+              if (/^(auto|light|dark|black)$/.test(p.theme)) d.theme = p.theme;
+              if (/^(classic|glass|paper)$/.test(p.cardStyle)) d.cardStyle = p.cardStyle;
+              if (/^(system|rounded|serif)$/.test(p.font)) d.font = p.font;
+              if (/^(sm|md|lg)$/.test(p.textSize)) d.textSize = p.textSize;
+              if (/^(full|reduced|off)$/.test(p.motion)) d.motion = p.motion;
+            }
+          }
+        } catch (e) {}
+        var prm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var eff = d.motion === 'off' ? 'off' : (d.motion === 'reduced' || prm) ? 'reduced' : 'full';
+        r.dataset.accent = d.accent;
+        r.dataset.theme = d.theme;
+        r.dataset.cardStyle = d.cardStyle;
+        r.dataset.font = d.font;
+        r.dataset.textSize = d.textSize;
+        r.dataset.motion = eff;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
