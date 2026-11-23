@@ -8,7 +8,7 @@ Three-level paths retain the root as a collection label and map Course → Lectu
 
 Card identity is `anki:<encoded GUID>:<template ordinal>`. Re-import updates fields, tags and placement, retains missing notes, and keeps local review history. New-card due positions update only while unreviewed. Preview new/updated/unchanged counts refer to notes, not individual cards. Content and optional merged revlog commit in one IndexedDB v2 transaction. Historical reviews deduplicate by card ID + timestamp, are marked `source: anki`, and replay through FSRS. Without revlog, cards start new, regardless of an incoming cards table's cached scheduling fields. Imported content and media survive reload; imported decks default to hiding demo decks, with a Data toggle to show them again.
 
-Name aliases use the central scheduler caps: Analysis 1 = 18, Introduction to Robotics / Robotics = 11, Physics 1 = 6, Programming 1 = 5. Other courses default to 20. Global cap remains 40.
+Name aliases use the central scheduler caps: Physics 1 = 18, Introduction to Robotics / Robotics = 11, Analysis 1 = 6, Programming 1 = 5. Other courses default to 20. Global cap remains 40.
 
 HTML is sanitized with DOMPurify, scripts/event handlers/style attributes are removed, ordinary links require HTTPS, and images require a matching imported-media blob URL. Source separately allows `obsidian://` and HTTPS and appears as Open source on answers. KaTeX handles `\(...\)`, `\[...\]`, `$...$` and `$$...$$`, with trust disabled. Demo cards retain their Markdown renderer.
 

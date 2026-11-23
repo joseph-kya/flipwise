@@ -22,7 +22,7 @@ Phase 1 uses the legacy FSRS-6 API in pinned ts-fsrs 6.0.1 (the package also has
 
 Default weights: `[0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722, 0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425, 0.0912, 0.0658, 0.1542]`.
 
-Caps live in `STUDY_CONFIG` in `src/scheduler.ts`, keyed by subject ID: Analysis 18, Robotics 11, Physics 6, Programming 5. **The product spec instead says Physics 18 / Analysis 6. Joseph's explicit Phase 1 instructions override that discrepancy.** Demo queue positions follow lesson index × 1000 + card index; imported Anki positions are future import work.
+Caps live in `STUDY_CONFIG` in `src/scheduler.ts`, keyed by subject ID: Physics 18, Robotics 11, Analysis 6, Programming 5 (confirmed by Joseph, matching the product spec). Demo queue positions follow lesson index × 1000 + card index; imported Anki positions are future import work.
 
 ## Persistence and undo
 
