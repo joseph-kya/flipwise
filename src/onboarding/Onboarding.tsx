@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type R
 import type { ImportedData } from '../anki/types';
 import type { AccountController, AccountSnapshot } from '../sync/account';
 import { plural } from '../plural';
-import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
+import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, SubjectIcon, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
 import { accountOutcome, canContinueOffline, hasRealDecks, STEPS, type OnboardingStep } from './flow';
 import { EXPLAINER_PANELS as HOW_PANELS, Explainer } from './Explainer';
 import { loadStarterPack, type StarterPack } from './starterPack';
@@ -82,6 +82,8 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
   if (step === 'welcome') {
     body = (
       <>
+        <WelcomeHero />
+        {/* Later: an unobtrusive "Install app" row lives under the lead (PWA install phase). */}
         <h1 className="ob-title ob-title-hero">Flipwise</h1>
         <p className="ob-lead">Flashcards that come back right before you’d forget them, so a few minutes a day is enough to keep every course in your head.</p>
       </>
@@ -212,6 +214,7 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
 
   return (
     <div className="onboarding">
+      <div className="ob-column">
       <div className="ob-top">
         {index > 0 && step !== 'done' ? (
           <IconButton ariaLabel="Back" className="ob-back" onClick={back}><ChevronLeft size={22} /></IconButton>
@@ -223,6 +226,27 @@ export function Onboarding({ account, online, imported, onAddStarter, renderImpo
         <div key={key} ref={headingRef} tabIndex={-1} className={`ob-step ob-step-${dir}`}>{body}</div>
       </main>
       {actions && <div className="ob-actions"><div className="ob-actions-inner">{actions}</div></div>}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Three flashcards in the subject colours rise from a stack, fan out, and the front one flips
+ * to its answer. One orchestrated arrival (transform/opacity only), static under reduced motion.
+ */
+function WelcomeHero() {
+  return (
+    <div className="ob-hero" aria-hidden="true">
+      <span className="ob-hero-glow" />
+      <span className="ob-hero-card ob-hero-card-3" style={{ '--tile': 'var(--hue-physics)' } as CSSProperties}><SubjectIcon subjectId="physics-1" size={26} /></span>
+      <span className="ob-hero-card ob-hero-card-2" style={{ '--tile': 'var(--hue-robotics)' } as CSSProperties}><SubjectIcon subjectId="robotics" size={26} /></span>
+      <span className="ob-hero-card ob-hero-card-1">
+        <span className="ob-hero-flip">
+          <span className="ob-hero-face ob-hero-front" style={{ '--tile': 'var(--hue-analysis)' } as CSSProperties}><span className="ob-hero-q">?</span></span>
+          <span className="ob-hero-face ob-hero-back" style={{ '--tile': 'var(--hue-analysis)' } as CSSProperties}><CheckIcon size={30} /></span>
+        </span>
+      </span>
     </div>
   );
 }
