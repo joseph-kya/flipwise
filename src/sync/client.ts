@@ -17,7 +17,7 @@ import {
   signOut as fbSignOut,
   type Auth,
 } from 'firebase/auth';
-import { connectFirestoreEmulator, initializeFirestore, type Firestore } from 'firebase/firestore';
+import { connectFirestoreEmulator, initializeFirestore, type Firestore } from 'firebase/firestore/lite';
 import type { CloudAdapter } from './engine';
 import type { FirebaseSetup } from './config';
 import { firestoreAdapter } from './firestoreAdapter';
@@ -68,7 +68,7 @@ export function createFirebaseClient(setup: FirebaseSetup): FirebaseClient {
       persistence: [indexedDBLocalPersistence, browserLocalPersistence],
       popupRedirectResolver: browserPopupRedirectResolver,
     });
-    // Memory cache: our own IndexedDB outbox is the offline story, so no second local copy.
+    // Firestore Lite (REST, no cache): our IndexedDB outbox is the offline story, so no second local copy.
     const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
     if (setup.emulator) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });

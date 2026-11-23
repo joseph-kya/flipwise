@@ -15,7 +15,7 @@ import {
   type Query,
   type QuerySnapshot,
   type Firestore,
-} from 'firebase/firestore';
+} from 'firebase/firestore/lite';
 import type { CloudAdapter } from './engine';
 import { MAX_BATCH_WRITES, type CloudDoc } from './merge';
 

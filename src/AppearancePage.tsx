@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { guideUrl } from 'virtual:deck-maker-assets';
 import { DataSettings } from './anki/DataSettings';
+import { AccountSection } from './sync/AccountSection';
+import type { AccountController, AccountSnapshot } from './sync/account';
 import type { ImportedData } from './anki/types';
 import { useSubjects } from './contentCatalog';
 import { STUDY_CONFIG } from './scheduler';
@@ -94,6 +96,7 @@ export function AppearancePage({
   onShowDemo,
   demoReviewCount = 0,
   onClearDemoHistory,
+  account,
 }: {
   settings: AppearanceSettings;
   effectiveMotion: EffectiveMotion;
@@ -104,6 +107,7 @@ export function AppearancePage({
   onShowDemo?: (show: boolean) => void;
   demoReviewCount?: number;
   onClearDemoHistory?: () => void;
+  account?: { controller: AccountController; snapshot: AccountSnapshot };
 }) {
   const [previewFlipped, setPreviewFlipped] = useState(false);
   const subjects = useSubjects();
@@ -121,6 +125,9 @@ export function AppearancePage({
   return (
     <div className="section-stack">
       <PageHeader title="Settings" />
+
+      {/* 0. Account (hidden without Firebase config) */}
+      {account && <AccountSection account={account.controller} snapshot={account.snapshot} />}
 
       {/* 1. Appearance */}
       <section aria-label="Appearance" className="settings-section">
@@ -316,7 +323,7 @@ export function AppearancePage({
         <SectionHeader title="About" />
         <Group ariaLabel="App information">
           <Row title="Version" value="0.1.0" />
-          <Row title="Storage" value="Saved on this device" />
+          <Row title="Storage" value={account?.snapshot.phase === 'signedIn' ? 'On this device + synced' : 'Saved on this device'} />
           <NavRow
             href={guideUrl}
             title="Deck maker guide"

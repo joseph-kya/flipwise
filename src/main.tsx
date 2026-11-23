@@ -7,12 +7,14 @@ import { ImportPage } from './anki/ImportPage';
 import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
 } from './scheduler';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
+import { AccountController } from './sync/account';
 import {
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -335,6 +337,9 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
   );
 }
 
+const noSubscribe = () => () => undefined;
+const noSnapshot = () => null;
+
 function App() {
   const [imported, setImported] = useState<ImportedData | null>(null);
   const [showDemo, setShowDemo] = useState(
@@ -384,6 +389,26 @@ function App() {
   const [insightsSubject, setInsightsSubject] = useState<SubjectFilter>('all');
   const insightsCatalog = useMemo(() => buildDefaultCatalog(subjects), [subjects]);
 
+  const accountRef = useRef<AccountController | null>(null);
+  const [accountVersion, setAccountVersion] = useState(0);
+  const applySynced = (next: { data: ImportedData | null; events: ReviewEvent[] }) => {
+    setImported((prev) => {
+      if (!prev && next.data) {
+        // Synced decks arrived on a device that only had demo decks: behave like a first import.
+        setShowDemo(false);
+        try { localStorage.setItem('flipwise.showDemo', 'false'); } catch { /* preference stays in memory */ }
+      }
+      return next.data;
+    });
+    setLog(next.events);
+    setSettings(loadSettings());
+  };
+  const reloadFromStorage = async () => {
+    const storage = storageRef.current;
+    if (!storage) return;
+    applySynced({ data: await storage.readDecks(), events: await storage.read() });
+  };
+
   useEffect(() => {
     void openReviewStorage()
       .then(async ({ storage, fallback }) => {
@@ -404,6 +429,13 @@ function App() {
         }
         setLog(initialEvents);
         setStorageReady(true);
+        const account = new AccountController(storage, {
+          onApplied: (state) => applySynced(state),
+          onReplaced: () => void reloadFromStorage(),
+        });
+        accountRef.current = account;
+        setAccountVersion((v) => v + 1);
+        account.start();
         if (fallback) {
           setStorageNotice('Using local browser storage because IndexedDB is unavailable.');
         }
@@ -455,6 +487,7 @@ function App() {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
       saveSettings(next);
+      void storageRef.current?.noteSettings(next).catch(() => undefined);
       return next;
     });
   };
@@ -591,8 +624,8 @@ function App() {
     );
     pendingWrite.current = true;
     setSaving(true);
-    const nextLog = [...log, event];
-    try { await storageRef.current.write(nextLog); } catch { setStorageNotice('Could not save your rating. Please try again.'); setSaving(false); pendingWrite.current = false; return; }
+    let nextLog: ReviewEvent[];
+    try { nextLog = await storageRef.current.append(event); } catch { setStorageNotice('Could not save your rating. Please try again.'); setSaving(false); pendingWrite.current = false; return; }
     setLog(nextLog); setSaving(false); pendingWrite.current = false;
     setSession((events) => [...events, event]);
     setSwipeHint(null);
@@ -835,11 +868,10 @@ function App() {
 
   const clearDemoHistory = async () => {
     markDemoCleared(true);
-    const cleaned = log.filter((e) => !e.demo);
-    setLog(cleaned);
+    setLog(log.filter((e) => !e.demo));
     if (storageRef.current) {
       try {
-        await storageRef.current.write(cleaned);
+        setLog(await storageRef.current.remove(log.filter((e) => e.demo).map((e) => e.id)));
       } catch {
         setStorageNotice('Could not clear demo history. Please try again.');
       }
@@ -899,12 +931,12 @@ function App() {
 
   const undo = async () => {
     if (
-      pendingWrite.current || !session.length || !storageRef.current || log.at(-1)?.id !== session.at(-1)?.id
+      pendingWrite.current || !session.length || !storageRef.current || !log.some((e) => e.id === session.at(-1)?.id)
     )
       return;
     pendingWrite.current = true; setSaving(true);
-    try { const next = log.slice(0, -1);
-      await storageRef.current.write(next); setLog(next); setSession(session.slice(0, -1));
+    try { const next = await storageRef.current.remove([session.at(-1)!.id]);
+      setLog(next); setSession(session.slice(0, -1));
       setIndex(Math.max(0, index - 1));
       location.hash = studyUrl;
       setHash(studyUrl); }
@@ -917,10 +949,15 @@ function App() {
       ) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   });
+  const accountSnapshot = useSyncExternalStore(
+    accountRef.current?.subscribe ?? noSubscribe,
+    accountRef.current?.getSnapshot ?? noSnapshot,
+  );
+  void accountVersion;
   const canUndo =
     session.length > 0 &&
     Boolean(storageRef.current) &&
-    log.at(-1)?.id === session.at(-1)?.id;
+    log.some((e) => e.id === session.at(-1)?.id);
   const activeStudy = studying && Boolean(card);
   const outcome = sessionOutcome(studying, cards.length, session.length);
   const sessionComplete = outcome === 'complete';
@@ -1394,9 +1431,9 @@ function App() {
               events={log}
               onCommit={async (data, events) => {
                 if (!storageRef.current) throw new Error('Storage is not ready.');
-                await storageRef.current.importDecks(data, events);
+                const stored = await storageRef.current.importDecks(data, events);
                 setImported(data);
-                setLog(events);
+                setLog(stored);
                 if (!imported) {
                   setShowDemo(false);
                   try { localStorage.setItem('flipwise.showDemo', 'false'); } catch { /* preference stays in memory */ }
@@ -1426,6 +1463,7 @@ function App() {
             }}
             demoReviewCount={demoReviewCount}
             onClearDemoHistory={() => void clearDemoHistory()}
+            account={accountRef.current && accountSnapshot ? { controller: accountRef.current, snapshot: accountSnapshot } : undefined}
           />
           ) : (
           <div className="section-stack">
@@ -1441,7 +1479,7 @@ function App() {
 
       {!activeStudy && !sessionComplete && (
         <footer className={`app-footer${showTabBar ? ' app-footer-above-tabbar' : ''}`}>
-          Saved locally on this device
+          {accountSnapshot?.phase === 'signedIn' ? 'Saved on this device and synced to your account' : 'Saved locally on this device'}
         </footer>
       )}
 
