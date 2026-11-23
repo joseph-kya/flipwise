@@ -170,6 +170,40 @@ export function SubjectIcon({ subjectId, name, size = 22 }: { subjectId: string;
   }
 }
 
+/* Subject colour: one hue token per subject (style.css --hue-*), deterministic for imports. */
+export type SubjectHue = 'analysis' | 'robotics' | 'physics' | 'programming' | 'h0' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
+const KNOWN_HUES: Record<string, SubjectHue> = { 'analysis-1': 'analysis', robotics: 'robotics', 'physics-1': 'physics', 'programming-1': 'programming' };
+
+export function subjectHue(subjectId: string, name?: string): SubjectHue {
+  const known = KNOWN_HUES[subjectIconKey(name ?? subjectId)] ?? KNOWN_HUES[subjectIconKey(subjectId)];
+  if (known) return known;
+  let h = 0;
+  for (const ch of name ?? subjectId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `h${h % 6}` as SubjectHue;
+}
+
+/** CSS colour for a subject, e.g. for `--subject` on a page or ring. */
+export const subjectColor = (subjectId: string, name?: string) => `var(--hue-${subjectHue(subjectId, name)})`;
+
+/** iOS Settings-style tile: a tinted rounded square behind a white glyph. */
+export function IconTile({ hue, size = 'md', children, className }: { hue: SubjectHue; size?: 'sm' | 'md' | 'lg'; children: ReactNode; className?: string }) {
+  return (
+    <span className={`icon-tile icon-tile-${size}${className ? ` ${className}` : ''}`} style={{ '--tile': `var(--hue-${hue})` } as CSSProperties} aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+/** A subject's glyph on its colour tile. */
+export function SubjectTile({ subjectId, name, size = 'md' }: { subjectId: string; name?: string; size?: 'sm' | 'md' | 'lg' }) {
+  const glyph = size === 'sm' ? 16 : size === 'lg' ? 26 : 22;
+  return (
+    <IconTile hue={subjectHue(subjectId, name)} size={size}>
+      <SubjectIcon subjectId={subjectId} name={name} size={glyph} />
+    </IconTile>
+  );
+}
+
 export const SUBJECT_DESCRIPTIONS: Record<string, string> = {
   'analysis-1': 'Limits, change and continuity',
   robotics: 'Motion, sensing and control',

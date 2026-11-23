@@ -4,7 +4,7 @@ import { InlineCardText } from '../anki/content';
 import { useSubjects } from '../contentCatalog';
 import { formatDuration } from '../calendar/dailyStats';
 import type { EffectiveMotion } from '../settings';
-import { ChevronRight, FlameIcon, Segmented, Select, type SelectOption } from '../ui';
+import { ChevronRight, FlameIcon, Segmented, Select, SubjectTile, type SelectOption } from '../ui';
 import type { InsightsData, RangeKey, SubjectFilter } from './aggregate';
 import { AreaLine, Bars, Donut, Histogram, StackedBars, YearHeatmap, type DonutSlice } from './Charts';
 
@@ -448,6 +448,7 @@ export function InsightsView({
             {data.subjects.map((sub) => (
               <div key={sub.subjectId} className="insight-subject-block">
                 <div className="insight-subject-head">
+                  <SubjectTile subjectId={sub.subjectId} name={sub.name} size="sm" />
                   <div className="insight-subject-title-wrap">
                     <span className="insight-subject-name">{sub.name}</span>
                     {sub.collectionLabel && (

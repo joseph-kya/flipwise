@@ -10,7 +10,7 @@ import {
   Row,
   SectionFooter,
   SectionHeader,
-  SubjectIcon,
+  SubjectTile,
   Switch,
 } from '../ui';
 import { parseInWorker } from './parseInWorker';
@@ -121,9 +121,7 @@ export function ImportPage({
                 <Row
                   key={s.id}
                   leading={
-                    <span className="subject-tile">
-                      <SubjectIcon subjectId={s.id} name={s.name} />
-                    </span>
+                    <SubjectTile subjectId={s.id} name={s.name} />
                   }
                   title={s.name}
                   subtitle={
@@ -221,9 +219,7 @@ export function ImportPage({
                   {preview.subjects.map((s) => (
                     <details key={s.id} className="import-course">
                       <summary className="group-row group-row-interactive">
-                        <span className="subject-tile">
-                          <SubjectIcon subjectId={s.id} name={s.name} />
-                        </span>
+                        <SubjectTile subjectId={s.id} name={s.name} />
                         <span className="row-main">
                           <span className="row-title">{s.name}</span>
                           <span className="row-sub">

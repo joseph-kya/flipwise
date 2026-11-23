@@ -11,7 +11,7 @@ import {
   NavRow,
   Row,
   SectionHeader,
-  SubjectIcon,
+  SubjectTile,
   formatSubjectDisplay,
 } from '../ui';
 
@@ -116,9 +116,7 @@ export function DayDetailPanel({
             }`;
             const subtitle = meta.subtitle ? `${meta.subtitle} · ${statsLine}` : statsLine;
             const leading = (
-              <span className="subject-tile">
-                <SubjectIcon subjectId={subject.subjectId} name={meta.name} />
-              </span>
+              <SubjectTile subjectId={subject.subjectId} name={meta.name} />
             );
             const value = `${subject.cardsStudied} ${subject.cardsStudied === 1 ? 'card' : 'cards'}`;
 

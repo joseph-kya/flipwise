@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type R
 import type { ImportedData } from '../anki/types';
 import type { AccountController, AccountSnapshot } from '../sync/account';
 import { plural } from '../plural';
-import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, SubjectIcon, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
+import { Button, CheckIcon, ChevronLeft, ChevronRight, Group, SubjectIcon, SubjectTile, IconButton, Row, SectionFooter, SectionHeader, Switch } from '../ui';
 import { accountOutcome, canContinueOffline, hasRealDecks, STEPS, type OnboardingStep } from './flow';
 import { EXPLAINER_PANELS as HOW_PANELS, Explainer } from './Explainer';
 import { loadStarterPack, type StarterPack } from './starterPack';
@@ -293,6 +293,7 @@ function StarterPicker({ onAdd, onDone }: { onAdd: (pack: StarterPack, ids: stri
                 className="ob-tick-in"
                 style={{ '--i': i } as CSSProperties}
                 titleId={`${baseId}-${i}`}
+                leading={<SubjectTile subjectId={s.id} name={s.name} />}
                 title={s.name}
                 subtitle={`${plural(s.lectures.length, 'lecture')} · ${plural(s.total, 'card')} · ${s.dailyNew} new a day`}
                 trailing={added && picked.has(s.id) ? (

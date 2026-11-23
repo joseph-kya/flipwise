@@ -74,7 +74,7 @@ import {
   SectionHeader,
   Segmented,
   SettingsTabIcon,
-  SubjectIcon,
+  SubjectTile,
   SubjectsTabIcon,
   TodayTabIcon,
 } from './ui';
@@ -322,9 +322,7 @@ function SubjectGroup({ log }: { log: readonly ReviewEvent[] }) {
               aria-controls={panelId}
               onClick={() => toggleSubject(s.id)}
             >
-              <span className="subject-tile">
-                <SubjectIcon subjectId={s.id} name={s.name} />
-              </span>
+              <SubjectTile subjectId={s.id} name={s.name} />
               <span className="row-main">
                 <span className="row-title">{s.name}</span>
                 <span className="row-sub">{s.collectionLabel ?? SUBJECT_DESCRIPTIONS[s.id]}</span>

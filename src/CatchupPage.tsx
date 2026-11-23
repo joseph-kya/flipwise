@@ -6,7 +6,7 @@ import { plural } from './plural';
 import type { ReviewEvent } from './reviewLog';
 import type { QueueCard } from './scheduler';
 import type { EffectiveMotion } from './settings';
-import { Button, Group, PageHeader, RatingButton, Row, SectionFooter, Select, Switch, type SelectOption } from './ui';
+import { Button, Group, PageHeader, RatingButton, Row, SectionFooter, Select, SubjectTile, Switch, type SelectOption } from './ui';
 import { AccuracyRing, AnimatedNumber, springSamples } from './motion';
 
 export type CatchupCard = QueueCard & DemoCard;
@@ -134,6 +134,7 @@ export function CatchupPage({
         <PageHeader backHref={backHref} backLabel={global ? 'Today' : subject?.name ?? 'Back'} title="Catch up" subtitle="A fast pass: tap to flip, then knew it or didn’t." />
         <Group ariaLabel="Catch-up scope" overflowVisible>
           <Row
+            leading={global ? undefined : <SubjectTile subjectId={scope.subjectId} name={subject?.name} size="sm" />}
             title={global ? 'Subjects' : 'Lessons'}
             trailing={
               <Select
