@@ -5,16 +5,9 @@ import {
   parseDateKey,
   type DayStats,
 } from './dailyStats';
+import { ChevronRight, SubjectIcon } from '../ui';
 
-const SUBJECT_META = new Map(
-  subjects.map((subject, index) => [
-    subject.id,
-    {
-      name: subject.name,
-      icon: ['∑', '⌘', 'φ', '{}'][index] ?? '·',
-    },
-  ]),
-);
+const SUBJECT_NAMES = new Map(subjects.map((subject) => [subject.id, subject.name]));
 
 function formatSelectedHeading(dateKey: string, referenceYear: number): {
   weekday: string;
@@ -31,14 +24,14 @@ function formatSelectedHeading(dateKey: string, referenceYear: number): {
   return { weekday, dateLine };
 }
 
-function subjectLabel(subjectId: string): { name: string; icon: string; known: boolean } {
-  const meta = SUBJECT_META.get(subjectId);
-  if (meta) return { ...meta, known: true };
+function subjectInfo(subjectId: string): { name: string; known: boolean } {
+  const name = SUBJECT_NAMES.get(subjectId);
+  if (name) return { name, known: true };
   const pretty = subjectId
     .split('-')
     .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : ''))
     .join(' ');
-  return { name: pretty || subjectId, icon: '·', known: false };
+  return { name: pretty || subjectId, known: false };
 }
 
 interface DayDetailPanelProps {
@@ -61,193 +54,107 @@ export function DayDetailPanel({
 
   if (!hasStudy || !stats) {
     return (
-      <aside className="cal-detail cal-detail-empty" aria-label={`Study details for ${weekday}, ${dateLine}`}>
+      <aside className="cal-detail" aria-label={`Study details for ${weekday}, ${dateLine}`}>
         <div className="cal-detail-head">
-          <div>
-            <p className="cal-detail-weekday">{weekday}</p>
-            <h2 className="cal-detail-date">{dateLine}</h2>
-          </div>
-          {isToday && <span className="cal-badge">Today</span>}
+          <h2 className="cal-detail-title">
+            {weekday}, {dateLine}
+          </h2>
+          {isToday && <span className="cal-detail-today">Today</span>}
         </div>
 
-        <div className="cal-empty-body">
-          <p className="cal-empty-title">
-            {isFuture ? 'Upcoming day' : isToday ? 'No reviews logged yet' : 'Rest day'}
-          </p>
-          <p className="cal-empty-copy">
+        <div className="group group-pad">
+          <div className="row-title" style={{ marginBottom: '4px' }}>
+            {isFuture ? 'Upcoming day' : isToday ? 'No reviews yet' : 'No study recorded'}
+          </div>
+          <p className="row-sub" style={{ margin: 0 }}>
             {isFuture
-              ? 'Study sessions you complete on this day will appear here automatically.'
+              ? 'Sessions completed on this date will appear here.'
               : isToday
-                ? 'A short session keeps recall steady without crowding your week.'
-                : 'No cards were reviewed on this date. Quiet days are part of a sustainable pace.'}
+                ? 'Start a session to log reviews for today.'
+                : 'No cards were reviewed on this date.'}
           </p>
-          {isToday ? (
-            <a className="primary cal-empty-cta" href="#/subjects">
-              Study now <span aria-hidden="true">↗</span>
-            </a>
-          ) : !isFuture ? (
-            <a className="text-link" href="#/subjects">
-              Choose a subject
-            </a>
-          ) : null}
+          {isToday && (
+            <div style={{ marginTop: '16px' }}>
+              <a className="btn btn-primary btn-full" href="#/subjects">
+                Study
+              </a>
+            </div>
+          )}
         </div>
       </aside>
     );
   }
 
-  const total = stats.cardsStudied;
-  const correctPct = (stats.correct / total) * 100;
-  const hardPct = (stats.hard / total) * 100;
-  const mistakePct = (stats.mistakes / total) * 100;
-  const maxSubjectCards = Math.max(...stats.subjects.map((s) => s.cardsStudied), 1);
+  const metricRows: ReadonlyArray<[string, string]> = [
+    ['Time studied', formatDuration(stats.durationMs)],
+    ['Cards studied', String(stats.cardsStudied)],
+    ['New learned', String(stats.newCardsLearned)],
+    ['Correct', `${stats.correct} · ${formatPercent(stats.accuracy)}`],
+    ['Hard', String(stats.hard)],
+    ['Mistakes', String(stats.mistakes)],
+  ];
 
   return (
     <aside className="cal-detail" aria-label={`Study details for ${weekday}, ${dateLine}`}>
       <div className="cal-detail-head">
-        <div>
-          <p className="cal-detail-weekday">{weekday}</p>
-          <h2 className="cal-detail-date">{dateLine}</h2>
-        </div>
-        {isToday && <span className="cal-badge">Today</span>}
+        <h2 className="cal-detail-title">
+          {weekday}, {dateLine}
+        </h2>
+        {isToday && <span className="cal-detail-today">Today</span>}
       </div>
 
-      <div className="cal-hero-metrics">
-        <div className="cal-hero-metric">
-          <span className="cal-metric-label">Time studied</span>
-          <strong className="cal-metric-big">{formatDuration(stats.durationMs)}</strong>
-        </div>
-        <div className="cal-hero-metric">
-          <span className="cal-metric-label">Cards studied</span>
-          <strong className="cal-metric-big">{stats.cardsStudied}</strong>
-        </div>
+      <div className="group group-divider" aria-label="Day summary">
+        {metricRows.map(([label, value]) => (
+          <div className="group-row" key={label}>
+            <span className="row-main">
+              <span className="row-title" style={{ fontSize: 'var(--text-sm)', fontWeight: 400 }}>
+                {label}
+              </span>
+            </span>
+            <span className="row-value row-value-strong">{value}</span>
+          </div>
+        ))}
       </div>
 
-      <dl className="cal-sub-metrics">
-        <div className="cal-sub-metric">
-          <dt>New cards learned</dt>
-          <dd>{stats.newCardsLearned}</dd>
+      <section aria-label="By subject">
+        <div className="section-head">
+          <h3 className="section-title">By subject</h3>
         </div>
-        <div className="cal-sub-metric">
-          <dt>Accuracy</dt>
-          <dd>{formatPercent(stats.accuracy)}</dd>
-        </div>
-      </dl>
-
-      <section className="cal-section" aria-label="Answer ratings">
-        <div className="cal-section-head">
-          <h3>Ratings</h3>
-          <span className="cal-section-note">{stats.correct} of {total} correct</span>
-        </div>
-
-        <div
-          className="cal-rating-bar"
-          role="img"
-          aria-label={`${stats.correct} correct, ${stats.hard} hard, ${stats.mistakes} mistakes`}
-        >
-          {stats.correct > 0 && (
-            <span
-              className="cal-bar-seg cal-bar-correct"
-              style={{ width: `${correctPct}%` }}
-            />
-          )}
-          {stats.hard > 0 && (
-            <span
-              className="cal-bar-seg cal-bar-hard"
-              style={{ width: `${hardPct}%` }}
-            />
-          )}
-          {stats.mistakes > 0 && (
-            <span
-              className="cal-bar-seg cal-bar-mistake"
-              style={{ width: `${mistakePct}%` }}
-            />
-          )}
-        </div>
-
-        <dl className="cal-rating-list">
-          <div className="cal-rating-item">
-            <dt>
-              <span className="cal-dot cal-dot-correct" aria-hidden="true" />
-              Correct
-            </dt>
-            <dd>
-              <strong>{stats.correct}</strong>
-              <span>Good + Easy</span>
-            </dd>
-          </div>
-          <div className="cal-rating-item">
-            <dt>
-              <span className="cal-dot cal-dot-hard" aria-hidden="true" />
-              Hard
-            </dt>
-            <dd>
-              <strong>{stats.hard}</strong>
-              <span>Needed effort</span>
-            </dd>
-          </div>
-          <div className="cal-rating-item">
-            <dt>
-              <span className="cal-dot cal-dot-mistake" aria-hidden="true" />
-              Mistakes
-            </dt>
-            <dd>
-              <strong>{stats.mistakes}</strong>
-              <span>Again</span>
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="cal-section" aria-label="Per-subject breakdown">
-        <div className="cal-section-head">
-          <h3>By subject</h3>
-          <span className="cal-section-note">
-            {stats.subjects.length} {stats.subjects.length === 1 ? 'subject' : 'subjects'}
-          </span>
-        </div>
-
-        <ul className="cal-subject-list">
+        <ul className="group group-list group-divider">
           {stats.subjects.map((subject) => {
-            const meta = subjectLabel(subject.subjectId);
-            const barWidth = Math.max(8, Math.round((subject.cardsStudied / maxSubjectCards) * 100));
-            const inner = (
+            const meta = subjectInfo(subject.subjectId);
+            const content = (
               <>
-                <span className="cal-subject-icon" aria-hidden="true">
-                  {meta.icon}
+                <span className="subject-tile">
+                  <SubjectIcon subjectId={subject.subjectId} />
                 </span>
-                <div className="cal-subject-body">
-                  <div className="cal-subject-top">
-                    <span className="cal-subject-name">{meta.name}</span>
-                    <span className="cal-subject-count">
-                      {subject.cardsStudied} {subject.cardsStudied === 1 ? 'card' : 'cards'}
-                    </span>
-                  </div>
-                  <div className="cal-subject-meta">
-                    <span>{formatDuration(subject.durationMs)}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{formatPercent(subject.accuracy)} accuracy</span>
-                    {subject.newCardsLearned > 0 && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span>{subject.newCardsLearned} new</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="cal-subject-track" aria-hidden="true">
-                    <span className="cal-subject-fill" style={{ width: `${barWidth}%` }} />
-                  </div>
-                </div>
+                <span className="row-main">
+                  <span className="row-title" style={{ fontSize: 'var(--text-sm)' }}>
+                    {meta.name}
+                  </span>
+                  <span className="row-sub tabular">
+                    {formatDuration(subject.durationMs)} · {formatPercent(subject.accuracy)}
+                    {subject.newCardsLearned > 0 ? ` · ${subject.newCardsLearned} new` : ''}
+                  </span>
+                </span>
+                <span className="row-value">
+                  {subject.cardsStudied} {subject.cardsStudied === 1 ? 'card' : 'cards'}
+                </span>
+                {meta.known && <ChevronRight size={14} className="row-chevron" />}
               </>
             );
 
             return (
-              <li key={subject.subjectId} className="cal-subject-row">
+              <li key={subject.subjectId}>
                 {meta.known ? (
-                  <a className="cal-subject-link" href={`#/subjects/${subject.subjectId}`}>
-                    {inner}
+                  <a
+                    className="group-row group-row-interactive"
+                    href={`#/subjects/${subject.subjectId}`}
+                  >
+                    {content}
                   </a>
                 ) : (
-                  <div className="cal-subject-link">{inner}</div>
+                  <div className="group-row">{content}</div>
                 )}
               </li>
             );

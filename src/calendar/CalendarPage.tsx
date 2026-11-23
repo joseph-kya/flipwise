@@ -16,7 +16,7 @@ import {
   weekdayMondayFirst,
 } from './dailyStats';
 import { DayDetailPanel } from './DayDetailPanel';
-import './calendar.css';
+import { ChevronLeft, ChevronRight } from '../ui';
 
 const WEEKDAYS = [
   { short: 'Mon', full: 'Monday' },
@@ -86,8 +86,6 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
     [byDay, viewYear, viewMonth],
   );
 
-  // Show the week containing today when viewing the current month,
-  // or the week containing the selected day when browsing another month.
   const isCurrentMonth = viewYear === todayParts.year && viewMonth === todayParts.monthIndex;
   const weekAnchor = isCurrentMonth ? todayKey : selectedKey;
   const activeWeekSummary = useMemo(
@@ -195,151 +193,134 @@ export function CalendarPage({ events, today, timeZone }: CalendarPageProps) {
   const selectedIsFuture = selectedKey > todayKey;
 
   return (
-    <div className="cal-page">
-      <a className="back" href="#/">‹ Back to today</a>
-
-      <div className="heading cal-heading">
-        <div>
-          <p className="muted">Study log</p>
-          <h1>Study calendar.</h1>
+    <div className="section-stack">
+      <div>
+        <a className="back-link" href="#/">
+          <ChevronLeft size={16} />
+          Today
+        </a>
+        <div className="page-head" style={{ marginBottom: 0 }}>
+          <h1 className="page-title">Calendar</h1>
         </div>
-        <span className="demo">Local study log</span>
       </div>
 
-      <section className="cal-summary" aria-label="Study summary">
-        <div className="cal-stat">
-          <span className="cal-stat-label">Current streak</span>
-          <strong className="cal-stat-value">
-            {streakStats.activeToday && <span className="cal-live-dot" aria-hidden="true" />}
+      <section className="group cal-summary" aria-label="Study summary">
+        <div className="cal-summary-cell">
+          <span className="cal-summary-label">Streak</span>
+          <strong className="cal-summary-value">
             {streakStats.current} {streakStats.current === 1 ? 'day' : 'days'}
           </strong>
-          <span className="cal-stat-sub">
-            {streakStats.longest > 0
-              ? `Longest ${streakStats.longest} ${streakStats.longest === 1 ? 'day' : 'days'}`
-              : 'Ready when you are'}
+          <span className="cal-summary-sub">
+            {streakStats.longest > 0 ? `Best ${streakStats.longest}d` : 'No streak yet'}
           </span>
         </div>
 
-        <div className="cal-stat">
-          <span className="cal-stat-label">{monthName} total</span>
-          <strong className="cal-stat-value">
+        <div className="cal-summary-cell">
+          <span className="cal-summary-label">{monthName}</span>
+          <strong className="cal-summary-value">
             {formatDuration(visibleMonthSummary.durationMs)}
           </strong>
-          <span className="cal-stat-sub">
-            {visibleMonthSummary.cardsStudied} cards · {visibleMonthSummary.activeDays}{' '}
-            {visibleMonthSummary.activeDays === 1 ? 'day' : 'days'}
+          <span className="cal-summary-sub">
+            {visibleMonthSummary.cardsStudied} cards · {visibleMonthSummary.activeDays}d
           </span>
         </div>
 
-        <div className="cal-stat">
-          <span className="cal-stat-label">{isCurrentMonth ? 'This week' : 'Selected week'}</span>
-          <strong className="cal-stat-value">
-            {activeWeekSummary.cardsStudied} cards
-          </strong>
-          <span className="cal-stat-sub">
+        <div className="cal-summary-cell">
+          <span className="cal-summary-label">
+            {isCurrentMonth ? 'This week' : 'Selected week'}
+          </span>
+          <strong className="cal-summary-value">{activeWeekSummary.cardsStudied} cards</strong>
+          <span className="cal-summary-sub">
             {formatDuration(activeWeekSummary.durationMs)} · {activeWeekSummary.newCardsLearned} new
           </span>
         </div>
 
-        <div className="cal-stat">
-          <span className="cal-stat-label">{monthName} accuracy</span>
-          <strong className="cal-stat-value">
+        <div className="cal-summary-cell">
+          <span className="cal-summary-label">Accuracy</span>
+          <strong className="cal-summary-value">
             {visibleMonthSummary.cardsStudied > 0
               ? formatPercent(visibleMonthSummary.accuracy)
               : '—'}
           </strong>
-          <span className="cal-stat-sub">
-            {visibleMonthSummary.newCardsLearned} new cards learned
+          <span className="cal-summary-sub">
+            {visibleMonthSummary.newCardsLearned} new learned
           </span>
         </div>
       </section>
 
-      <div className="cal-workspace">
-        <section className="cal-board" aria-label={`Calendar for ${monthTitle}`}>
+      <div className="cal-layout">
+        <section className="group" aria-label={`Calendar for ${monthTitle}`}>
           <div className="cal-board-head">
             <h2 className="cal-month-title">{monthTitle}</h2>
-            <div className="cal-nav-group">
+            <div className="cal-nav">
               {(!isCurrentMonth || selectedKey !== todayKey) && (
-                <button
-                  type="button"
-                  className="cal-today-btn"
-                  onClick={jumpToToday}
-                >
+                <button type="button" className="btn btn-plain" onClick={jumpToToday}>
                   Today
                 </button>
               )}
               <button
                 type="button"
-                className="cal-icon-btn"
+                className="icon-btn"
                 onClick={() => stepMonth(-1)}
                 aria-label="Previous month"
               >
-                <span aria-hidden="true">‹</span>
+                <ChevronLeft size={18} />
               </button>
               <button
                 type="button"
-                className="cal-icon-btn"
+                className="icon-btn"
                 onClick={() => stepMonth(1)}
                 aria-label="Next month"
               >
-                <span aria-hidden="true">›</span>
+                <ChevronRight size={18} />
               </button>
             </div>
           </div>
 
-          <div className="cal-weekdays" aria-hidden="true">
-            {WEEKDAYS.map((day) => (
-              <span key={day.short} className="cal-weekday" title={day.full}>
-                {day.short}
-              </span>
-            ))}
-          </div>
+          <div className="cal-grid-wrap">
+            <div className="cal-weekdays" aria-hidden="true">
+              {WEEKDAYS.map((day) => (
+                <span key={day.short} className="cal-weekday" title={day.full}>
+                  {day.short}
+                </span>
+              ))}
+            </div>
 
-          <div className="cal-grid" ref={gridRef} role="group" aria-label={`${monthTitle} days`}>
-            {Array.from({ length: leadingBlanks }).map((_, index) => (
-              <span key={`blank-${index}`} className="cal-blank" aria-hidden="true" />
-            ))}
+            <div className="cal-grid" ref={gridRef} role="group" aria-label={`${monthTitle} days`}>
+              {Array.from({ length: leadingBlanks }).map((_, index) => (
+                <span key={`blank-${index}`} aria-hidden="true" />
+              ))}
 
-            {monthDays.map(({ day, dateKey }) => {
-              const stats = byDay.get(dateKey);
-              const count = stats?.cardsStudied ?? 0;
-              const level = heatmapLevel(count);
-              const isToday = dateKey === todayKey;
-              const isSelected = dateKey === selectedKey;
+              {monthDays.map(({ day, dateKey }) => {
+                const stats = byDay.get(dateKey);
+                const count = stats?.cardsStudied ?? 0;
+                const level = heatmapLevel(count);
+                const isToday = dateKey === todayKey;
+                const isSelected = dateKey === selectedKey;
 
-              return (
-                <button
-                  key={dateKey}
-                  type="button"
-                  className="cal-day"
-                  data-date={dateKey}
-                  data-level={level}
-                  data-today={isToday || undefined}
-                  data-selected={isSelected || undefined}
-                  aria-label={buildDayAriaLabel(dateKey, isToday, stats)}
-                  aria-pressed={isSelected}
-                  aria-current={isToday ? 'date' : undefined}
-                  onClick={() => setSelectedKey(dateKey)}
-                  onKeyDown={(e) => handleDayKeyDown(e, dateKey)}
-                >
-                  <span className="cal-day-num">{day}</span>
-                  {count > 0 ? (
-                    <span className="cal-day-count" aria-hidden="true">
-                      {count}
-                    </span>
-                  ) : isToday ? (
-                    <span className="cal-day-today-label" aria-hidden="true">
-                      •
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    className="cal-day"
+                    data-date={dateKey}
+                    data-level={level}
+                    data-today={isToday ? 'true' : undefined}
+                    data-selected={isSelected ? 'true' : undefined}
+                    aria-label={buildDayAriaLabel(dateKey, isToday, stats)}
+                    aria-pressed={isSelected}
+                    aria-current={isToday ? 'date' : undefined}
+                    onClick={() => setSelectedKey(dateKey)}
+                    onKeyDown={(e) => handleDayKeyDown(e, dateKey)}
+                  >
+                    <span>{day}</span>
+                    {isToday && <span className="cal-today-dot" aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="cal-board-foot">
-            <span className="cal-keyboard-hint">Select a day to inspect its session</span>
-            <div className="cal-legend" aria-label="Study intensity scale from less to more">
+            <div className="cal-board-foot" aria-label="Study intensity scale from less to more">
               <span>Less</span>
               <span className="cal-swatch" data-level="0" aria-hidden="true" />
               <span className="cal-swatch" data-level="1" aria-hidden="true" />
