@@ -97,9 +97,19 @@ clamped to a range, and never above `U`.
 | Exam | solver (below), re-solved every day | `min(10 × new, 500)` |
 | Custom | whatever the user set | whatever the user set |
 
-Ten reviews per new card per day is the FSRS steady state at 90% retention. At that load the
-reviews from a constant intake level off at about 8–10× the daily new cards, so the cap only
-bites when a backlog builds.
+The review caps are generous on purpose: they're ceilings that only bite when a backlog builds,
+not targets. The forecast itself measures what a constant intake really costs with FSRS-6's
+default parameters (10 new cards a day):
+
+| Retention | Week 1 | Week 4 | Week 8 | Week 26 | Week 52 |
+| --- | --- | --- | --- | --- | --- |
+| 85% | 4.7 | 14.3 | 27.3 | 34.2 | 51.3 |
+| 90% | 7.9 | 24.7 | 27.4 | 45.6 | 61.8 |
+| 95% | 13.4 | 35.5 | 49.2 | 78.0 | 97.3 |
+
+(Reviews per day. At 90% that's about 2.7× the new cards by week 8 and about 6× after a year,
+which is roughly 12 minutes a day at 8 s per answer.) That's well below the 8–10× often quoted
+for Anki's old SM-2 scheduler, because FSRS intervals grow faster.
 
 Editing any number by hand switches the course to **Custom**. **Apply to all** writes the preset
 to every course and records it as the global `pace`.
