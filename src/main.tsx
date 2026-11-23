@@ -75,6 +75,7 @@ import {
   Segmented,
   SettingsTabIcon,
   SubjectTile,
+  subjectColor,
   SubjectsTabIcon,
   TodayTabIcon,
 } from './ui';
@@ -998,6 +999,10 @@ function App() {
   const caughtUp = outcome === 'caught-up';
   const nextAvailable = caughtUp ? nextAvailableAt(catalog.filter(c=>globalStudy || c.subjectId===parts[1] && (parts[2]==='all' || c.lessonId===parts[2])), studyLog, new Date(now)) : null;
   const hasMobileRatingBar = activeStudy && revealed;
+  // Subject pages, study and catch-up carry the subject's colour (top wash, progress).
+  const washSubject = (parts[0] === 'subjects' || parts[0] === 'study' || parts[0] === 'catchup') && subject && !globalStudy
+    ? subject
+    : parts[0] === 'catchup' ? subjects.find((s) => s.id === parts[1]) : undefined;
   const showTabBar = !activeStudy && !sessionComplete && !(catchupActive && parts[0] === 'catchup');
 
   if (onboardingOpen && storageReady) {
@@ -1076,13 +1081,14 @@ function App() {
         )}
         <main
         id="main"
-        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}`}>
+        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}${washSubject ? ' has-subject-wash' : ''}`}
+        style={washSubject ? ({ '--subject': subjectColor(washSubject.id, washSubject.name) } as CSSProperties) : undefined}>
           {parts[0] === '' ? (
           <div className="section-stack">
             <PageHeader eyebrow={formatTodayLabel()} title="Today" />
 
             <section aria-label="Due summary">
-              <Group divider={false}>
+              <Group divider={false} className="hero-surface">
                 <div className="due-row">
                   <div>
                     <div className="due-figure">{todayCounts.total}</div>
@@ -1144,7 +1150,8 @@ function App() {
 
             <Group divider={false}>
               <div className="due-row">
-                <div>
+                <SubjectTile subjectId={subject.id} name={subject.name} size="lg" />
+                <div className="due-row-main">
                   <div className="row-title">All lessons</div>
                   <div className="row-sub tabular">
                     {plural(queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt).length, 'card')} in queue

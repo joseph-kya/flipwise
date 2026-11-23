@@ -1758,6 +1758,7 @@ a.insight-card:active { transform: scale(0.99); }
 .how-rating-easy { background: var(--sem-green-bg); color: var(--sem-green); }
 
 /* ---------- Quick catch-up ---------- */
+.due-row-main { flex: 1; min-width: 0; }
 .due-row-actions { display: flex; gap: var(--spacing-2); flex-wrap: wrap; justify-content: flex-end; }
 .catchup { display: flex; flex-direction: column; gap: var(--spacing-4); max-width: 680px; margin: 0 auto; min-height: calc(100dvh - 140px); }
 .catchup-bar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--spacing-3); }
@@ -1934,3 +1935,54 @@ a.insight-card:active { transform: scale(0.99); }
 :root[data-motion="reduced"] .ob-hero-card, :root[data-motion="reduced"] .ob-hero-flip,
 :root[data-motion="off"] .ob-hero-card, :root[data-motion="off"] .ob-hero-flip, :root[data-motion="off"] .ob-hero-glow { animation: none; }
 :root[data-motion="reduced"] .ob-hero { animation: ob-fade 200ms ease both; }
+
+/* ---------- Surfaces: soft colour where it carries meaning ---------- */
+/* Today's hero: two soft lights (accent, top right; a cooler hue, bottom left) on the surface. */
+.group.hero-surface {
+  background:
+    radial-gradient(120% 150% at 100% 0%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 58%),
+    radial-gradient(90% 130% at 0% 100%, color-mix(in srgb, var(--hue-analysis) 9%, transparent) 0%, transparent 62%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 16%, var(--separator));
+}
+.hero-surface .due-figure { color: var(--label); }
+
+/* Subject, study and catch-up pages: a gentle wash of the subject's hue behind the header. */
+.main.has-subject-wash { position: relative; isolation: isolate; }
+.main.has-subject-wash::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  inset: 0 calc(-1 * var(--page-pad)) auto; height: 340px;
+  /* Centred ellipse that reaches transparent exactly at the box edges: no visible seams. */
+  background: radial-gradient(50% 100% at 50% 0%, color-mix(in srgb, var(--subject) var(--wash, 16%), transparent), transparent);
+}
+:root[data-theme="dark"], :root[data-theme="black"] { --wash: 10%; }
+@media (prefers-color-scheme: dark) { :root[data-theme="auto"] { --wash: 10%; } }
+.has-subject-wash .progress-fill { background: var(--subject); }
+
+/* Celebrations: a soft glow behind the ring, never confetti-loud. */
+.complete-head::before, .catchup-summary-head::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  width: 240px; height: 160px; left: 50%; top: -20px; transform: translateX(-50%);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--subject, var(--accent)) 22%, transparent), transparent);
+}
+.catchup-summary-head { position: relative; isolation: isolate; }
+.catchup-summary-head::before { left: 36px; top: -48px; }
+
+/* Header with a single trailing button stays one row on phones (button aligned to the title). */
+.page-head-split:has(> .btn) { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+.page-head-split > .btn { flex-shrink: 0; margin-bottom: 2px; }
+
+/* Dark: low-alpha yellow/orange fills turn olive/brown on near-black. Use a neutral fill with the
+   rating colour as text and a top edge instead (same meaning, no muddy tints). */
+:root[data-theme="dark"] .rating-btn, :root[data-theme="black"] .rating-btn { background: var(--fill); }
+@media (prefers-color-scheme: dark) { :root[data-theme="auto"] .rating-btn { background: var(--fill); } }
+:root[data-theme="dark"] .rating-again, :root[data-theme="black"] .rating-again { box-shadow: inset 0 3px 0 var(--sem-red-dot); }
+:root[data-theme="dark"] .rating-hard, :root[data-theme="black"] .rating-hard { box-shadow: inset 0 3px 0 var(--sem-orange-dot); }
+:root[data-theme="dark"] .rating-good, :root[data-theme="black"] .rating-good { box-shadow: inset 0 3px 0 var(--sem-yellow-dot); }
+:root[data-theme="dark"] .rating-easy, :root[data-theme="black"] .rating-easy { box-shadow: inset 0 3px 0 var(--sem-green-dot); }
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .rating-again { box-shadow: inset 0 3px 0 var(--sem-red-dot); }
+  :root[data-theme="auto"] .rating-hard { box-shadow: inset 0 3px 0 var(--sem-orange-dot); }
+  :root[data-theme="auto"] .rating-good { box-shadow: inset 0 3px 0 var(--sem-yellow-dot); }
+  :root[data-theme="auto"] .rating-easy { box-shadow: inset 0 3px 0 var(--sem-green-dot); }
+}
