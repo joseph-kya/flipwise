@@ -28,6 +28,9 @@ describe('settings', () => {
     const storage = createMemoryStorage();
     const custom: AppearanceSettings = {
       retention: .9,
+      newPerDay: 25,
+      reviewsPerDay: 180,
+      pace: 'medium',
       accent: 'purple',
       theme: 'black',
       cardStyle: 'glass',
@@ -56,10 +59,16 @@ describe('settings', () => {
         font: 'comic',
         textSize: 'sm',
         motion: 'off',
+        newPerDay: -3,
+        reviewsPerDay: 'lots',
+        pace: 'warp',
       }),
     );
     expect(loadSettings(storage)).toEqual({
       retention: .9,
+      newPerDay: 40,
+      reviewsPerDay: null,
+      pace: 'custom',
       accent: 'blue',
       theme: 'dark',
       cardStyle: 'paper',

@@ -80,13 +80,16 @@ export function mergeImport(
   for (const subject of [...incoming.subjects, ...(previous?.subjects ?? [])]) {
     let target = subjects.find((s) => s.id === subject.id);
     if (!target) {
-      target = { ...subject, lectures: [], total: 0 };
+      // Study limits are the user's, not the package's: a re-import keeps them.
+      const study = previous?.subjects.find((s) => s.id === subject.id)?.study;
+      target = { ...subject, lectures: [], total: 0, ...(study ? { study } : {}) };
       subjects.push(target);
     }
     for (const lesson of subject.lectures) {
       let dest = target.lectures.find((l) => l.id === lesson.id);
       if (!dest) {
-        dest = { ...lesson, cards: [] };
+        const study = previous?.subjects.find((s) => s.id === subject.id)?.lectures.find((l) => l.id === lesson.id)?.study;
+        dest = { ...lesson, cards: [], ...(study ? { study } : {}) };
         target.lectures.push(dest);
       }
       for (const card of lesson.cards as ImportedCard[]) {

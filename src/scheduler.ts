@@ -22,17 +22,88 @@ export function isDueState(s: Card | undefined, at: Date): boolean {
   return !!s && (s.state === State.Review ? studyDay(s.due) <= studyDay(at) : s.due <= at);
 }
 export interface QueueCard { cardId: string; subjectId: string; lessonId: string; queuePosition: number; dailyNew?: number }
-export function queue<T extends QueueCard>(cards: readonly T[], events: readonly ReviewEvent[], at = new Date()): T[] {
-  const states = replay(events), seen = new Set<string>(), used: Record<string, number> = {}; let total = 0;
-  for (const e of events) { if (!seen.has(e.cardId) && studyDay(new Date(e.at)) === studyDay(at)) { used[e.subjectId] = (used[e.subjectId] ?? 0)+1; total++; } seen.add(e.cardId); }
-  const due = cards.filter(c => isDueState(states.get(c.cardId), at)).sort((a,b) => {
+/** Effective daily limits by level; absent/null = no limit at that level (see docs/study-pace.md). */
+export interface QueueLimits {
+  globalNew: number;
+  globalReviews: number | null;
+  course(subjectId: string): { newPerDay: number; reviewsPerDay: number | null } | undefined;
+  lecture(subjectId: string, lessonId: string): { newPerDay: number | null; reviewsPerDay: number | null } | undefined;
+}
+
+/** The pre-settings behaviour: per-card dailyNew, else the built-in course table, global 40, no review caps. */
+export const DEFAULT_LIMITS: QueueLimits = {
+  globalNew: STUDY_CONFIG.globalNew,
+  globalReviews: null,
+  course: () => undefined,
+  lecture: () => undefined,
+};
+
+/** FSRS-6 retrievability (probability of recall) of a studied card at `at`. */
+export function retrievability(card: Card, at: Date, w: readonly number[] = engine().parameters.w): number {
+  if (!card.last_review || card.state === State.New) return 0;
+  const t = Math.max(0, (+at - +card.last_review) / 86_400_000);
+  const decay = -w[20];
+  const factor = Math.pow(0.9, 1 / decay) - 1;
+  return Math.pow(1 + (factor * t) / Math.max(card.stability, 0.01), decay);
+}
+
+/** Today's usage: first introductions and answers to review-state cards, by course/lecture/total. */
+function usageToday(events: readonly ReviewEvent[], at: Date) {
+  const today = studyDay(at);
+  const states = new Map<string, Card>(), seen = new Set<string>();
+  const usage = { newTotal: 0, reviewTotal: 0, newBy: new Map<string, number>(), reviewBy: new Map<string, number>() };
+  const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1);
+  for (const e of events) {
+    const prev = states.get(e.cardId);
+    if (studyDay(new Date(e.at)) === today) {
+      if (!seen.has(e.cardId)) { usage.newTotal++; bump(usage.newBy, e.subjectId); bump(usage.newBy, `${e.subjectId}/${e.lessonId}`); }
+      else if (prev?.state === State.Review) { usage.reviewTotal++; bump(usage.reviewBy, e.subjectId); bump(usage.reviewBy, `${e.subjectId}/${e.lessonId}`); }
+    }
+    seen.add(e.cardId);
+    states.set(e.cardId, schedule(prev, e.rating, new Date(e.at), e.retention ?? .9, e.fuzz ?? true));
+  }
+  return { states, usage };
+}
+
+export function queue<T extends QueueCard>(cards: readonly T[], events: readonly ReviewEvent[], at = new Date(), limits: QueueLimits = DEFAULT_LIMITS): T[] {
+  const { states, usage } = usageToday(events, at);
+  const room = (cap: number | null | undefined, used: number) => cap === null || cap === undefined || used < cap;
+
+  // Due cards: learning/relearning are never capped; review-state cards respect review caps,
+  // admitting the lowest-retrievability (most at risk) first.
+  const dueCards = cards.filter(c => isDueState(states.get(c.cardId), at));
+  const learning = dueCards.filter(c => states.get(c.cardId)!.state !== State.Review);
+  const reviewsUsed = { total: usage.reviewTotal, by: new Map(usage.reviewBy) };
+  const w = engine().parameters.w;
+  const candidates = dueCards.filter(c => states.get(c.cardId)!.state === State.Review)
+    .map(c => ({ c, r: retrievability(states.get(c.cardId)!, at, w) }))
+    .sort((a, b) => a.r - b.r || a.c.cardId.localeCompare(b.c.cardId));
+  const reviews: T[] = [];
+  for (const { c } of candidates) {
+    const lessonKey = `${c.subjectId}/${c.lessonId}`;
+    const courseCap = limits.course(c.subjectId)?.reviewsPerDay;
+    const lectureCap = limits.lecture(c.subjectId, c.lessonId)?.reviewsPerDay;
+    if (!room(limits.globalReviews, reviewsUsed.total) || !room(courseCap, reviewsUsed.by.get(c.subjectId) ?? 0) || !room(lectureCap, reviewsUsed.by.get(lessonKey) ?? 0)) continue;
+    reviewsUsed.total++;
+    reviewsUsed.by.set(c.subjectId, (reviewsUsed.by.get(c.subjectId) ?? 0) + 1);
+    reviewsUsed.by.set(lessonKey, (reviewsUsed.by.get(lessonKey) ?? 0) + 1);
+    reviews.push(c);
+  }
+  const due = [...learning, ...reviews].sort((a,b) => {
     const x=states.get(a.cardId)!, y=states.get(b.cardId)!;
     return Number(x.state===State.Review)-Number(y.state===State.Review) || +x.due- +y.due || a.cardId.localeCompare(b.cardId);
   });
+
+  // New cards: queue position order; admitted while lecture, course and global all have room.
+  let total = usage.newTotal;
+  const used = new Map(usage.newBy);
   const fresh = [...cards].filter(c=>!states.has(c.cardId)).sort((a,b)=>a.queuePosition-b.queuePosition || a.cardId.localeCompare(b.cardId)).filter(c=>{
-    const cap=c.dailyNew ?? STUDY_CONFIG.courseNew[c.subjectId as keyof typeof STUDY_CONFIG.courseNew] ?? STUDY_CONFIG.defaultNew;
-    if(total>=STUDY_CONFIG.globalNew || (used[c.subjectId]??0)>=cap) return false;
-    total++; used[c.subjectId]=(used[c.subjectId]??0)+1; return true;
+    const lessonKey = `${c.subjectId}/${c.lessonId}`;
+    const cap = limits.course(c.subjectId)?.newPerDay ?? c.dailyNew ?? STUDY_CONFIG.courseNew[c.subjectId as keyof typeof STUDY_CONFIG.courseNew] ?? STUDY_CONFIG.defaultNew;
+    const lectureCap = limits.lecture(c.subjectId, c.lessonId)?.newPerDay;
+    if (total >= limits.globalNew || (used.get(c.subjectId) ?? 0) >= cap || !room(lectureCap, used.get(lessonKey) ?? 0)) return false;
+    total++; used.set(c.subjectId, (used.get(c.subjectId) ?? 0) + 1); used.set(lessonKey, (used.get(lessonKey) ?? 0) + 1);
+    return true;
   });
   return [...due,...fresh];
 }

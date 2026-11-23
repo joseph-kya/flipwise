@@ -6,8 +6,16 @@ export type TextSize = 'sm' | 'md' | 'lg';
 export type MotionSetting = 'full' | 'reduced' | 'off';
 export type EffectiveMotion = 'full' | 'reduced' | 'off';
 
+export type PacePreset = 'slow' | 'medium' | 'aggressive' | 'exam' | 'custom';
+
 export interface AppearanceSettings {
   retention: number;
+  /** New cards per day across all courses (was STUDY_CONFIG.globalNew). */
+  newPerDay: number;
+  /** Reviews per day across all courses; null = no limit. */
+  reviewsPerDay: number | null;
+  /** Last preset applied to every course. */
+  pace: PacePreset;
   accent: AccentId;
   theme: ThemeMode;
   cardStyle: CardStyle;
@@ -20,6 +28,9 @@ export const SETTINGS_STORAGE_KEY = 'flipwise.appearance.v1';
 
 export const DEFAULT_SETTINGS: AppearanceSettings = {
   retention: .9,
+  newPerDay: 40,
+  reviewsPerDay: null,
+  pace: 'custom',
   accent: 'blue',
   theme: 'auto',
   cardStyle: 'classic',
@@ -59,6 +70,9 @@ export function sanitizeSettings(input: unknown): AppearanceSettings {
   const raw = input as Record<string, unknown>;
   return {
     retention: typeof raw.retention === 'number' && raw.retention >= .7 && raw.retention <= .99 ? raw.retention : .9,
+    newPerDay: typeof raw.newPerDay === 'number' && Number.isFinite(raw.newPerDay) && raw.newPerDay >= 0 && raw.newPerDay <= 500 ? Math.round(raw.newPerDay) : DEFAULT_SETTINGS.newPerDay,
+    reviewsPerDay: typeof raw.reviewsPerDay === 'number' && Number.isFinite(raw.reviewsPerDay) && raw.reviewsPerDay >= 1 && raw.reviewsPerDay <= 5000 ? Math.round(raw.reviewsPerDay) : null,
+    pace: typeof raw.pace === 'string' && ['slow', 'medium', 'aggressive', 'exam', 'custom'].includes(raw.pace) ? (raw.pace as PacePreset) : DEFAULT_SETTINGS.pace,
     accent: typeof raw.accent === 'string' && VALID_ACCENTS.has(raw.accent)
       ? (raw.accent as AccentId)
       : DEFAULT_SETTINGS.accent,
