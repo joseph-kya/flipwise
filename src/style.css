@@ -2010,3 +2010,10 @@ a.insight-card:active { transform: scale(0.99); }
 :root[data-motion="reduced"] .group-row-interactive:hover .row-chevron,
 :root[data-motion="reduced"] .lesson-row:hover .row-chevron,
 :root[data-motion="reduced"] .group-row-interactive:hover .icon-tile { transform: none; }
+
+/* Subject page "All lessons": on phones the two actions get their own full-width row. */
+@media (max-width: 560px) {
+  .due-row:has(> .due-row-actions) { flex-wrap: wrap; }
+  .due-row > .due-row-actions { width: 100%; flex-wrap: nowrap; }
+  .due-row > .due-row-actions .btn { flex: 1; }
+}
