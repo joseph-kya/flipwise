@@ -4,10 +4,8 @@ import { plural } from './plural';
 import { mediaType } from './anki/media';
 import { ContentContext, useSubjects } from './contentCatalog';
 import { stableCardId, type ImportedData } from './anki/types';
-import { CardContent } from './anki/content';
 import { ImportPage } from './anki/ImportPage';
-import { nextAvailableAt, sessionOutcome, queue, queueCounts, ratingEvent, replay, schedule, intervalLabel, isLeech,
-} from './scheduler';
+import { queue, queueCounts, replay } from './scheduler';
 import { secondsPerAnswer } from './forecast';
 import {
   applyDemoStudy,
@@ -19,6 +17,7 @@ import {
   type StudyLimits,
 } from './studyOptions';
 import { StudyOptionsSheet } from './study/StudyOptionsSheet';
+import { StudySession } from './study/StudySession';
 import { openReviewStorage, type LogStorage } from './reviewStorage';
 import { AccountController } from './sync/account';
 import { hasRealDecks, restoreProgress, isOnboardingComplete, markOnboardingComplete, shouldShowOnboarding } from './onboarding/flow';
@@ -32,27 +31,20 @@ import {
   Suspense,
   lazy,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { subjects as demoSubjects,
-  type DemoCard, type Subject, type Lecture,
-} from './demoSubjects';
+import { subjects as demoSubjects, type Subject, type Lecture } from './demoSubjects';
 import './style.css';
 import './pwa/runtime';
 import { UpdatePrompt } from './pwa/InstallApp';
-import {
-  type ReviewEvent,
-  type Rating } from './reviewLog';
+import { type ReviewEvent } from './reviewLog';
 import { mastery } from './mastery';
-import { sessionStats } from './sessionStats';
 import { aggregateByDay, streak, toStudyDateKey } from './calendar/dailyStats';
 import { CalendarPage } from './calendar/CalendarPage';
 import { buildDefaultCatalog, computeInsights, type RangeKey, type SubjectFilter,
@@ -60,7 +52,6 @@ import { buildDefaultCatalog, computeInsights, type RangeKey, type SubjectFilter
 import { InsightDetailPage, isValidChartId } from './insights/InsightDetailPage';
 import { InsightsView } from './insights/InsightsView';
 import { markDemoCleared, seedDemoHistoryIfEmpty } from './insights/seedDemoHistory';
-import { Markdown } from './markdown';
 import { AppearancePage } from './AppearancePage';
 import {
   applyAppearance,
@@ -69,24 +60,16 @@ import {
   type AppearanceSettings,
   type EffectiveMotion,
 } from './settings';
-import {
-  AccuracyRing,
-  AnimatedNumber,
-  ConfettiBurst,
-  animateButtonSpring,
-  animateCardExit,
-} from './motion';
+import { AnimatedNumber } from './motion';
 import {
   Button,
   CalendarTabIcon,
   ChevronDown,
   ChevronRight,
-  FlameIcon,
   Group,
   NavRow,
   NotesTabIcon,
   PageHeader,
-  Row,
   SUBJECT_DESCRIPTIONS,
   SectionHeader,
   Segmented,
@@ -102,160 +85,12 @@ import { NoteOpenContext, parseNotesHash, type NoteOpenTarget } from './notes/so
 const NotesApp = lazy(() => import('./notes/NotesApp'));
 const NotesOverlay = lazy(() => import('./notes/NotesApp').then((m) => ({ default: m.NotesOverlay })));
 
-const RATINGS: ReadonlyArray<{ key: Rating; label: string }> = [
-  { key: 'again', label: 'Again' },
-  { key: 'hard', label: 'Hard' },
-  { key: 'good', label: 'Good' },
-  { key: 'easy', label: 'Easy' },
-];
-
-type SwipeHint = { label: string; rating: Rating } | null;
-
-interface ExitingCardState {
-  key: number;
-  card: DemoCard;
-  cardNum: number;
-  totalCards: number;
-  rating: Rating;
-  startTransform: string;
-}
-
-function ExitingCardOverlay({
-  exiting,
-  motion,
-  onDone,
-  media,
-}: {
-  media: Record<string,string>;
-  exiting: ExitingCardState;
-  motion: EffectiveMotion;
-  onDone: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
-
-  useLayoutEffect(() => {
-    let active = true;
-    animateCardExit(ref.current, exiting.rating, motion, exiting.startTransform).then(() => {
-      if (active) onDoneRef.current();
-    });
-    return () => {
-      active = false;
-    };
-  }, [exiting, motion]);
-
-  return (
-    <div ref={ref} className="card-exit-layer" aria-hidden="true">
-      <section className="study-card">
-        <div className="card-meta">
-          <span>Question</span>
-          <span>
-            {exiting.cardNum} of {exiting.totalCards}
-          </span>
-        </div>
-        <div className="card-question">
-          <CardContent card={exiting.card} side="front" media={media} />
-        </div>
-        <div className="card-answer">
-          <p className="card-answer-label">Answer</p>
-          <CardContent card={exiting.card} side="back" media={media} />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function formatElapsed(ms: number): string {
-  const safe = Math.max(0, ms);
-  const minutes = Math.floor(safe / 60000);
-  const seconds = Math.floor(safe / 1000) % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
-
 function formatTodayLabel(): string {
   const today = new Date();
   const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(today);
   const dateLine = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long',
   }).format(today);
   return `${weekday}, ${dateLine}`;
-}
-
-function SessionStatsGroup({
-  stats,
-  totalCards,
-  elapsed,
-  motion,
-  showHeader = false,
-}: {
-  stats: ReturnType<typeof sessionStats>;
-  totalCards: number;
-  elapsed: string;
-  motion: EffectiveMotion;
-  showHeader?: boolean;
-}) {
-  return (
-    <Group as="div" ariaLabel="Session statistics">
-      {showHeader && (
-        <div className="group-row session-head-row">
-          <div className="row-main">
-            <h2 className="session-sidebar-title">Session</h2>
-            <span className="row-sub tabular">
-              <AnimatedNumber value={stats.done} motion={motion} /> / {plural(totalCards, 'card')}
-            </span>
-          </div>
-          <AccuracyRing
-            percent={stats.accuracy}
-            hasData={stats.done > 0}
-            size={44}
-            strokeWidth={4}
-            motion={motion}
-          />
-        </div>
-      )}
-      <Row
-        title="Done"
-        value={
-          <>
-            <AnimatedNumber value={stats.done} motion={motion} /> / {totalCards}
-          </>
-        }
-        valueStrong
-      />
-      <Row
-        title="Remaining"
-        value={<AnimatedNumber value={stats.remaining} motion={motion} />}
-        valueStrong
-      />
-      <Row
-        title="Correct"
-        value={<AnimatedNumber value={stats.right} motion={motion} />}
-        valueStrong
-      />
-      <Row
-        title="Hard"
-        value={<AnimatedNumber value={stats.hard} motion={motion} />}
-        valueStrong
-      />
-      <Row
-        title="Again"
-        value={<AnimatedNumber value={stats.again} motion={motion} />}
-        valueStrong
-      />
-      <Row
-        title="Accuracy"
-        value={
-          stats.done > 0 ? (
-            <AnimatedNumber value={stats.accuracy} motion={motion} suffix="%" />
-          ) : (
-            '—'
-          )
-        }
-        valueStrong
-      />
-      <Row title="Time" value={elapsed} valueStrong />
-    </Group>
-  );
 }
 
 function LessonRows({
@@ -451,13 +286,11 @@ function App() {
     [settings, osReducedMotion],
   );
 
-  const [index, setIndex] = useState(0);
   const [log, setLog] = useState<ReviewEvent[]>([]);
   const storageRef = useRef<LogStorage | null>(null);
   const [storageReady, setStorageReady] = useState(false);
   const [storageNotice, setStorageNotice] = useState('');
-  const pendingWrite = useRef(false);
-  const [saving, setSaving] = useState(false);
+  const [completedStudyKey, setCompletedStudyKey] = useState<string | null>(null);
   const [insightsRange, setInsightsRange] = useState<RangeKey>('90d');
   const [insightsSubject, setInsightsSubject] = useState<SubjectFilter>('all');
   const insightsCatalog = useMemo(() => buildDefaultCatalog(subjects), [subjects]);
@@ -530,37 +363,7 @@ function App() {
       .catch(() => setStorageNotice('Study storage is unavailable. Please reload before studying.'),
       );
   }, []);
-  const [session, setSession] = useState<ReviewEvent[]>([]);
-  const [started, setStarted] = useState(Date.now());
-  const [cardStarted, setCardStarted] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
-  const [exitingCard, setExitingCard] = useState<ExitingCardState | null>(null);
-  const [exitingBar, setExitingBar] = useState(false);
-  const [overlapEnter, setOverlapEnter] = useState(false);
-  const [swipeHint, setSwipeHint] = useState<SwipeHint>(null);
-
-  const cardShellRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const tintRef = useRef<HTMLDivElement>(null);
-  const prevStageHeightRef = useRef<number | null>(null);
-  const barTimerRef = useRef<number | null>(null);
-  const finishTimerRef = useRef<number | null>(null);
-  const ratingBtnRefs = useRef<Record<Rating, HTMLButtonElement | null>>({
-    again: null,
-    hard: null,
-    good: null,
-    easy: null,
-  });
-
-  const dragRef = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    dx: number;
-    dy: number;
-    startTime: number;
-    locked: 'none' | 'gesture' | 'scroll';
-  } | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -682,18 +485,18 @@ function App() {
       if (nextHash === hash) return;
       const prevRoute = hash.split('/').slice(0, 3).join('/');
       const nextRoute = nextHash.split('/').slice(0, 3).join('/');
-      const isCardRevealToggle = prevRoute === nextRoute && nextHash.startsWith('#/study/');
+      const isStudyRoute = nextHash.startsWith('#/study/');
       const isNoteAnchorJump =
         nextHash.startsWith('#/notes/') &&
         hash.startsWith('#/notes/') &&
         hash.split('#').slice(0, 2).join('#') === nextHash.split('#').slice(0, 2).join('#');
 
-      if (!isCardRevealToggle && !isNoteAnchorJump) {
-        window.scrollTo(0, 0);
+      if (prevRoute !== nextRoute) {
+        setCompletedStudyKey(null);
       }
 
       if (
-        !isCardRevealToggle &&
+        !isStudyRoute &&
         !isNoteAnchorJump &&
         motionRef.current === 'full' &&
         typeof document !== 'undefined' &&
@@ -703,6 +506,7 @@ function App() {
         try {
           document.startViewTransition(() => {
             flushSync(() => setHash(nextHash));
+            window.scrollTo(0, 0);
           });
           return;
         } catch {
@@ -710,6 +514,9 @@ function App() {
         }
       }
       setHash(nextHash);
+      if (!isNoteAnchorJump) {
+        window.scrollTo(0, 0);
+      }
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -754,7 +561,9 @@ function App() {
   );
   const secPerAnswer = useMemo(() => secondsPerAnswer(log), [log]);
   const logSignature = `${log.length}:${log.at(-1)?.id ?? ''}`;
+  const isStudyRoute = parts[0] === 'study';
   const globalStudy = parts[1] === 'global';
+  const studySessionKey = isStudyRoute ? `${parts[1] ?? ''}/${parts[2] ?? ''}` : '';
   const available = useMemo(() => queue(
     catalog.filter(
       (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
@@ -763,308 +572,9 @@ function App() {
     limits,
   ), [catalog, studyLog, globalStudy, parts[1], parts[2], previewAt, limits]);
   const cards = storageReady ? available : [];
-  const card = cards[0];
-  const subject = subjects.find(
-    (s) => s.id === (globalStudy ? (card?.subjectId ?? session.at(-1)?.subjectId) : parts[1]),
-  );
-  const lecture = subject?.lectures.find((l) => l.id === (globalStudy ? card?.lessonId : parts[2]));
-  const studying = parts[0] === 'study' && storageReady && (globalStudy || Boolean(subject));
-  const revealed = parts[3] === 'answer';
-  const studyUrl = `#/study/${parts[1]}/${parts[2]}`;
+  const routeSubject = subjects.find((s) => s.id === parts[1]);
   const todayCounts = useMemo(() => queueCounts(queue(catalog, studyLog, previewAt, limits), log), [catalog, studyLog, log, previewAt, limits]);
   const backlog = useMemo(() => (parts[0] === '' ? dueCount(catalog, studyLog, previewAt) : 0), [parts[0], catalog, studyLog, previewAt]);
-
-  useEffect(() => {
-    setIndex(0);
-    setSession([]);
-    setStarted(Date.now());
-    setCardStarted(Date.now());
-    setExitingCard(null);
-    setExitingBar(false);
-    setOverlapEnter(false);
-    setSwipeHint(null);
-    prevStageHeightRef.current = null;
-    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
-    if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
-  }, [parts[1], parts[2]]);
-
-  // Smooth height adaptation during 3D card flip without clipping long answers
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const prevHeight = prevStageHeightRef.current;
-    const nextHeight = stage.getBoundingClientRect().height;
-    prevStageHeightRef.current = nextHeight;
-
-    if (
-      prevHeight !== null &&
-      effectiveMotion === 'full' &&
-      Math.abs(nextHeight - prevHeight) > 4 &&
-      typeof stage.animate === 'function'
-    ) {
-      stage.animate([{ height: `${prevHeight}px` }, { height: `${nextHeight}px` }],
-        {
-          duration: 340,
-          easing: 'cubic-bezier(0.22, 1.08, 0.36, 1)',
-        });
-    }
-  }, [revealed, index, effectiveMotion]);
-
-  const revealCard = () => {
-    if (!studying || !card || revealed) return;
-    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
-    setExitingBar(false);
-    if (stageRef.current) {
-      prevStageHeightRef.current = stageRef.current.getBoundingClientRect().height;
-    }
-    const nextHash = `${studyUrl}/answer`;
-    setHash(nextHash);
-    location.hash = nextHash;
-  };
-
-  const rate = async (rating: Rating, startTransform?: string) => {
-    if (!subject || !card || !revealed || pendingWrite.current || !storageRef.current) return;
-    const event = ratingEvent(
-      card,
-      rating, log, new Date(), Date.now() - cardStarted, settings.retention, crypto.randomUUID(),
-    );
-    pendingWrite.current = true;
-    setSaving(true);
-    let nextLog: ReviewEvent[];
-    try { nextLog = await storageRef.current.append(event); } catch { setStorageNotice('Could not save your rating. Please try again.'); setSaving(false); pendingWrite.current = false; return; }
-    setLog(nextLog); setSaving(false); pendingWrite.current = false;
-    setSession((events) => [...events, event]);
-    setSwipeHint(null);
-    prevStageHeightRef.current = null;
-
-    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
-    if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
-
-    const isLastCard = queue(
-        catalog.filter(
-          (c) => globalStudy || (c.subjectId === parts[1] && (parts[2] === 'all' || c.lessonId === parts[2])), ),
-        nextLog.filter((e) => visibleIds.has(e.cardId)),
-        new Date(),
-        limits,
-      ).length === 0;
-
-    // Motion Off: instant swap, zero WAAPI, zero CSS animations
-    if (effectiveMotion === 'off') {
-      setExitingCard(null);
-      setExitingBar(false);
-      setOverlapEnter(false);
-      setIndex((i) => i + 1);
-      setCardStarted(Date.now());
-      setHash(studyUrl);
-      location.hash = studyUrl;
-      window.scrollTo(0, 0);
-      return;
-    }
-
-    animateButtonSpring(ratingBtnRefs.current[rating], effectiveMotion);
-
-    // Dismiss rating bar immediately while card exits
-    setExitingBar(true);
-    barTimerRef.current = window.setTimeout(
-      () => setExitingBar(false),
-      effectiveMotion === 'full' ? 155 : 125,
-    );
-
-    const snapshot: ExitingCardState = {
-      key: Date.now(),
-      card,
-      cardNum: session.length + 1,
-      totalCards: session.length + cards.length,
-      rating,
-      startTransform: startTransform || 'translate3d(0, 0, 0) rotate(0deg)',
-    };
-
-    if (isLastCard) {
-      // Let final card exit cleanly before celebration sheet rises
-      setExitingCard(snapshot);
-      setHash(studyUrl);
-      location.hash = studyUrl;
-      finishTimerRef.current = window.setTimeout(
-        () => {
-        setIndex((i) => i + 1);
-        setExitingCard(null);
-        setCardStarted(Date.now());
-        window.scrollTo(0, 0);
-      }, effectiveMotion === 'full' ? 180 : 120,
-      );
-      return;
-    }
-
-    // Overlap: outgoing card exits on top while next card mounts and begins entering at ~55% of exit
-    setExitingCard(snapshot);
-    setOverlapEnter(true);
-    setIndex((i) => i + 1);
-    setCardStarted(Date.now());
-    setHash(studyUrl);
-    location.hash = studyUrl;
-    window.scrollTo(0, 0);
-  };
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (
-        noteOverlay ||
-        !studying ||
-        !card ||
-        e.repeat ||
-        e.ctrlKey ||
-        e.metaKey ||
-        e.altKey ||
-        (e.target instanceof HTMLElement &&
-          e.target.closest('input,textarea,select,[contenteditable]'))
-      ) {
-        return;
-      }
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (!revealed) revealCard();
-      }
-      const rating = (['again', 'hard', 'good', 'easy'] as Rating[])[Number(e.key) - 1];
-      if (rating && revealed) {
-        e.preventDefault();
-        rate(rating);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  });
-
-  // Swipe gestures on revealed study card (left = Again, right = Good, up = Easy)
-  const onCardPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!revealed || e.button > 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('.table-scroll, a, button, code')) return;
-    dragRef.current = {
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      dx: 0,
-      dy: 0,
-      startTime: performance.now(),
-      locked: 'none',
-    };
-  };
-
-  const onCardPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId || drag.locked === 'scroll') return;
-
-    const dx = e.clientX - drag.startX;
-    const dy = e.clientY - drag.startY;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    if (drag.locked === 'none') {
-      if (absX < 12 && absY < 12) return;
-      // Preserve normal vertical scrolling (downward drag or downward-biased vertical move)
-      if (dy > 0 && absY >= absX) {
-        drag.locked = 'scroll';
-        return;
-      }
-      // Only lock upward swipe if user is already at top of scroll and dragging steeply up
-      if (dy < 0 && absY > absX && window.scrollY > 4) {
-        drag.locked = 'scroll';
-        return;
-      }
-      drag.locked = 'gesture';
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      } catch {
-        // Ignore capture failure.
-      }
-    }
-
-    drag.dx = dx;
-    drag.dy = dy;
-
-    const shell = cardShellRef.current;
-    const tint = tintRef.current;
-    if (shell) {
-      const rot = effectiveMotion === 'full' ? dx * 0.045 : 0;
-      shell.style.transform = `translate3d(${dx}px, ${Math.min(24, dy)}px, 0) rotate(${rot}deg)`;
-    }
-
-    const isUp = dy < -28 && Math.abs(dy) > absX * 1.15;
-    const rating: Rating | null = isUp ? 'easy' : dx < -22 ? 'again' : dx > 22 ? 'good' : null;
-    const progress = isUp
-      ? Math.min(1, Math.abs(dy) / 110)
-      : Math.min(1, absX / 110);
-
-    if (tint) {
-      if (rating) {
-        const bgVar =
-          rating === 'again'
-            ? 'var(--sem-red-bg)'
-            : rating === 'good'
-              ? 'var(--sem-yellow-bg)'
-              : 'var(--sem-green-bg)';
-        tint.style.background = bgVar;
-        tint.style.opacity = String(progress * 0.9);
-      } else {
-        tint.style.opacity = '0';
-      }
-    }
-
-    if (rating && progress > 0.28) {
-      const label = rating === 'again' ? 'Again' : rating === 'good' ? 'Good' : 'Easy';
-      setSwipeHint((prev) => (prev?.rating === rating ? prev : { label, rating }));
-    } else {
-      setSwipeHint((prev) => (prev ? null : prev));
-    }
-  };
-
-  const endCardDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId) return;
-    dragRef.current = null;
-
-    if (drag.locked !== 'gesture') return;
-
-    const elapsedMs = Math.max(16, performance.now() - drag.startTime);
-    const vx = drag.dx / elapsedMs;
-    const vy = drag.dy / elapsedMs;
-    const shell = cardShellRef.current;
-    const tint = tintRef.current;
-
-    const commitEasy = drag.dy < -96 || (drag.dy < -42 && vy < -0.45 && Math.abs(drag.dy) > Math.abs(drag.dx));
-    const commitAgain = !commitEasy && (drag.dx < -96 || (drag.dx < -40 && vx < -0.45));
-    const commitGood = !commitEasy && (drag.dx > 96 || (drag.dx > 40 && vx > 0.45));
-
-    const currentTransform = shell?.style.transform || 'translate3d(0, 0, 0) rotate(0deg)';
-    if (tint) tint.style.opacity = '0';
-
-    if (commitEasy || commitAgain || commitGood) {
-      const nextRating: Rating = commitEasy ? 'easy' : commitAgain ? 'again' : 'good';
-      rate(nextRating, currentTransform);
-      return;
-    }
-
-    setSwipeHint(null);
-    if (shell) {
-      if (effectiveMotion === 'full' && typeof shell.animate === 'function') {
-        shell.animate(
-          [{ transform: currentTransform },
-            { transform: 'translate3d(0, 0, 0) rotate(0deg)' }],
-          {
-            duration: 280,
-            easing: 'cubic-bezier(0.22, 1.18, 0.36, 1)',
-          },
-        );
-      }
-      shell.style.transform = '';
-    }
-  };
-
-  const stats = sessionStats(
-    log.filter((e) => session.some((review) => review.id === e.id)),
-    session.length + cards.length,
-  );
-  const elapsed = formatElapsed(now - started);
 
   const todayKey = toStudyDateKey(new Date(now));
   const dailyAggregate = useMemo(() => aggregateByDay(log), [log]);
@@ -1120,58 +630,16 @@ function App() {
     </div>
   );
 
-  const restart = () => {
-    setIndex(0);
-    setSession([]);
-    setStarted(Date.now());
-    setCardStarted(Date.now());
-    setExitingCard(null);
-    setExitingBar(false);
-    setOverlapEnter(false);
-    setSwipeHint(null);
-    prevStageHeightRef.current = null;
-    if (barTimerRef.current) window.clearTimeout(barTimerRef.current);
-    if (finishTimerRef.current) window.clearTimeout(finishTimerRef.current);
-    setHash(studyUrl);
-    location.hash = studyUrl;
-  };
-
-  const undo = async () => {
-    if (
-      pendingWrite.current || !session.length || !storageRef.current || !log.some((e) => e.id === session.at(-1)?.id)
-    )
-      return;
-    pendingWrite.current = true; setSaving(true);
-    try { const next = await storageRef.current.remove([session.at(-1)!.id]);
-      setLog(next); setSession(session.slice(0, -1));
-      setIndex(Math.max(0, index - 1));
-      location.hash = studyUrl;
-      setHash(studyUrl); }
-    catch { setStorageNotice('Could not undo. Please try again.'); }
-    finally { setSaving(false); pendingWrite.current = false; }
-  };
-  useEffect(() => { const handler = (e: KeyboardEvent) => {
-      if (
-        !noteOverlay &&
-        (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)
-      ) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  });
   const accountSnapshot = useSyncExternalStore(
     accountRef.current?.subscribe ?? noSubscribe,
     accountRef.current?.getSnapshot ?? noSnapshot,
   );
   void accountVersion;
-  const canUndo =
-    session.length > 0 &&
-    Boolean(storageRef.current) &&
-    log.some((e) => e.id === session.at(-1)?.id);
-  const activeStudy = studying && Boolean(card);
-  const outcome = sessionOutcome(studying, cards.length, session.length);
-  const sessionComplete = outcome === 'complete';
-  const caughtUp = outcome === 'caught-up';
-  const nextAvailable = caughtUp ? nextAvailableAt(catalog.filter(c=>globalStudy || c.subjectId===parts[1] && (parts[2]==='all' || c.lessonId===parts[2])), studyLog, new Date(now)) : null;
-  const hasMobileRatingBar = activeStudy && revealed;
+  const studyLoading = isStudyRoute && !storageReady;
+  const studyActiveOrLoading =
+    studyLoading ||
+    (isStudyRoute && storageReady && (globalStudy || Boolean(routeSubject)) && cards.length > 0) ||
+    (isStudyRoute && completedStudyKey === studySessionKey);
   const notesRoute = useMemo(() => parseNotesHash(hash), [hash]);
   const isNotesReader = parts[0] === 'notes' && Boolean(notesRoute.noteSlug);
   const notesWashColor =
@@ -1179,11 +647,11 @@ function App() {
       ? subjectColor(notesRoute.courseSlug)
       : undefined;
   // Subject pages, study and catch-up carry the subject's colour (top wash, progress).
-  const washSubject = (parts[0] === 'subjects' || parts[0] === 'study' || parts[0] === 'catchup') && subject && !globalStudy
-    ? subject
-    : parts[0] === 'catchup' ? subjects.find((s) => s.id === parts[1]) : undefined;
+  const washSubject = (parts[0] === 'subjects' || parts[0] === 'study' || parts[0] === 'catchup') && routeSubject && !globalStudy
+    ? routeSubject
+    : undefined;
   const washColor = washSubject ? subjectColor(washSubject.id, washSubject.name) : notesWashColor;
-  const showTabBar = !activeStudy && !sessionComplete && !(catchupActive && parts[0] === 'catchup') && !noteOverlay;
+  const showTabBar = !studyActiveOrLoading && !(catchupActive && parts[0] === 'catchup') && !noteOverlay;
 
   if (onboardingOpen && storageReady) {
     const account = accountRef.current && accountSnapshot && accountSnapshot.phase !== 'unavailable'
@@ -1275,7 +743,7 @@ function App() {
         )}
         <main
         id="main"
-        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}${washColor ? ' has-subject-wash' : ''}${isNotesReader ? ' main-notes-reader' : ''}`}
+        className={`main${washColor ? ' has-subject-wash' : ''}${isNotesReader ? ' main-notes-reader' : ''}`}
         style={washColor ? ({ '--subject': washColor } as CSSProperties) : undefined}>
           {parts[0] === '' ? (
           <div className="section-stack">
@@ -1333,18 +801,18 @@ function App() {
             />
             <SubjectGroup log={log} />
           </div>
-        ) : parts[0] === 'subjects' && subject ? (
+        ) : parts[0] === 'subjects' && routeSubject ? (
           <div className="section-stack">
             <PageHeader
               backHref="#/subjects"
               backLabel="Subjects"
-              title={subject.name}
-              subtitle={`${subject.collectionLabel ? `${subject.collectionLabel} · ` : ''}${plural(subject.total, 'card')} · ${plural(subject.lectures.length, 'lesson')}`}
+              title={routeSubject.name}
+              subtitle={`${routeSubject.collectionLabel ? `${routeSubject.collectionLabel} · ` : ''}${plural(routeSubject.total, 'card')} · ${plural(routeSubject.lectures.length, 'lesson')}`}
               trailing={
                 <Button
                   variant="secondary"
                   className="btn-compact"
-                  onClick={() => setStudySheet({ subjectId: subject.id })}
+                  onClick={() => setStudySheet({ subjectId: routeSubject.id })}
                 >
                   <SlidersIcon size={16} />
                   Study options
@@ -1354,21 +822,20 @@ function App() {
 
             <Group divider={false}>
               <div className="due-row">
-                <SubjectTile subjectId={subject.id} name={subject.name} size="lg" />
+                <SubjectTile subjectId={routeSubject.id} name={routeSubject.name} size="lg" />
                 <div className="due-row-main">
                   <div className="row-title">All lessons</div>
                   <div className="row-sub tabular">
-                    {plural(queue(catalog.filter(c=>c.subjectId===subject.id), studyLog, previewAt, limits).length, 'card')} in queue
+                    {plural(queue(catalog.filter(c=>c.subjectId===routeSubject.id), studyLog, previewAt, limits).length, 'card')} in queue
                   </div>
                 </div>
                 <div className="due-row-actions">
-                  <Button variant="secondary" href={`#/catchup/${subject.id}/all`}>
+                  <Button variant="secondary" href={`#/catchup/${routeSubject.id}/all`}>
                     Catch up
                   </Button>
                   <Button
                     variant="primary"
-                    href={`#/study/${subject.id}/all`}
-                    onClick={() => setIndex(0)}
+                    href={`#/study/${routeSubject.id}/all`}
                   >
                     Study all
                   </Button>
@@ -1380,335 +847,51 @@ function App() {
               <SectionHeader title="Lessons" />
               <Group inset="lessons" divider={false}>
                 <LessonRows
-                  subject={subject}
+                  subject={routeSubject}
                   log={log}
                   stagger
-                  onOpenLectureOptions={(lectureId) => setStudySheet({ subjectId: subject.id, lectureId })}
+                  onOpenLectureOptions={(lectureId) => setStudySheet({ subjectId: routeSubject.id, lectureId })}
                 />
               </Group>
             </section>
           </div>
-        ) : activeStudy && subject ? (
-          <>
-            <PageHeader
-              backHref={`#/subjects/${subject.id}`}
-              backLabel={subject.name}
-              title={lecture?.title || 'All lessons'}
-              subtitle={subject.collectionLabel}
-              trailing={
-                <div className="study-head-actions">
-                  <Button
-                    variant="plain"
-                    onClick={() => setStudySheet({ subjectId: subject.id, lectureId: lecture?.id })}
-                  >
-                    Study options
-                  </Button>
-                  <Button variant="plain" href={`#/catchup/${subject.id}/${parts[2] || 'all'}`}>
-                    Catch up
-                  </Button>
-                </div>
-              }
-              className="study-page-head"
-            />
-
-            <div className="study-layout">
-              <div className="study-main">
-                <div className="study-progress-mobile" aria-label="Session progress">
-                  <div className="progress-meta">
-                    <span className="progress-meta-left">
-                      {canUndo && (
-                        <Button
-                          variant="plain"
-                          className="progress-undo-btn"
-                          disabled={saving}
-                          onClick={() => void undo()}
-                        >
-                          Undo
-                        </Button>
-                      )}
-                      <span>
-                        <AnimatedNumber value={stats.done} motion={effectiveMotion} /> /{' '}
-                        {session.length + cards.length} done
-                      </span>
-                    </span>
-                    <span>
-                      {stats.done > 0 && (
-                        <>
-                          <AnimatedNumber value={stats.accuracy} motion={effectiveMotion} suffix="%" />{' '}
-                          ·{' '}
-                        </>
-                      )}
-                      {elapsed}
-                    </span>
-                  </div>
-                  <div className="progress-track" aria-hidden="true">
-                    <div
-                      className="progress-fill"
-                      style={{
-                        transform: `scaleX(${cards.length ? Math.min(1, stats.done / (session.length + cards.length)) : 0})`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="card-deck">
-                  {exitingCard && (
-                    <ExitingCardOverlay
-                      key={exitingCard.key}
-                      exiting={exitingCard}
-                        media={media}
-                      motion={effectiveMotion}
-                      onDone={() => setExitingCard(null)}
-                    />
-                  )}
-                  <div
-                    key={index}
-                    ref={cardShellRef}
-                    className={`card-shell${overlapEnter ? ' card-shell-overlap' : ''}`}
-                    style={
-                        exitingCard && cards.length === 0 && !revealed ? { visibility: 'hidden' } : undefined
-                      }
-                      onPointerDown={onCardPointerDown}
-                    onPointerMove={onCardPointerMove}
-                    onPointerUp={endCardDrag}
-                    onPointerCancel={endCardDrag}
-                  >
-                    <div
-                      ref={stageRef}
-                      className={`card-stage${revealed ? ' is-flipped' : ''}`}
-                      onClick={(e) => {
-                        if (!revealed && !(e.target as HTMLElement).closest('a, button')) {
-                          revealCard();
-                        }
-                      }}
-                    >
-                      <div className="card-flipper">
-                        <section
-                          className="study-card card-face card-face-front"
-                          aria-label="Flashcard question"
-                          aria-hidden={revealed}
-                        >
-                          <div className="card-meta card-stagger" style={{ '--i': 0 } as CSSProperties}
-                            >
-                              <span>Question</span>
-                            <span>
-                              {session.length + 1} of {session.length + cards.length}
-                            </span>
-                          </div>
-                          <div className="card-question card-stagger" style={{ '--i': 1 } as CSSProperties}
-                            >
-                              <CardContent card={card} side="front" media={media} />
-                          </div>
-                          <div className="card-reveal-wrap card-stagger" style={{ '--i': 2 } as CSSProperties}>
-                            <Button
-                              variant="primary"
-                              size="full"
-                              href={`${studyUrl}/answer`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                revealCard();
-                              }}
-                            >
-                              Show answer
-                            </Button>
-                          </div>
-                        </section>
-
-                        <section
-                          className="study-card card-face card-face-back"
-                          aria-label="Flashcard answer"
-                          aria-hidden={!revealed}
-                        >
-                          <div ref={tintRef} className="swipe-tint" aria-hidden="true" />
-                          {swipeHint && (
-                            <span className={`swipe-badge swipe-badge-${swipeHint.rating}`} aria-hidden="true"
-                              >
-                                {swipeHint.label}
-                            </span>
-                          )}
-                          <div className="card-meta">
-                            <span>Question</span>
-                            <span>
-                              {session.length + 1} of {session.length + cards.length}
-                            </span>
-                          </div>
-                          <div className="card-question">
-                            <CardContent card={card} side="front" media={media} />
-                          </div>
-                          <div className="card-answer">
-                            <p className="card-answer-label">Answer</p>
-                            <CardContent card={card} side="back" media={media} />
-                          </div>
-                        </section>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {(revealed || exitingBar) && (
-                  <div
-                    className={`ratings-bar${exitingBar && !revealed ? ' ratings-bar-exiting' : ''}`}
-                    role="group"
-                    aria-label="Rate your recall"
-                    aria-hidden={!revealed}
-                  >
-                    <div className="ratings-grid">
-                      {RATINGS.map(({ key, label }) => (
-                        <button
-                          key={key}
-                          ref={(el) => {
-                            ratingBtnRefs.current[key] = el;
-                          }}
-                          type="button"
-                          className={`rating-btn rating-${key}`}
-                          disabled={!revealed || saving}
-                          onClick={() => rate(key)}
-                        >
-                          {label}
-                            <small className="rating-interval">
-                              {intervalLabel(
-                                schedule(
-                                  states.get(card.cardId),
-                                  key, previewAt, settings.retention,
-                                ),
-                                previewAt,
-                              )}
-                            </small>
-                          </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <p className="study-hint">
-                  {states.get(card.cardId) && isLeech(states.get(card.cardId)!) ? 'leech · ' : ''}
-                  {revealed ? 'Press 1–4 to rate' : 'Press Space to show answer'}
-                </p>
-              </div>
-
-              <aside className="study-sidebar" aria-label="Session stats">
-                <SessionStatsGroup
-                  stats={stats}
-                  totalCards={session.length + cards.length}
-                  elapsed={elapsed}
-                  motion={effectiveMotion}
-                  showHeader
-                />
-                {canUndo && (
-                  <div className="sidebar-undo-wrap">
-                    <Button
-                      variant="plain"
-                      className="sidebar-undo-btn"
-                      disabled={saving}
-                      onClick={() => void undo()}
-                    >
-                      Undo last rating
-                    </Button>
-                  </div>
-                )}
-              </aside>
-            </div>
-          </>
-        ) : caughtUp ? (
-          <Group divider={false} ariaLabel="Study queue empty" className="caught-up">
-            <h1 className="page-title">All caught up</h1>
-            <p className="caught-up-sub">
-              {nextAvailable
-                ? `Next available ${nextAvailable.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`
-                : 'There are no cards waiting in this lesson.'}
-            </p>
-            <div className="caught-up-actions">
-              {subject && (
-                <Button
-                  variant="primary"
-                  onClick={() => setStudySheet({ subjectId: subject.id, lectureId: lecture?.id })}
-                >
-                  Study options
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                href={subject ? `#/subjects/${subject.id}` : '#/subjects'}
-              >
-                Back to subjects
-              </Button>
-            </div>
-          </Group>
-        ) : sessionComplete ? (
-          <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="complete-title">
-            <section className="complete-sheet">
-              <ConfettiBurst active motion={effectiveMotion} />
-              <div className="sheet-handle" aria-hidden="true" />
-
-              <div className="complete-head">
-                <AccuracyRing
-                  percent={stats.accuracy}
-                  hasData={stats.done > 0}
-                  size={88}
-                  strokeWidth={7}
-                  motion={effectiveMotion}
-                />
-                <h1 id="complete-title" className="complete-title">
-                  Session complete
-                </h1>
-                {subject && (
-                  <p className="page-sub">
-                    {subject.name}
-                    {subject.collectionLabel ? ` · ${subject.collectionLabel}` : ''} ·{' '}
-                    {lecture?.title || 'All lessons'}
-                  </p>
-                )}
-              </div>
-
-              <Group as="div" ariaLabel="Session summary">
-                <Row
-                  title="Cards done"
-                  value={<AnimatedNumber value={stats.done} motion={effectiveMotion} />}
-                  valueStrong
-                />
-                <Row title="Time" value={elapsed} valueStrong />
-                <Row
-                  title="Streak"
-                  value={
-                    <span className="streak-value">
-                      <FlameIcon size={16} className="streak-flame" />
-                      <AnimatedNumber value={streakStats.current} motion={effectiveMotion} />{' '}
-                      {streakStats.current === 1 ? 'day' : 'days'}
-                    </span>
-                  }
-                  valueStrong
-                />
-              </Group>
-
-              <div className="complete-actions">
-                <Button variant="primary" size="full" href="#/subjects">
-                  Done
-                </Button>
-                <Button variant="secondary" size="full" onClick={restart}>
-                  Study again
-                </Button>
-                <div className="complete-links">
-                  {canUndo && (
-                    <>
-                      <Button
-                        variant="plain"
-                        disabled={saving}
-                        onClick={() => void undo()}
-                      >
-                        Undo last rating
-                      </Button>
-                      <span className="complete-links-sep" aria-hidden="true">
-                        ·
-                      </span>
-                    </>
-                  )}
-                  <Button variant="plain" href="#/calendar">
-                    View calendar
-                  </Button>
-                </div>
-              </div>
-            </section>
-          </div>
+        ) : isStudyRoute ? (
+          <StudySession
+            key={studySessionKey}
+            storageReady={storageReady}
+            globalStudy={globalStudy}
+            subjectId={parts[1] || ''}
+            lectureId={parts[2] || 'all'}
+            subjects={subjects}
+            catalog={catalog}
+            visibleIds={visibleIds}
+            cards={cards}
+            log={log}
+            studyLog={studyLog}
+            states={states}
+            limits={limits}
+            previewAt={previewAt}
+            now={now}
+            retention={settings.retention}
+            media={media}
+            effectiveMotion={effectiveMotion}
+            streakDays={streakStats.current}
+            noteOverlayOpen={Boolean(noteOverlay)}
+            hasStorage={Boolean(storageRef.current)}
+            onAppendEvent={async (event) => {
+              const next = await storageRef.current!.append(event);
+              setLog(next);
+              return next;
+            }}
+            onRemoveEvents={async (ids) => {
+              const next = await storageRef.current!.remove(ids);
+              setLog(next);
+              return next;
+            }}
+            onStorageError={setStorageNotice}
+            onOpenStudySheet={setStudySheet}
+            onCompleteChange={(complete) => setCompletedStudyKey(complete ? studySessionKey : null)}
+          />
         ) : parts[0] === 'notes' ? (
           <Suspense fallback={<div className="section-stack"><PageHeader title="Notes" /></div>}>
             <NotesApp

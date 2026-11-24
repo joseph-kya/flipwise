@@ -612,12 +612,47 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
   z-index: 1;
   min-width: 0;
   touch-action: pan-y;
-  animation: card-enter 230ms var(--ease-out) both;
+  animation: card-enter 210ms var(--ease-out) both;
 }
 
 .card-shell-overlap {
-  animation: card-enter 220ms var(--ease-out) 115ms both;
+  animation: card-enter 210ms var(--ease-out) 115ms both;
 }
+
+.study-layout-has-mobile-bar { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+.study-placeholder-back {
+  height: 36px;
+  width: 92px;
+  margin-bottom: var(--spacing-1);
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+}
+.study-card-placeholder { min-height: 224px; }
+.study-placeholder-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0 var(--spacing-3);
+}
+.study-placeholder-line {
+  display: block;
+  height: 14px;
+  border-radius: 6px;
+  background: var(--fill);
+}
+.study-placeholder-xs { width: 56px; height: 11px; }
+.study-placeholder-sm { width: 96px; height: 11px; }
+.study-placeholder-md { width: 64%; height: 18px; }
+.study-placeholder-lg { width: 88%; height: 18px; }
+.study-placeholder-btn {
+  display: block;
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+}
+.study-sidebar-placeholder { min-height: 280px; }
 
 .card-exit-layer {
   position: absolute;
@@ -662,6 +697,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
   position: absolute; inset: 0;
   transform: rotateY(180deg);
   pointer-events: none; overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear calc(var(--dur-flip) / 2);
 }
 .card-stage.is-flipped .card-face-front {
   position: absolute; inset: 0;
@@ -670,6 +707,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .card-stage.is-flipped .card-face-back {
   position: relative;
   pointer-events: auto; overflow: visible;
+  visibility: visible;
+  transition: visibility 0s;
 }
 
 .card-stagger { animation: row-enter 220ms var(--ease-out) calc(var(--i, 0) * 35ms) both; }
@@ -941,7 +980,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 
 /* Keyframes (transform & opacity only) */
 @keyframes row-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes card-enter { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes card-enter { from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.985); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
 @keyframes dot-fill { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
 @keyframes week-enter { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 @keyframes tab-bounce { 0% { transform: scale(1); } 35% { transform: scale(0.86); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
@@ -1010,6 +1049,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
   .study-sidebar { display: flex; flex-direction: column; position: sticky; top: 76px; }
   .study-progress-mobile { display: none; }
   .main-has-mobile-bar { padding-bottom: var(--spacing-8); }
+  .study-layout-has-mobile-bar { padding-bottom: 0; }
   .ratings-bar { position: static; padding: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-top: 0; }
   .ratings-grid { max-width: none; }
   .cal-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: var(--spacing-6); }
@@ -1044,12 +1084,25 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 :root[data-motion="reduced"] .card-stage.is-flipped .card-flipper { transform: none; }
 :root[data-motion="reduced"] .card-face-back { transform: none; opacity: 0; transition: opacity 150ms var(--ease-out); }
 :root[data-motion="reduced"] .card-stage.is-flipped .card-face-front { opacity: 0; }
-:root[data-motion="reduced"] .card-stage.is-flipped .card-face-back { opacity: 1; }
+:root[data-motion="reduced"] .card-stage.is-flipped .card-face-back { opacity: 1; animation: fade-in 150ms var(--ease-out) both; }
 :root[data-motion="reduced"] .complete-sheet { animation: fade-in 160ms var(--ease-out); }
 :root[data-motion="reduced"] .card-stage:hover .card-face-front,
 :root[data-motion="reduced"] :active { transform: none; }
 :root[data-motion="reduced"] button,
 :root[data-motion="reduced"] a { transition: opacity 120ms var(--ease-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card-shell,
+  .card-shell-overlap { animation: fade-in 150ms var(--ease-out) both; }
+  .card-flipper { transition: none; }
+  .card-stage.is-flipped .card-flipper { transform: none; }
+  .card-face-back { transform: none; opacity: 0; transition: opacity 150ms var(--ease-out); }
+  .card-stage.is-flipped .card-face-front { opacity: 0; }
+  .card-stage.is-flipped .card-face-back { opacity: 1; animation: fade-in 150ms var(--ease-out) both; }
+  .ratings-bar { animation: fade-in 130ms var(--ease-out) both; }
+  .ratings-bar-exiting { animation: fade-out 120ms var(--ease-out) forwards; }
+  .card-stage:hover .card-face-front { transform: none; }
+}
 
 :root[data-motion="off"] *,
 :root[data-motion="off"] *::before,
