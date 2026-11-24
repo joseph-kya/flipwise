@@ -129,14 +129,37 @@ function renderMathPlaceholder(tex: string, displayMode: boolean): string {
   return displayMode ? `<div class="mb">${clean}</div>` : `<span class="m">${clean}</span>`;
 }
 
+function isCaptionLine(line: string): boolean {
+  const t = line.replace(/^\s*(?:>\s*)*/, '').trim();
+  return (/^\*[^*].*[^*]\*$/.test(t) || /^_[^_].*_$/.test(t));
+}
+
+/** Drop mentions of slide/handout PDF files (Joseph: notes only, no slides or PDFs). */
+export function stripPdfMentions(text: string): string {
+  return text
+    .replace(/\s*\((?:[^()]*?)`[^`]+\.pdf`[^()]*\)/gi, '')
+    .replace(/`[^`]+\.pdf`/gi, 'the lecture handout');
+}
+
+/** Remove header sentences that cite slide decks / PDFs / Moodle resources. */
+export function cleanSubtitle(inner: string): string {
+  const sentences = inner.split(/(?<=[.;])\s+(?=[A-Z(])/);
+  return sentences
+    .filter((x) => !/\.pdf|^\(?slides?\b[^.]*:|moodle resource|readings for this class|slide numbers/i.test(x))
+    .join(' ')
+    .trim();
+}
+
 /** Remove all image/file embeds `![[...]]` and `![](...)`, dropping embed-only lines entirely. */
 export function stripEmbeds(markdown: string): string {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const lines = stripPdfMentions(markdown).replace(/\r\n/g, '\n').split('\n');
   const out: string[] = [];
   let inFence = false;
+  let afterEmbed = false;
   for (const line of lines) {
     if (/^\s*(?:>\s*)*(?:```|~~~)/.test(line)) {
       inFence = !inFence;
+      afterEmbed = false;
       out.push(line);
       continue;
     }
@@ -145,8 +168,15 @@ export function stripEmbeds(markdown: string): string {
       continue;
     }
     if (/^\s*(?:>\s*)*(?:!\[\[[^\]]+\]\]|!\[[^\]]*\]\([^)]+\))(?:\s*(?:!\[\[[^\]]+\]\]|!\[[^\]]*\]\([^)]+\)))*\s*$/.test(line)) {
+      afterEmbed = true;
       continue;
     }
+    // Orphan caption: an italic-only line directly below a removed image.
+    if (afterEmbed && isCaptionLine(line)) {
+      afterEmbed = false;
+      continue;
+    }
+    afterEmbed = false;
     const cleaned = line
       .replace(/!\[\[[^\]]+\]\]/g, '')
       .replace(/!\[[^\]]*\]\([^)]+\)/g, '');
@@ -198,7 +228,8 @@ function splitHeader(markdown: string): SplitHeaderResult {
       if (/^builds\s+on:/i.test(inner)) {
         buildsOnLines.push(inner);
       } else {
-        subtitleLines.push(inner);
+        const cleanedInner = cleanSubtitle(inner);
+        if (cleanedInner) subtitleLines.push(cleanedInner);
       }
       idx++;
       continue;

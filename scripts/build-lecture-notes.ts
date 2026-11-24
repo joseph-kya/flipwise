@@ -160,6 +160,15 @@ for (const courseName of INCLUDED_COURSES) {
     ),
   }));
 
+  // Disambiguate duplicate lecture titles (e.g. 25W vs 26W versions of a Robotics lecture).
+  const titleCounts = new Map<string, number>();
+  for (const c of converted) titleCounts.set(c.result.title, (titleCounts.get(c.result.title) ?? 0) + 1);
+  for (const c of converted) {
+    if ((titleCounts.get(c.result.title) ?? 0) < 2) continue;
+    const term = /winter term (\d{4})/i.exec(c.raw.markdown.slice(0, 1200));
+    c.result.title = `${c.result.title} (${term ? `winter term ${term[1]}` : `lecture ${c.result.number ?? ''}`.trim()})`;
+  }
+
   const lectureMetas: NoteLectureMeta[] = [];
   let courseWords = 0;
   let courseMinutes = 0;
