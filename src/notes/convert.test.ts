@@ -1,6 +1,6 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import createDOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
+import DOMPurify from 'dompurify';
 import {
   NOTE_SANITIZE_CONFIG,
   convertNoteMarkdown,
@@ -11,21 +11,24 @@ import {
 } from './convert';
 import { resolveHeadingId, slugify } from './slug';
 
-const dom = new JSDOM('<!doctype html><html><body></body></html>');
-const purify = createDOMPurify(dom.window as unknown as Parameters<typeof createDOMPurify>[0]);
-purify.addHook('afterSanitizeAttributes', (node) => {
-  for (const attr of Array.from(node.attributes)) {
-    if (attr.name.startsWith('data-') && attr.name !== 'data-lang') {
-      node.removeAttribute(attr.name);
+const sanitize = (html: string) => {
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    for (const attr of Array.from(node.attributes)) {
+      if (attr.name.startsWith('data-') && attr.name !== 'data-lang') {
+        node.removeAttribute(attr.name);
+      }
     }
-  }
-});
-const sanitize = (html: string) =>
-  purify.sanitize(html, {
-    ...NOTE_SANITIZE_CONFIG,
-    ALLOWED_TAGS: [...NOTE_SANITIZE_CONFIG.ALLOWED_TAGS],
-    ALLOWED_ATTR: [...NOTE_SANITIZE_CONFIG.ALLOWED_ATTR],
   });
+  try {
+    return DOMPurify.sanitize(html, {
+      ...NOTE_SANITIZE_CONFIG,
+      ALLOWED_TAGS: [...NOTE_SANITIZE_CONFIG.ALLOWED_TAGS],
+      ALLOWED_ATTR: [...NOTE_SANITIZE_CONFIG.ALLOWED_ATTR],
+    });
+  } finally {
+    DOMPurify.removeHook('afterSanitizeAttributes');
+  }
+};
 
 function buildLookup(entries: NoteLookupEntry[]): Map<string, NoteLookupEntry[]> {
   const map = new Map<string, NoteLookupEntry[]>();

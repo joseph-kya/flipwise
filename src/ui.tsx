@@ -104,6 +104,16 @@ export function SubjectsTabIcon({ size = 22, className }: IconProps) {
   );
 }
 
+export function NotesTabIcon({ size = 22, className }: IconProps) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M4.5 5.5A2.5 2.5 0 0 1 7 3h11.5v16.5H7a2.5 2.5 0 0 0-2.5 2V5.5Z" />
+      <path d="M4.5 19.5A2 2 0 0 1 6.5 17.5h12" />
+      <path d="M9 7.5h6M9 11h5" />
+    </Svg>
+  );
+}
+
 export function CalendarTabIcon({ size = 22, className }: IconProps) {
   return (
     <Svg size={size} className={className}>

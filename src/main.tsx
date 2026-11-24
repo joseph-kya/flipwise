@@ -29,6 +29,8 @@ import { mergeImport } from './anki/types';
 import { CatchupPage } from './CatchupPage';
 import { CATCHUP_BACKLOG, dueCount } from './catchup';
 import {
+  Suspense,
+  lazy,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -82,6 +84,7 @@ import {
   FlameIcon,
   Group,
   NavRow,
+  NotesTabIcon,
   PageHeader,
   Row,
   SUBJECT_DESCRIPTIONS,
@@ -94,6 +97,10 @@ import {
   SubjectsTabIcon,
   TodayTabIcon,
 } from './ui';
+import { NoteOpenContext, parseNotesHash, type NoteOpenTarget } from './notes/sourceLink';
+
+const NotesApp = lazy(() => import('./notes/NotesApp'));
+const NotesOverlay = lazy(() => import('./notes/NotesApp').then((m) => ({ default: m.NotesOverlay })));
 
 const RATINGS: ReadonlyArray<{ key: Rating; label: string }> = [
   { key: 'again', label: 'Again' },
@@ -413,6 +420,7 @@ function App() {
   );
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [catchupActive, setCatchupActive] = useState(false);
+  const [noteOverlay, setNoteOverlay] = useState<NoteOpenTarget | null>(null);
   const online = useOnline();
   const media = useMemo(
     () =>
@@ -675,13 +683,18 @@ function App() {
       const prevRoute = hash.split('/').slice(0, 3).join('/');
       const nextRoute = nextHash.split('/').slice(0, 3).join('/');
       const isCardRevealToggle = prevRoute === nextRoute && nextHash.startsWith('#/study/');
+      const isNoteAnchorJump =
+        nextHash.startsWith('#/notes/') &&
+        hash.startsWith('#/notes/') &&
+        hash.split('#').slice(0, 2).join('#') === nextHash.split('#').slice(0, 2).join('#');
 
-      if (!isCardRevealToggle) {
+      if (!isCardRevealToggle && !isNoteAnchorJump) {
         window.scrollTo(0, 0);
       }
 
       if (
         !isCardRevealToggle &&
+        !isNoteAnchorJump &&
         motionRef.current === 'full' &&
         typeof document !== 'undefined' &&
         'startViewTransition' in document &&
@@ -895,6 +908,7 @@ function App() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (
+        noteOverlay ||
         !studying ||
         !card ||
         e.repeat ||
@@ -1138,6 +1152,7 @@ function App() {
   };
   useEffect(() => { const handler = (e: KeyboardEvent) => {
       if (
+        !noteOverlay &&
         (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)
       ) { e.preventDefault(); void undo(); } }; window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -1157,11 +1172,18 @@ function App() {
   const caughtUp = outcome === 'caught-up';
   const nextAvailable = caughtUp ? nextAvailableAt(catalog.filter(c=>globalStudy || c.subjectId===parts[1] && (parts[2]==='all' || c.lessonId===parts[2])), studyLog, new Date(now)) : null;
   const hasMobileRatingBar = activeStudy && revealed;
+  const notesRoute = useMemo(() => parseNotesHash(hash), [hash]);
+  const isNotesReader = parts[0] === 'notes' && Boolean(notesRoute.noteSlug);
+  const notesWashColor =
+    parts[0] === 'notes' && notesRoute.courseSlug && !notesRoute.noteSlug
+      ? subjectColor(notesRoute.courseSlug)
+      : undefined;
   // Subject pages, study and catch-up carry the subject's colour (top wash, progress).
   const washSubject = (parts[0] === 'subjects' || parts[0] === 'study' || parts[0] === 'catchup') && subject && !globalStudy
     ? subject
     : parts[0] === 'catchup' ? subjects.find((s) => s.id === parts[1]) : undefined;
-  const showTabBar = !activeStudy && !sessionComplete && !(catchupActive && parts[0] === 'catchup');
+  const washColor = washSubject ? subjectColor(washSubject.id, washSubject.name) : notesWashColor;
+  const showTabBar = !activeStudy && !sessionComplete && !(catchupActive && parts[0] === 'catchup') && !noteOverlay;
 
   if (onboardingOpen && storageReady) {
     const account = accountRef.current && accountSnapshot && accountSnapshot.phase !== 'unavailable'
@@ -1197,7 +1219,8 @@ function App() {
 
   return (
     <ContentContext.Provider value={subjects}>
-      <div className="app">
+      <NoteOpenContext.Provider value={(target) => setNoteOverlay(target)}>
+      <div className="app" aria-hidden={Boolean(noteOverlay)}>
       <header className="topbar">
         <div className="topbar-inner">
           <a className="brand" href="#/">
@@ -1216,6 +1239,13 @@ function App() {
               aria-current={parts[0] === 'subjects' ? 'page' : undefined}
             >
               Subjects
+            </a>
+            <a
+              className="nav-link"
+              href="#/notes"
+              aria-current={parts[0] === 'notes' ? 'page' : undefined}
+            >
+              Notes
             </a>
             <a
               className="nav-link"
@@ -1245,8 +1275,8 @@ function App() {
         )}
         <main
         id="main"
-        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}${washSubject ? ' has-subject-wash' : ''}`}
-        style={washSubject ? ({ '--subject': subjectColor(washSubject.id, washSubject.name) } as CSSProperties) : undefined}>
+        className={`main${hasMobileRatingBar ? ' main-has-mobile-bar' : ''}${washColor ? ' has-subject-wash' : ''}${isNotesReader ? ' main-notes-reader' : ''}`}
+        style={washColor ? ({ '--subject': washColor } as CSSProperties) : undefined}>
           {parts[0] === '' ? (
           <div className="section-stack">
             <PageHeader eyebrow={formatTodayLabel()} title="Today" />
@@ -1679,6 +1709,15 @@ function App() {
               </div>
             </section>
           </div>
+        ) : parts[0] === 'notes' ? (
+          <Suspense fallback={<div className="section-stack"><PageHeader title="Notes" /></div>}>
+            <NotesApp
+              courseSlug={notesRoute.courseSlug}
+              noteSlug={notesRoute.noteSlug}
+              headingId={notesRoute.headingId}
+              motion={effectiveMotion}
+            />
+          </Suspense>
         ) : parts[0] === 'calendar' ? (
           <CalendarPage
             events={log}
@@ -1805,6 +1844,16 @@ function App() {
             </a>
             <a
               className="tab-item"
+              href="#/notes"
+              aria-current={parts[0] === 'notes' ? 'page' : undefined}
+            >
+              <span className="tab-icon" key={parts[0] === 'notes' ? 'notes-on' : 'notes-off'}>
+                <NotesTabIcon />
+              </span>
+              <span>Notes</span>
+            </a>
+            <a
+              className="tab-item"
               href="#/calendar"
               aria-current={
                   parts[0] === 'calendar' || parts[0] === 'insights' ? 'page' : undefined
@@ -1846,7 +1895,18 @@ function App() {
         onSaveLecture={saveLectureStudy}
       />
     )}
+    {noteOverlay && (
+      <Suspense fallback={null}>
+        <NotesOverlay
+          target={noteOverlay}
+          motion={effectiveMotion}
+          onClose={() => setNoteOverlay(null)}
+          onNavigate={(next) => setNoteOverlay(next)}
+        />
+      </Suspense>
+    )}
     <UpdatePrompt />
+    </NoteOpenContext.Provider>
     </ContentContext.Provider>
   );
 }

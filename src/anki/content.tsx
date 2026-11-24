@@ -4,6 +4,7 @@ import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import type { DemoCard } from "../demoSubjects";
 import { Markdown } from "../markdown";
+import { parseVaultSource, resolveCardSource, useNotesIndex, useOpenNote } from "../notes/sourceLink";
 export const MATH_DELIMITERS = [
   { left: "$$", right: "$$", display: true },
   { left: "\\[", right: "\\]", display: true },
@@ -109,8 +110,20 @@ export function CardContent({
     });
     return holder.innerHTML;
   }, [text, card.format, media]);
+  const openNote = useOpenNote();
+  const parsedVault = useMemo(
+    () => (card.source && side === "back" ? parseVaultSource(card.source) : null),
+    [card.source, side],
+  );
+  const notesIndex = useNotesIndex(Boolean(parsedVault?.isSemesterVault));
+  const noteSource = useMemo(
+    () => (parsedVault?.isSemesterVault ? resolveCardSource(card.source, notesIndex) : null),
+    [parsedVault, card.source, notesIndex],
+  );
   const url =
-    card.source && side === "back" ? sourceUrl(card.source) : undefined;
+    card.source && side === "back" && !parsedVault?.isSemesterVault
+      ? sourceUrl(card.source)
+      : undefined;
   return (
     <>
       {card.format === "anki" ? (
@@ -121,15 +134,38 @@ export function CardContent({
       ) : (
         <Markdown text={text} />
       )}
-      {url && (
+      {noteSource?.kind === "note" ? (
         <a
-          className="source-link"
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
+          className="source-note-link"
+          href={`#/notes/${noteSource.courseSlug}/${noteSource.noteSlug}${noteSource.headingId ? `#${noteSource.headingId}` : ""}`}
+          onClick={(e) => {
+            if (openNote) {
+              e.preventDefault();
+              openNote({
+                courseSlug: noteSource.courseSlug,
+                noteSlug: noteSource.noteSlug,
+                headingId: noteSource.headingId,
+              });
+            }
+          }}
         >
-          Open source
+          <span className="source-note-kicker">Read in notes</span>
+          <span className="source-note-sep" aria-hidden="true">›</span>
+          <span className="source-note-heading">{noteSource.headingLabel}</span>
         </a>
+      ) : noteSource?.kind === "plain" ? (
+        <span className="source-plain">{noteSource.text}</span>
+      ) : (
+        url && (
+          <a
+            className="source-link"
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open source
+          </a>
+        )
       )}
     </>
   );
