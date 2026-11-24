@@ -168,12 +168,21 @@ describe('StudySession deck-open transition & state integrity', () => {
     expect(host.querySelector('[data-study-state="loading"]')).toBeNull();
     const shell = host.querySelector('.card-shell');
     expect(shell).toBeTruthy();
+    expect(shell!.classList.contains('card-shell-enter')).toBe(true);
     expect(shell!.classList.contains('card-shell-overlap')).toBe(false);
     expect(host.querySelector('.card-stagger')).toBeNull();
     expect(host.querySelector('.card-stage')?.classList.contains('is-flipped')).toBe(false);
     expect(host.querySelector('.card-face-front')?.textContent).toContain('Define limit');
     expect(host.querySelector('.card-face-back')).toBeNull();
     expect(host.textContent).not.toContain('Epsilon-delta answer');
+  });
+
+  it('does not double-animate the first card when storage is already ready on deck open', () => {
+    const host = mount(<StudySession {...baseProps({ storageReady: true })} />);
+    const shell = host.querySelector('.card-shell');
+    expect(shell).toBeTruthy();
+    expect(shell!.classList.contains('card-shell-enter')).toBe(false);
+    expect(shell!.classList.contains('card-shell-overlap')).toBe(false);
   });
 
   it('also holds a stable placeholder for global study (#/study/global/all) until ready', () => {
@@ -301,8 +310,19 @@ describe('StudySession deck-open transition & state integrity', () => {
     expect(host.textContent).not.toContain('Limit equals value answer');
   });
 
-  it('keeps card entrance transform+opacity only, hides unflipped back face, and respects prefers-reduced-motion', () => {
+  it('uses single-screen transform+opacity entrance without view-transition overlap, hides unflipped back face, and respects prefers-reduced-motion', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/style.css'), 'utf8');
+    const mainTsx = readFileSync(resolve(process.cwd(), 'src/main.tsx'), 'utf8');
+
+    expect(mainTsx).not.toContain('startViewTransition');
+    expect(css).not.toContain('::view-transition-');
+
+    const screenEnterMatch = css.match(/@keyframes\s+screen-enter\s*\{[^}]*\}/);
+    expect(screenEnterMatch).toBeTruthy();
+    const screenEnter = screenEnterMatch![0];
+    expect(screenEnter).toContain('opacity');
+    expect(screenEnter).toContain('transform');
+    expect(screenEnter).not.toMatch(/\b(height|width|margin|padding|top|left)\s*:/);
 
     const cardEnterMatch = css.match(/@keyframes\s+card-enter\s*\{[^}]*\}/);
     expect(cardEnterMatch).toBeTruthy();
@@ -311,8 +331,11 @@ describe('StudySession deck-open transition & state integrity', () => {
     expect(cardEnter).toContain('transform');
     expect(cardEnter).not.toMatch(/\b(height|width|margin|padding|top|left)\s*:/);
 
+    expect(css).toMatch(/\.route-screen\s*\{[^}]*animation:\s*screen-enter[^;]*backwards/);
     expect(css).toMatch(/\.card-face-back\s*\{[^}]*visibility:\s*hidden/);
-    expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.card-shell[\s\S]*?fade-in/);
-    expect(css).toContain(':root[data-motion="reduced"] .card-shell');
+    expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.route-screen[\s\S]*?fade-in/);
+    expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.card-shell-enter[\s\S]*?fade-in/);
+    expect(css).toContain(':root[data-motion="reduced"] .route-screen');
+    expect(css).toContain(':root[data-motion="reduced"] .card-shell-enter');
   });
 });

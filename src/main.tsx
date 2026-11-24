@@ -476,44 +476,23 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const motionRef = useRef(effectiveMotion);
-  motionRef.current = effectiveMotion;
-
   useEffect(() => {
     const onHashChange = () => {
       const nextHash = location.hash || '#/';
       if (nextHash === hash) return;
       const prevRoute = hash.split('/').slice(0, 3).join('/');
       const nextRoute = nextHash.split('/').slice(0, 3).join('/');
-      const isStudyRoute = nextHash.startsWith('#/study/');
       const isNoteAnchorJump =
         nextHash.startsWith('#/notes/') &&
         hash.startsWith('#/notes/') &&
         hash.split('#').slice(0, 2).join('#') === nextHash.split('#').slice(0, 2).join('#');
 
-      if (prevRoute !== nextRoute) {
-        setCompletedStudyKey(null);
-      }
-
-      if (
-        !isStudyRoute &&
-        !isNoteAnchorJump &&
-        motionRef.current === 'full' &&
-        typeof document !== 'undefined' &&
-        'startViewTransition' in document &&
-        typeof document.startViewTransition === 'function'
-      ) {
-        try {
-          document.startViewTransition(() => {
-            flushSync(() => setHash(nextHash));
-            window.scrollTo(0, 0);
-          });
-          return;
-        } catch {
-          // Fallback to plain state update.
+      flushSync(() => {
+        if (prevRoute !== nextRoute) {
+          setCompletedStudyKey(null);
         }
-      }
-      setHash(nextHash);
+        setHash(nextHash);
+      });
       if (!isNoteAnchorJump) {
         window.scrollTo(0, 0);
       }
@@ -652,6 +631,12 @@ function App() {
     : undefined;
   const washColor = washSubject ? subjectColor(washSubject.id, washSubject.name) : notesWashColor;
   const showTabBar = !studyActiveOrLoading && !(catchupActive && parts[0] === 'catchup') && !noteOverlay;
+  const routeScreenKey =
+    parts[0] === 'notes'
+      ? `notes:${notesRoute.courseSlug ?? ''}:${notesRoute.noteSlug ?? ''}`
+      : isStudyRoute
+        ? `study:${studySessionKey}`
+        : parts.slice(0, 3).join('/') || 'today';
 
   if (onboardingOpen && storageReady) {
     const account = accountRef.current && accountSnapshot && accountSnapshot.phase !== 'unavailable'
@@ -745,6 +730,7 @@ function App() {
         id="main"
         className={`main${washColor ? ' has-subject-wash' : ''}${isNotesReader ? ' main-notes-reader' : ''}`}
         style={washColor ? ({ '--subject': washColor } as CSSProperties) : undefined}>
+        <div key={routeScreenKey} className="route-screen">
           {parts[0] === '' ? (
           <div className="section-stack">
             <PageHeader eyebrow={formatTodayLabel()} title="Today" />
@@ -995,6 +981,7 @@ function App() {
             </div>
           </div>
         )}
+        </div>
       </main>
 
       {showTabBar && (

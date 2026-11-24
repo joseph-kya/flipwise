@@ -203,9 +203,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 }
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* View Transitions (calm root cross-fade only; never fly headings across chrome) */
-::view-transition-old(root),
-::view-transition-new(root) { animation-duration: 180ms; animation-timing-function: var(--ease-out); }
+/* Route entrance: new screen enters alone (no overlapping crossfade of old+new screens) */
+.route-screen { animation: screen-enter 180ms var(--ease-out) backwards; }
 
 /* Shell, glass ambient backdrop, desktop top bar & phone bottom tab bar */
 .app { min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--label); }
@@ -612,19 +611,28 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
   z-index: 1;
   min-width: 0;
   touch-action: pan-y;
-  animation: card-enter 210ms var(--ease-out) both;
+}
+
+.card-shell-enter {
+  animation: card-enter 200ms var(--ease-out) backwards;
 }
 
 .card-shell-overlap {
-  animation: card-enter 210ms var(--ease-out) 115ms both;
+  animation: card-enter 200ms var(--ease-out) 115ms backwards;
 }
 
 .study-layout-has-mobile-bar { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 
 .study-placeholder-back {
-  height: 36px;
+  height: 44px;
   width: 92px;
-  margin-bottom: var(--spacing-1);
+  margin: -8px 0 var(--spacing-1) 0;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+}
+.study-placeholder-actions {
+  min-height: 44px;
+  width: 168px;
   border-radius: var(--radius-sm);
   background: var(--fill);
 }
@@ -979,6 +987,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .app-footer-above-tabbar { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 
 /* Keyframes (transform & opacity only) */
+@keyframes screen-enter { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 @keyframes row-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes card-enter { from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.985); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
 @keyframes dot-fill { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
@@ -1067,8 +1076,9 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 :root[data-motion="reduced"] .tab-item[aria-current="page"] .tab-icon,
 :root[data-motion="reduced"] .streak-flame { animation: none !important; }
 
-:root[data-motion="reduced"] .card-shell,
-:root[data-motion="reduced"] .card-shell-overlap { animation: fade-in 150ms var(--ease-out) both; }
+:root[data-motion="reduced"] .route-screen { animation: fade-in 150ms var(--ease-out) backwards; }
+:root[data-motion="reduced"] .card-shell-enter,
+:root[data-motion="reduced"] .card-shell-overlap { animation: fade-in 150ms var(--ease-out) backwards; }
 :root[data-motion="reduced"] .ratings-bar { animation: fade-in 130ms var(--ease-out) both; }
 :root[data-motion="reduced"] .ratings-bar-exiting { animation: fade-out 120ms var(--ease-out) forwards; }
 :root[data-motion="reduced"] .card-flipper,
@@ -1092,8 +1102,9 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 :root[data-motion="reduced"] a { transition: opacity 120ms var(--ease-out); }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-shell,
-  .card-shell-overlap { animation: fade-in 150ms var(--ease-out) both; }
+  .route-screen { animation: fade-in 150ms var(--ease-out) backwards; }
+  .card-shell-enter,
+  .card-shell-overlap { animation: fade-in 150ms var(--ease-out) backwards; }
   .card-flipper { transition: none; }
   .card-stage.is-flipped .card-flipper { transform: none; }
   .card-face-back { transform: none; opacity: 0; transition: opacity 150ms var(--ease-out); }

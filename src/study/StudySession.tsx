@@ -249,6 +249,7 @@ export function StudySession({
   const [overlapEnter, setOverlapEnter] = useState(false);
   const [swipeHint, setSwipeHint] = useState<SwipeHint>(null);
 
+  const mountedReadyRef = useRef(storageReady);
   const pendingWrite = useRef(false);
   const cardShellRef = useRef<HTMLDivElement>(null);
   const tintRef = useRef<HTMLDivElement>(null);
@@ -619,21 +620,27 @@ export function StudySession({
     hasStorage &&
     log.some((e) => e.id === session.at(-1)?.id);
 
-  // Queue not ready yet: hold a stable study-shaped placeholder so we never flash
-  // "Page not found", "All caught up", or an uninitialized card.
+  // Queue not ready yet: hold a stable study-shaped placeholder with matching header geometry
+  // so we never flash "Page not found", "All caught up", or shift the header when ready.
   if (!storageReady) {
     return (
       <div className="study-loading" aria-busy="true" aria-live="polite" data-study-state="loading">
         <div className="page-header-wrap study-page-head">
-          <div className="page-head">
-            <div className="study-placeholder-back" aria-hidden="true" />
-            <h1 className="page-title">
-              {!globalStudy && routeLecture
-                ? routeLecture.title
-                : !globalStudy && routeSubject
-                  ? 'All lessons'
-                  : 'Study'}
-            </h1>
+          <div className="study-placeholder-back" aria-hidden="true" />
+          <div className="page-head page-head-split" style={{ marginBottom: 0 }}>
+            <div className="page-head-text">
+              <h1 className="page-title">
+                {!globalStudy && routeLecture
+                  ? routeLecture.title
+                  : !globalStudy && routeSubject
+                    ? 'All lessons'
+                    : 'Study'}
+              </h1>
+              {!globalStudy && routeSubject?.collectionLabel && (
+                <p className="page-sub">{routeSubject.collectionLabel}</p>
+              )}
+            </div>
+            <div className="study-head-actions study-placeholder-actions" aria-hidden="true" />
           </div>
         </div>
         <div className="study-layout">
@@ -751,7 +758,13 @@ export function StudySession({
               <div
                 key={index}
                 ref={cardShellRef}
-                className={`card-shell${overlapEnter ? ' card-shell-overlap' : ''}`}
+                className={`card-shell${
+                  overlapEnter
+                    ? ' card-shell-overlap'
+                    : index > 0 || !mountedReadyRef.current
+                      ? ' card-shell-enter'
+                      : ''
+                }`}
                 style={
                   exitingCard && cards.length === 0 && !revealed ? { visibility: 'hidden' } : undefined
                 }
