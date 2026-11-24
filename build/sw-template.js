@@ -6,7 +6,7 @@ const RUNTIME = __RUNTIME_CACHE__;
 const PRECACHE = __PRECACHE__;
 const scope = self.registration.scope;
 const INDEX = new URL('./', scope).href;
-const RUNTIME_RE = /(\/starter\/[^/]+\.json|\.wasm)$/;
+const RUNTIME_RE = /(\/starter\/[^/]+\.json|\/notes\/[^/]+\/[^/]+\.json|\.wasm)$/;
 
 self.addEventListener('install', (event) => {
   // Wait for the page to ask (update prompt) before taking over: no skipWaiting here.
@@ -15,7 +15,11 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key.startsWith(SHELL_PREFIX) && key !== SHELL) await caches.delete(key);
+    for (const key of await caches.keys()) {
+      if ((key.startsWith(SHELL_PREFIX) && key !== SHELL) || (key.startsWith('flipwise-runtime-') && key !== RUNTIME)) {
+        await caches.delete(key);
+      }
+    }
     await self.clients.claim();
   })());
 });

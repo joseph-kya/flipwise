@@ -48,10 +48,10 @@ describe('service worker versioning', () => {
   it('deletes only older shell caches on activate', () => {
     expect(staleCaches(['flipwise-shell-old', 'flipwise-shell-new', 'flipwise-runtime-v1', 'other-app'], 'new')).toEqual(['flipwise-shell-old']);
   });
-  it('precaches the shell but leaves the starter pack, wasm and downloads to runtime/network', () => {
-    for (const p of ['index.html', 'assets/index-abc.js', 'assets/index-abc.css', 'assets/KaTeX_Main-Regular-x.woff2', 'icons/icon-192.png', 'manifest.webmanifest'])
+  it('precaches the shell and notes index but leaves individual notes, starter pack, wasm and downloads to runtime/network', () => {
+    for (const p of ['index.html', 'assets/index-abc.js', 'assets/index-abc.css', 'assets/KaTeX_Main-Regular-x.woff2', 'icons/icon-192.png', 'manifest.webmanifest', 'notes/index.json'])
       expect(shouldPrecache(p)).toBe(true);
-    for (const p of ['starter/ai-robotics.json', 'assets/sql-wasm-x.wasm', 'assets/flipwise-deck-maker-x.zip', 'assets/ai-deck-guide-x.md', 'assets/KaTeX_Main-x.ttf', 'sw.js'])
+    for (const p of ['notes/analysis-1/1-elements-of-logic.json', 'starter/ai-robotics.json', 'assets/sql-wasm-x.wasm', 'assets/flipwise-deck-maker-x.zip', 'assets/ai-deck-guide-x.md', 'assets/KaTeX_Main-x.ttf', 'sw.js'])
       expect(shouldPrecache(p)).toBe(false);
   });
   it('never handles cross-origin requests (Firebase, Google sign-in, Firestore)', () => {

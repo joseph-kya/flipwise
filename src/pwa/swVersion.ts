@@ -1,7 +1,7 @@
 /** Pure helpers shared by the service-worker build plugin and its tests. */
 
 export const SHELL_PREFIX = 'flipwise-shell-';
-export const RUNTIME_CACHE = 'flipwise-runtime-v1';
+export const RUNTIME_CACHE = 'flipwise-runtime-v2';
 
 /** Stable short version from the build's file names (hashed) and public-file fingerprints. */
 export function buildVersion(entries: readonly string[]): string {
@@ -31,6 +31,8 @@ export function staleCaches(keys: readonly string[], version: string): string[] 
  * formats that browsers with woff2 never request).
  */
 export function shouldPrecache(path: string): boolean {
+  if (path === 'notes/index.json') return true; // precache lecture notes index for instant offline browse & deep links
+  if (/(^|\/)notes\//.test(path)) return false; // individual notes runtime-cached on fetch
   if (/(^|\/)starter\//.test(path)) return false; // runtime-cached when chosen
   if (/\.(wasm|map|zip|md|ttf|woff)$/.test(path)) return false;
   if (/^(sw\.js|icons\/flipwise-mark\.svg)$/.test(path)) return false;
