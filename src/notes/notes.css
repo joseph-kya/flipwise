@@ -528,15 +528,22 @@
   font-size: inherit;
 }
 
-/* Blockquotes */
+/* Blockquotes (quiet rounded surface, no left stripe) */
 .note-prose blockquote {
-  margin: 1.2em 0;
-  padding: 2px 0 2px 16px;
-  border-left: 3px solid var(--separator);
+  margin: 1.3em 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--label) 4%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--label) 8%, transparent);
   color: var(--label-secondary);
+  font-style: italic;
 }
 
-.note-prose blockquote p:last-child {
+.note-prose blockquote > :first-child {
+  margin-top: 0;
+}
+
+.note-prose blockquote > :last-child {
   margin-bottom: 0;
 }
 
@@ -605,56 +612,124 @@
 }
 
 /* ==========================================================================
-   Obsidian Callouts (tinted Apple cards with left accent bar)
+   Obsidian Callouts (Apple-style soft tinted rounded cards, no stripes)
    ========================================================================== */
 .note-prose .nc {
   --nc-accent: var(--accent);
-  margin: 1.25em 0;
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--nc-accent) 7%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--nc-accent) 18%, var(--separator));
-  border-left: 3.5px solid var(--nc-accent);
+  --nc-ink: color-mix(in srgb, var(--nc-accent) 88%, var(--label));
+  --nc-bg-mix: 5.5%;
+  --nc-border-mix: 16%;
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M14.7 7.4l1.9 1.9-6.8 6.8-2.5.6.6-2.5 6.8-6.8Z' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  margin: 1.35em 0;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--nc-accent) var(--nc-bg-mix), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--nc-accent) var(--nc-border-mix), transparent);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.028),
+    0 4px 12px -6px color-mix(in srgb, var(--nc-accent) 12%, transparent);
   overflow: hidden;
 }
 
-.note-prose .nc-abstract { --nc-accent: var(--hue-analysis); }
-.note-prose .nc-note,
-.note-prose .nc-info { --nc-accent: var(--accent); }
-.note-prose .nc-tip,
-.note-prose .nc-check { --nc-accent: var(--sem-green-dot); }
-.note-prose .nc-warning { --nc-accent: var(--sem-orange-dot); }
-.note-prose .nc-failure,
-.note-prose .nc-important { --nc-accent: var(--sem-red-dot); }
-.note-prose .nc-example { --nc-accent: var(--hue-robotics); }
-.note-prose .nc-question { --nc-accent: var(--hue-programming); }
-.note-prose .nc-quote { --nc-accent: var(--label-secondary); }
+.note-prose .nc-abstract {
+  --nc-accent: var(--hue-analysis);
+  --nc-ink: light-dark(#4341b5, #9a98ff);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M7.5 8.6h9M7.5 12h9M7.5 15.4h5.5' fill='none' stroke='%23000' stroke-width='1.85' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-note {
+  --nc-accent: var(--accent);
+}
+
+.note-prose .nc-info {
+  --nc-accent: light-dark(#0284c7, #38bdf8);
+  --nc-ink: light-dark(#0369a1, #7dd3fc);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Ccircle cx='12' cy='8.2' r='1.15' fill='%23000'/%3E%3Cpath d='M12 11.2v5.3' fill='none' stroke='%23000' stroke-width='1.95' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-tip {
+  --nc-accent: var(--sem-green-dot);
+  --nc-ink: var(--sem-green);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M9.7 14.3c-.9-.7-1.6-1.7-1.6-3a3.9 3.9 0 1 1 7.8 0c0 1.3-.7 2.3-1.6 3-.4.3-.6.8-.6 1.3h-3.4c0-.5-.2-1-.6-1.3ZM10.3 17.8h3.4' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-check {
+  --nc-accent: var(--sem-green-dot);
+  --nc-ink: var(--sem-green);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M7.8 12.4l2.7 2.8 5.7-6' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-warning {
+  --nc-accent: var(--sem-orange-dot);
+  --nc-ink: var(--sem-orange);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M12 7.4l5.2 9.1H6.8L12 7.4Z' fill='none' stroke='%23000' stroke-width='1.65' stroke-linejoin='round'/%3E%3Cpath d='M12 10.7v2.3' fill='none' stroke='%23000' stroke-width='1.65' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='14.7' r='0.85' fill='%23000'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-important {
+  --nc-accent: var(--sem-red-dot);
+  --nc-ink: var(--sem-red);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M12 7.4v5.4' fill='none' stroke='%23000' stroke-width='2.05' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='1.2' fill='%23000'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-failure {
+  --nc-accent: var(--sem-red-dot);
+  --nc-ink: var(--sem-red);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M8.8 8.8l6.4 6.4M15.2 8.8l-6.4 6.4' fill='none' stroke='%23000' stroke-width='1.95' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-example {
+  --nc-accent: var(--hue-robotics);
+  --nc-ink: light-dark(#086678, #5eead4);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M12 7.3l5 2.7-5 2.7-5-2.7 5-2.7ZM7 13.5l5 2.7 5-2.7' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-question {
+  --nc-accent: var(--hue-programming);
+  --nc-ink: light-dark(#7e2aa6, #d896f6);
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M9.7 9.5a2.35 2.35 0 1 1 3.6 2c-.8.5-1.3 1-1.3 1.9v.2' fill='none' stroke='%23000' stroke-width='1.85' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='16.5' r='1.1' fill='%23000'/%3E%3C/svg%3E");
+}
+
+.note-prose .nc-quote {
+  --nc-accent: var(--label-secondary);
+  --nc-ink: var(--label-secondary);
+  --nc-bg-mix: 6%;
+  --nc-border-mix: 16%;
+  --nc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23000' fill-opacity='0.15'/%3E%3Cpath d='M10.4 9.2H8.2a.9.9 0 0 0-.9.9v2.1a.9.9 0 0 0 .9.9h1.3c0 1-.5 1.8-1.5 2.3M16.2 9.2H14a.9.9 0 0 0-.9.9v2.1a.9.9 0 0 0 .9.9h1.3c0 1-.5 1.8-1.5 2.3' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
 
 .note-prose .nc-t {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 11px 15px 6px;
+  gap: 9px;
+  padding: 13px 16px 7px;
   font-size: var(--text-sm);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.35;
-  color: color-mix(in srgb, var(--nc-accent) 82%, var(--label));
+  color: var(--nc-ink);
 }
 
 .note-prose .nc-t::before {
   content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 99px;
-  background: var(--nc-accent);
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  background-color: var(--nc-ink);
+  -webkit-mask-image: var(--nc-icon);
+  mask-image: var(--nc-icon);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
 .note-prose details.nc > summary.nc-t {
   cursor: pointer;
   list-style: none;
-  padding: 12px 15px;
+  padding: 13px 16px;
   user-select: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 
 .note-prose details.nc > summary.nc-t::-webkit-details-marker {
@@ -662,26 +737,37 @@
 }
 
 .note-prose details.nc > summary.nc-t::after {
-  content: "›";
+  content: "";
+  width: 14px;
+  height: 14px;
   margin-left: auto;
-  font-size: 1.15em;
-  line-height: 1;
-  color: var(--label-secondary);
-  transition: transform var(--dur-fast) var(--ease-out);
+  flex-shrink: 0;
+  background-color: var(--nc-ink);
+  opacity: 0.65;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3.5L10.5 8 6 12.5' fill='none' stroke='%23000' stroke-width='1.85' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3.5L10.5 8 6 12.5' fill='none' stroke='%23000' stroke-width='1.85' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
 }
 
 .note-prose details.nc[open] > summary.nc-t {
-  padding-bottom: 6px;
+  padding-bottom: 7px;
 }
 
 .note-prose details.nc[open] > summary.nc-t::after {
   transform: rotate(90deg);
+  opacity: 0.85;
 }
 
 .note-prose .nc-b {
-  padding: 2px 15px 13px;
-  font-size: 0.95em;
-  line-height: 1.65;
+  padding: 2px 16px 15px;
+  font-size: 0.94em;
+  line-height: 1.66;
 }
 
 .note-prose .nc-b > :first-child {
@@ -690,6 +776,41 @@
 
 .note-prose .nc-b > :last-child {
   margin-bottom: 0;
+}
+
+/* Dark & OLED black calibration for callouts and blockquotes */
+:root[data-theme="dark"] .note-prose .nc,
+:root[data-theme="black"] .note-prose .nc {
+  --nc-bg-mix: 9.5%;
+  --nc-border-mix: 22%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 2px 10px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="black"] .note-prose .nc {
+  --nc-bg-mix: 10.5%;
+  --nc-border-mix: 24%;
+}
+
+:root[data-theme="dark"] .note-prose blockquote,
+:root[data-theme="black"] .note-prose blockquote {
+  background: color-mix(in srgb, #ffffff 4.5%, var(--surface));
+  border-color: color-mix(in srgb, #ffffff 8%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .note-prose .nc {
+    --nc-bg-mix: 9.5%;
+    --nc-border-mix: 22%;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 2px 10px rgba(0, 0, 0, 0.24);
+  }
+  :root[data-theme="auto"] .note-prose blockquote {
+    background: color-mix(in srgb, #ffffff 4.5%, var(--surface));
+    border-color: color-mix(in srgb, #ffffff 8%, transparent);
+  }
 }
 
 /* Prev / Next lecture navigation */
@@ -762,12 +883,11 @@
 .notes-toc-link {
   display: block;
   padding: 6px 10px 6px 12px;
-  border-left: 2px solid transparent;
   font-size: var(--text-xs);
   line-height: 1.4;
   color: var(--label-secondary);
-  border-radius: 0 6px 6px 0;
-  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+  border-radius: 8px;
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 
 .notes-toc-l3 {
@@ -777,8 +897,7 @@
 .notes-toc-link.is-active {
   color: var(--accent);
   font-weight: 600;
-  border-left-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .notes-toc-sheet-body {
@@ -792,7 +911,6 @@
   display: flex;
   align-items: center;
   font-size: var(--text-sm);
-  border-left: 0;
   border-radius: var(--radius-sm);
 }
 
@@ -874,6 +992,9 @@
   .notes-toc-link.is-active:hover {
     color: var(--accent);
   }
+  .note-prose details.nc > summary.nc-t:hover {
+    background: color-mix(in srgb, var(--nc-accent) 5%, transparent);
+  }
   .note-prose a.wl:hover,
   .notes-builds-links a.wl:hover,
   .note-prose a.xl:hover {
@@ -918,8 +1039,7 @@
     top: 112px;
     max-height: calc(100dvh - 136px);
     overflow-y: auto;
-    padding-right: 4px;
-    border-left: 1px solid var(--separator);
+    padding: 0 4px 0 8px;
   }
   .notes-overlay .notes-toc-sidebar {
     top: 64px;
@@ -930,6 +1050,10 @@
 /* Reduced / Off motion */
 :root[data-motion="reduced"] .notes-overlay {
   animation: fade-in 140ms var(--ease-out) both;
+}
+
+:root[data-motion="reduced"] .note-prose details.nc > summary.nc-t::after {
+  transition: none;
 }
 
 :root[data-motion="reduced"] .note-heading-flash,
@@ -945,6 +1069,9 @@
   }
   .notes-overlay {
     animation: none;
+  }
+  .note-prose details.nc > summary.nc-t::after {
+    transition: none;
   }
 }
 
